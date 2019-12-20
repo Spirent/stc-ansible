@@ -1,0 +1,79 @@
+- 
+  hosts: labservers
+
+  tasks: 
+    - 
+      name: Create session
+      register: result
+      stc: 
+        action: new_session
+        user: mintaka
+        name: ansible-demo-session-1
+
+    - 
+      name: Create the base ports
+      register: result
+      stc: 
+        action: create
+        objects: 
+          - project: 
+              - port: 
+                  location: "//(Offline)/1/1"
+                  name: Port1
+              - port: 
+                  location: "//(Offline)/2/1"
+                  name: Port2
+
+    - 
+      debug:
+        var: result
+
+
+    -
+      name: Create 32 emulated device blocks
+      register: result
+      with_sequence: start=0 end=100
+      stc: 
+        action: create
+        under: ref:/project
+        objects: 
+        - emulateddevice: 
+            AffiliatedPort: ref:/port[name=Port1]
+            DeviceCount: 10
+            name: "IGMP Client {{ item }}"
+            PrimaryIf: ref:./Ipv4If
+            TopLevelIf: ref:./Ipv4If
+            EthIIIf: 
+              SourceMac: be:ef:00:00:{{ '%02x'|format(item|int) }}:00
+            Ipv4If: 
+              AddrStep: 0.0.0.2
+              Address: 10.0.{{ item }}.1
+              Gateway: 192.85.1.1
+              PrefixLength: 16
+              stackedon: ref:../EthIIIf
+
+
+    - 
+      name: Configure the associated PPPoE client device
+      with_sequence: start=0 end=100
+      stc: 
+        action: config
+        parent: ref:/EmulatedDevice[Name=IGMP Client {{ item }}]
+        properties: 
+          PppoeServerBlockConfig:
+            AcName: mintaka
+            Authentication: CHAP_MD5
+            ConnectRate: 1000
+            TotalClients: 10
+            PppoeServerIpv4PeerPool: 
+              Ipv4PeerPoolAddr: 10.0.0.1
+              NetworkCount: 100000
+              PrefixLength: 24
+          PppoeIf:
+            stackedon: ref:../EthIIIf
+          PppIf:
+            stackedon: ref:../PppoeIf
+          Ipv4If:
+            stackedon: ref:../PppIf
+
+            
