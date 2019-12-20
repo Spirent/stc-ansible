@@ -1,6 +1,8 @@
 
 # STC Ansible
 
+This is a proof of concept for using Ansible to configure STC data-models. 
+
 ## Installation
 
 ```
