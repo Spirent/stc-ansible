@@ -1,0 +1,136 @@
+- 
+  name: Create session
+  register: result
+  stc: 
+    action: new_session
+    user: ansible
+    name: pppoe-device
+
+- 
+  name: Copy the data model
+  copy:
+    src: asset/datamodel-small.xml
+    dest: /tmp/datamodel.xml
+
+-
+  name: Load a data model
+  register: result
+  stc:
+    action: load
+    datamodel: /tmp/datamodel.xml
+
+- 
+  debug:
+    var: result
+
+# - 
+#   name: Create the base ports
+#   register: result
+#   stc: 
+#     action: create
+#     objects: 
+#       - project: 
+#           - port: 
+#               location: "//(Offline)/1/1"
+#               name: Port1
+#               VxlanPortConfig:
+#                 UdpDstPort: 88
+
+#           - port: 
+#               location: "//(Offline)/2/1"
+#               name: Port2
+# - 
+#   debug:
+#     var: result
+
+-
+  name: create 100 device blocks with name
+  register: result
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 100
+      DeviceCount: 1
+      Port: ref:/port[Name=Port1]
+      IfStack: Ipv4If PppIf PppoeIf EthIIIf
+      IfCount: '1 1 1 1'
+      name: "Created device $item"
+
+# -
+#   name: Create 32 emulated device blocks
+#   register: result
+#   stc: 
+#     action: create
+#     under: ref:/project
+#     count: 32
+#     objects: 
+#     - emulateddevice: 
+#         AffiliatedPort: ref:/port[name=Port1]
+#         DeviceCount: 10
+#         name: "IGMP Client $item"
+#         PrimaryIf: ref:./Ipv4If
+#         TopLevelIf: ref:./Ipv4If
+#         EthIIIf: 
+#           SourceMac: be:ef:00:00:$item:00
+#         Ipv4If: 
+#           AddrStep: 0.0.0.2
+#           Address: 10.0.$item.1
+#           Gateway: 192.85.1.1
+#           PrefixLength: 16
+#           stackedon: ref:./EthIIIf
+
+# - 
+#   name: Configure the associated PPPoeIF client device
+#   stc: 
+#     count: 32
+#     action: config
+#     parent: ref:/EmulatedDevice[Name=IGMP Client $item]
+#     properties:
+#       PppIf:
+#         stackedon: ref:../PppoeIf
+#         name: PPP interface
+#       PppoeIf:
+#         stackedon: ref:../EthIIIf
+#         IfCountPerLowerIf: 1
+#         name: PPPoE interface
+#       Ipv4If:
+#         stackedon: ref:../PppIf
+#       PppoeServerBlockConfig:
+#         AcName: mintaka
+#         Authentication: CHAP_MD5
+#         ConnectRate: 1000
+#         TotalClients: 10
+#         PppoeServerIpv4PeerPool: 
+#           Ipv4PeerPoolAddr: 10.0.0.1
+#           NetworkCount: 100000
+#           PrefixLength: 24
+
+
+# - 
+#   name: Configure the traffic generator
+#   stc: 
+#     count: 32
+#     action: create
+#     under: ref:/port[name=Port1]
+#     objects: 
+#     - StreamBlock: 
+#         name: stream $item
+#         EnableStreamOnlyGeneration: true
+#         SrcBinding-targets: ref:/EmulatedDevice[Name=IGMP Client $item]/Ipv4If
+#         DstBinding-targets: ref:/EmulatedDevice[Name=IGMP Client 0]/Ipv4If
+#         AffiliationStreamBlockLoadProfile: 
+#           Load: 100
+
+# - 
+#   name: Configure the traffic analyser
+#   stc: 
+#     count: 32
+#     action: config
+#     parent: ref:/project
+#     properties:
+#       analyzerpreloadprofile:
+#         AffiliationAnalyzerPreloadStreamBlock-targets: ref:/port[name=Port1]/StreamBlock
+
+

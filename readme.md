@@ -1,7 +1,8 @@
 
 # STC Ansible
 
-This is a proof of concept for using Ansible to configure STC data-models. 
+
+This is an *experimental* Ansible plugin to configure STC data-models. 
 
 ## Installation
 

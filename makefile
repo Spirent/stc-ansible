@@ -2,6 +2,7 @@
 play:
 	ansible-playbook main.yaml
 
-
 test: 
-	python module_utils/test.py
+	python -m tests.playbook
+
+-include makefile.local

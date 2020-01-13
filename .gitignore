@@ -1,4 +1,7 @@
 venv
 __pycache__
-stc-ansible-datamodel.json
+model-temp
 log
+makefile.local
+docs/*
+tests/*

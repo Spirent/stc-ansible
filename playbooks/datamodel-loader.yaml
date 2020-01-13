@@ -1,0 +1,26 @@
+- 
+  name: Create session
+  register: result
+  stc: 
+    action: new_session
+    user: ansible
+    name: ansible-demo-session-datamod
+
+- 
+  name: Copy the data model
+  copy:
+    src: asset/datamodel-small.xml
+    dest: /tmp/datamodel.xml
+
+-
+  name: Load a data model
+  register: result
+  stc:
+    action: load
+    datamodel: /tmp/datamodel.xml
+
+- 
+  debug:
+    var: result
+
+
