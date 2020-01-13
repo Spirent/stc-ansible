@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-13 12:47:12
+# @Last Modified time: 2020-01-13 16:43:38
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -31,7 +31,7 @@ class Templater:
 
         if type(val) is str:
 
-            return val.replace("$item", str(index))
+            return self._evaluate(val, index)
 
         elif type(val) is list:
 
@@ -54,3 +54,10 @@ class Templater:
         else:
 
             raise Exception("Templater - unknown type: %s" % (type(val)))
+
+    def _evaluate(self, val, index):
+
+        val = val.replace("$item", str(index+1))
+        val = val.replace("${item}", str(index+1))
+        val = val.replace("${item+1}", str(index + 2))
+        return val

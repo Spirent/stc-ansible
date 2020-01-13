@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-13 12:56:05
+# @Last Modified time: 2020-01-13 16:19:38
 
 try:
     from ansible.module_utils.templater import Templater
@@ -52,7 +52,7 @@ class MetaModel:
 
         elif action == "config":
 
-            parent = params["parent"] if "parent" in params else None
+            parent = params["object"] if "object" in params else None
             count = params["count"] if "count" in params else 1
 
             result = self.config(params["properties"], parent, count=count)
@@ -122,15 +122,17 @@ class MetaModel:
 
     def create(self, objects, under=None, count=1):
 
-        parent = None
-        if under != None:
-            parent = self.linker.resolve(under[4:])
-            if parent == None:
-                raise Exception("Can not find parent object " + under)
-
         handles = {}
         xobjects = Templater(objects)
         for i in range(0, count):
+
+            parent = None
+            if under != None:
+                ref = Templater(under[4:]).instance(i)
+                parent = self.linker.resolve(ref)
+                if parent == None:
+                    raise Exception("Can not find parent object %s" % parent)
+
             # print(i,">",json.dumps(xobjects.instance(i),indent=4),"<<",json.dumps(objects,indent=4))
             handles[i] = self.createObject(xobjects.instance(i), parent)
         return handles
@@ -289,8 +291,8 @@ class MetaModel:
                         found = True
                         break
                 if not found:
-                    print("Failed to find handle for child", key, "from",
-                          children)
+                    # print("Failed to find handle for child", key, "from",
+                    #       children)
                     continue
 
                 params = obj["children"][key]

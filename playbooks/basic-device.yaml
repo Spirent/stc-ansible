@@ -1,0 +1,58 @@
+# -*- coding: utf-8 -*-
+# @Author: rjezequel
+# @Date:   2019-12-20 09:18:14
+# @Last Modified by:   ronanjs
+# @Last Modified time: 2020-01-13 15:45:28
+
+
+- 
+  name: Create session
+  register: result
+  stc: 
+    action: new_session
+    user: ansible
+    name: basic-device
+
+- 
+  name: Create the base ports
+  register: result
+  stc: 
+    action: create
+    objects: 
+      - project: 
+          - port: 
+              location: "//(Offline)/1/1"
+              name: Port1
+
+          - port: 
+              location: "//(Offline)/2/1"
+              name: Port2
+
+-
+  name: create 20 device-blocks of 50 emulated devices each
+  register: result
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 20
+      DeviceCount: 50
+      Port: ref:/port[Name=Port1]
+      IfStack: Ipv4If PppIf PppoeIf EthIIIf
+      IfCount: '1 1 1 1'
+      name: "Device $item"
+
+
+-
+  name: Configure the IP address of each device
+  register: result
+  stc: 
+    action: config
+    object: ref:/EmulatedDevice[Name=Device $item]
+    properties:
+        Ipv4If: 
+          AddrStep: 0.0.0.1
+          Address: 10.0.$item.1
+
+

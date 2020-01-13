@@ -1,0 +1,109 @@
+# -*- coding: utf-8 -*-
+# @Author: rjezequel
+# @Date:   2019-12-20 09:18:14
+# @Last Modified by:   ronanjs
+# @Last Modified time: 2020-01-13 15:45:28
+
+- 
+  name: Create session
+  register: result
+  stc: 
+    action: new_session
+    user: ansible
+    name: igmp
+
+- 
+  name: Create 18 base ports
+  register: result
+  stc: 
+    action: create
+    count: 18
+    objects: 
+      - project: 
+          - port: 
+              location: "//(Offline)/1/${item+1}"
+              name: "Port $item"
+
+
+- 
+  name: Configure the IPv4 multicast group
+  stc: 
+    action: create
+    under: ref:/project
+    objects: 
+    - Ipv4Group: 
+        name: Ipv4 Group 1
+        Ipv4NetworkBlock:
+          StartIpList: 225.0.0.1
+          PrefixLength: 32
+          NetworkCount: 1250
+          Active: true
+
+
+-
+  name: Create 18 blocks of emulated devices
+  register: result
+  stc: 
+    action: create
+    under: ref:/project
+    count: 18
+    objects: 
+    - emulateddevice: 
+        AffiliatedPort: ref:/port[name=Port $item]
+        DeviceCount: 10
+        name: "IGMP Device $item"
+        PrimaryIf: ref:./Ipv4If
+        TopLevelIf: ref:./Ipv4If
+        EthIIIf: 
+          SourceMac: be:ef:00:00:$item:00
+        Ipv4If: 
+          AddrStep: 0.0.0.2
+          Address: 10.0.$item.1
+          Gateway: 192.85.1.1
+          PrefixLength: 16
+          stackedon: ref:./EthIIIf
+
+- 
+  name: Configure the IGMP group member ship
+  stc: 
+    count: 18
+    action: config
+    object: ref:/EmulatedDevice[Name=IGMP Device $item]
+    properties:
+      IgmpHostConfig:
+        Active: true
+
+        UsesIf: ref:../Ipv4If
+        IgmpGroupMembership:
+          name: "IgmpGroupMembership $item"
+          MulticastGroup: ref:/Ipv4Group
+
+
+- 
+  name: Configure the traffic generator
+  stc: 
+    action: create
+    under: ref:/port[name=Port 0]
+    objects: 
+    - StreamBlock: 
+        name: multicast-stream 
+        EnableStreamOnlyGeneration: true
+        SrcBinding-targets: ref:/EmulatedDevice[Name=IGMP Device 0]/Ipv4If
+        DstBinding-targets: ref:/Ipv4Group/Ipv4NetworkBlock
+        AffiliationStreamBlockLoadProfile: 
+          Load: 100
+
+
+- 
+  name: Start the traffic
+  stc: 
+    action: perform
+    command: GeneratorStart
+    properties: 
+      GeneratorList: ref:/project 
+
+
+
+
+
+

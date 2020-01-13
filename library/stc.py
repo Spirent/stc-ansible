@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-18 10:08:41
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-03 15:20:17
+# @Last Modified time: 2020-01-13 16:19:18
 
 from ansible.module_utils.basic import *
 from ansible.module_utils.metamodel import MetaModel
@@ -36,7 +36,7 @@ def main():
             "required": False,
             "type": "dict"
         },
-        "parent": {
+        "object": {
             "required": False,
             "type": "str"
         },
