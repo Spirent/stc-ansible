@@ -29,7 +29,7 @@ To run all of them, just use `make play`, and it will create an STC session for 
 
 In your inventory (`inventory.ini`), declare the lab servers you want the ansible playbook to connect to:
 
-```yaml
+```ini
 [labservers]
 my-labserver-1 ansible_host=10.61.67.200
 
@@ -186,7 +186,7 @@ One an object is created, it is possible to update its configuration. What is ne
 
 If declarating your own data model is to complex, you can also import an existing XML data-model:
 
-```
+```yaml
 - name: Copy the data model
   copy:
     src: asset/datamodel.xml
@@ -204,7 +204,7 @@ Note that you must first copy the data model to the lab-server, before beeing ab
 
 Starting the traffic is as simple as performing a command:
 
-```
+```yaml
 - name: Start the traffic
   stc: 
     action: perform
