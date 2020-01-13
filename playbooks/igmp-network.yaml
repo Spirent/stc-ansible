@@ -83,12 +83,12 @@
   name: Configure the traffic generator
   stc: 
     action: create
-    under: ref:/port[name=Port 0]
+    under: ref:/port[name=Port 1]
     objects: 
     - StreamBlock: 
         name: multicast-stream 
         EnableStreamOnlyGeneration: true
-        SrcBinding-targets: ref:/EmulatedDevice[Name=IGMP Device 0]/Ipv4If
+        SrcBinding-targets: ref:/EmulatedDevice[Name=IGMP Device 1]/Ipv4If
         DstBinding-targets: ref:/Ipv4Group/Ipv4NetworkBlock
         AffiliationStreamBlockLoadProfile: 
           Load: 100

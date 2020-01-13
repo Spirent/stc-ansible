@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-13 16:19:38
+# @Last Modified time: 2020-01-13 17:27:21
 
 try:
     from ansible.module_utils.templater import Templater
@@ -131,7 +131,7 @@ class MetaModel:
                 ref = Templater(under[4:]).instance(i)
                 parent = self.linker.resolve(ref)
                 if parent == None:
-                    raise Exception("Can not find parent object %s" % parent)
+                    raise Exception("Can not find parent object %s" % ref)
 
             # print(i,">",json.dumps(xobjects.instance(i),indent=4),"<<",json.dumps(objects,indent=4))
             handles[i] = self.createObject(xobjects.instance(i), parent)

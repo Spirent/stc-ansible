@@ -57,7 +57,7 @@ class Templater:
 
     def _evaluate(self, val, index):
 
-        val = val.replace("$item", str(index+1))
-        val = val.replace("${item}", str(index+1))
+        val = val.replace("$item", str(index + 1))
+        val = val.replace("${item}", str(index + 1))
         val = val.replace("${item+1}", str(index + 2))
         return val
