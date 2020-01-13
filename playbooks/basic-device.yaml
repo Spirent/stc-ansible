@@ -49,6 +49,7 @@
   register: result
   stc: 
     action: config
+    count: 20
     object: ref:/EmulatedDevice[Name=Device $item]
     properties:
         Ipv4If: 
