@@ -1,16 +1,15 @@
 - 
-  hosts: localhost
+  hosts: bdc-ls
 
   tasks: 
 
     - name: Create two IGMP device
-      include_tasks: playbooks/igmpdevice-example.yaml
+      include_tasks: playbooks/igmp-device.yaml
 
-    # - name: Create an IGMP mesh network
-    #   include_tasks: playbooks/igmpmesh-example.yaml
+    - name: Create an IGMP mesh network
+      include_tasks: playbooks/igmp-mesh.yaml
 
-
-    # - name: Load a predefined XML datamodel
-    #   include_tasks: playbooks/datamodel-loader.yaml
+    - name: Load a predefined XML datamodel
+      include_tasks: playbooks/datamodel-loader.yaml
 
 

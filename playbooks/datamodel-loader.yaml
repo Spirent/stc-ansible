@@ -4,12 +4,12 @@
   stc: 
     action: new_session
     user: ansible
-    name: ansible-demo-session-datamod
+    name: datamodel-loader
 
 - 
   name: Copy the data model
   copy:
-    src: asset/datamodel-small.xml
+    src: asset/datamodel.xml
     dest: /tmp/datamodel.xml
 
 -
