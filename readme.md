@@ -96,7 +96,7 @@ You can then declare your own emulated device:
               name: Port 2
 ```
 
-The STC ansible module has a special iterator construct, which can be used to create several objects in an iterative way. For that, you only need to define the `count` property under `stc`. 
+The STC ansible module has a special iterator construct, which can be used to create several objects in an iterative way. For that, you only need to define the `count` property under `stc`. You can then use the keyword `${item}` as a template - The item will be replace with the values from 1 to _count_.
 
 ```yaml
 - name: Create the 18 ports
@@ -107,7 +107,7 @@ The STC ansible module has a special iterator construct, which can be used to cr
       - project: 
           - port: 
               location: "//(Offline)/1/${item}"
-              name: "Port $item"
+              name: "Port ${item}"
 ```
 
 This will create 18 ports with the names ["Port 1".... "Port 18"], located at "//(Offline)/1/1" ... "//(Offline)/1/18".
@@ -130,7 +130,7 @@ One the ports are created, the next step is to create the emulated device. The e
       Port: ref:/port[Name=Port 1]
       IfStack: Ipv4If PppIf PppoeIf EthIIIf
       IfCount: '1 1 1 1'
-      name: "Device $item"
+      name: "Device ${item}"
 ```
 
 Note the `ref:/port[Name=Port 1]`. This is a special construct (called _reference_ later), which allows the task to reference another object in the data-model. If the object does not exists, an exception is raised and the playbook stops. 
@@ -148,16 +148,16 @@ Creating the emulated device can alos be done using the `create` method, but req
     count: 20
     objects: 
     - emulateddevice: 
-        AffiliatedPort: ref:/port[name=Port $item]
+        AffiliatedPort: ref:/port[name=Port ${item}]
         DeviceCount: 50
-        name: "Device $item"
+        name: "Device ${item}"
         PrimaryIf: ref:./Ipv4If
         TopLevelIf: ref:./Ipv4If
         EthIIIf: 
-          SourceMac: be:ef:00:00:$item:00
+          SourceMac: be:ef:00:00:${item}:00
         Ipv4If: 
           AddrStep: 0.0.0.2
-          Address: 10.0.$item.1
+          Address: 10.0.${item}.1
           Gateway: 192.85.1.1
           PrefixLength: 16
           stackedon: ref:./EthIIIf
@@ -165,14 +165,14 @@ Creating the emulated device can alos be done using the `create` method, but req
 
 ### Reconfiguring a data-model
 
-One an object is created, it is possible to update its configuration. What is needed is to provide the reference `object` of the object which has to be updated. Since there can be several objects, you usually use a named reference - `ref:/EmulatedDevice[Name= Device $item]` in this case.
+One an object is created, it is possible to update its configuration. What is needed is to provide the reference `object` of the object which has to be updated. Since there can be several objects, you usually use a named reference - `ref:/EmulatedDevice[Name= Device ${item}]` in this case.
 
 ```yaml
 - name: configure the server device block
   stc: 
     action: config
     count: 20
-    object: ref:/EmulatedDevice[Name= Device $item]
+    object: ref:/EmulatedDevice[Name= Device ${item}]
     properties:
       PppoeClientBlockConfig:
         ConnectRate: 1000
