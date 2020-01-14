@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-13 12:33:39
+# @Last Modified time: 2020-01-14 10:20:24
 
 import requests
 import pickle
@@ -74,9 +74,7 @@ class DataModel:
     def insert(self, handle, attributes, parent=None):
 
         if not ("object_type" in attributes):
-            raise Exception(
-                "Trying to insert handle %s without object_type attribute" %
-                handle)
+            raise Exception("Trying to insert handle %s without object_type attribute" % handle)
         # print("[data-model] Inserting %s (%s) under [%s]"%(handle,attributes["object_type"],parent))
         obj = ObjectModel(handle, attributes, parent)
 

@@ -20,21 +20,14 @@ class ObjectTree:
             # Expect that the sub-childs are dictionnaries
             for child in attributes:
                 if not type(child) is dict:
-                    raise Exception(
-                        "Invalid attribute type %s for %s under %s" %
-                        (type(child), child, parent))
+                    raise Exception("Invalid attribute type %s for %s under %s" % (type(child), child, parent))
 
                 for key in child.keys():
                     subchildren = {}
                     subproperties = {}
                     nodeid = parent + "." + key if parent != "" else key
-                    self.create(child[key], "", subproperties, nodeid,
-                                subchildren)
-                    obj = {
-                        "type": key,
-                        "props": subproperties,
-                        "children": subchildren
-                    }
+                    self.create(child[key], "", subproperties, nodeid, subchildren)
+                    obj = {"type": key, "props": subproperties, "children": subchildren}
                     if under != "":
                         obj["under"] = under
                     self.objects.append(obj)
@@ -53,8 +46,7 @@ class ObjectTree:
                     if parent != "":
                         children[parent][key] = None
                     children[nodeid] = val
-                    self.create(val, nodeid, properties, under + "." + key,
-                                children)
+                    self.create(val, nodeid, properties, under + "." + key, children)
 
                 elif type(val) is str:
                     properties[nodeid] = val
@@ -66,11 +58,9 @@ class ObjectTree:
                     properties[nodeid] = val
 
                 else:
-                    print("[objtree] Unknown type %s [%s:%s]" %
-                          (type(val), key, val))
+                    print("[objtree] Unknown type %s [%s:%s]" % (type(val), key, val))
                     exit()
 
         else:
 
-            raise Exception("Invalid attribute %s type %s" %
-                            (attributes, type(attributes)))
+            raise Exception("Invalid attribute %s type %s" % (attributes, type(attributes)))

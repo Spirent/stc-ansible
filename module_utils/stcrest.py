@@ -36,10 +36,7 @@ class StcRest:
 
         url = "http://" + self.server + "/stcapi/sessions"
         params = {'userid': user_name, 'sessionname': session_name}
-        rsp = requests.post(url,
-                            headers={'Accept': 'application/json'},
-                            data=params,
-                            timeout=60 * 2)
+        rsp = requests.post(url, headers={'Accept': 'application/json'}, data=params, timeout=60 * 2)
         if rsp.status_code == 409 or rsp.status_code == 200 or rsp.status_code == 201:
             self.session = session_name + " - " + user_name
             self.perform("ResetConfig")
@@ -79,8 +76,7 @@ class StcRest:
 
         if rsp.status_code == 200 or rsp.status_code == 204:
             self.errorInfo = None
-            self.log("CONFIG %s %s -> %s" %
-                     (url, json.dumps(params, indent=4), rsp.content))
+            self.log("CONFIG %s %s -> %s" % (url, json.dumps(params, indent=4), rsp.content))
             return None
 
         self.errorInfo = "config failed\n - url:%s\n - code:%d\n - response:%s\n - params:%s\n - session:%s!" % (
@@ -96,8 +92,7 @@ class StcRest:
         """
         params["object_type"] = object_type
         result = self._post("objects", params)
-        if result == None or (
-                not "handle" in result) or result["handle"] == None:
+        if result == None or (not "handle" in result) or result["handle"] == None:
             raise Exception("Failed to create object: " + self.errorInfo)
         return result["handle"]
 
@@ -155,8 +150,7 @@ class StcRest:
 
         if rsp.status_code == 200 or rsp.status_code == 201:
             self.errorInfo = None
-            self.log("POST %s %s -> %s" % (url, json.dumps(
-                params, indent=4), json.dumps(rsp.json(), indent=4)))
+            self.log("POST %s %s -> %s" % (url, json.dumps(params, indent=4), json.dumps(rsp.json(), indent=4)))
             return rsp.json()
 
         self.errorInfo = "post failed\n - url:%s\n - code:%d\n - response:%s\n - params:%s\n - session:%s!" % (
@@ -165,18 +159,12 @@ class StcRest:
 
     def _get(self, container):
         url = "http://" + self.server + "/stcapi/" + container
-        rsp = requests.get(url,
-                           headers={
-                               'Accept': 'application/json',
-                               "X-STC-API-Session": self.session
-                           },
-                           timeout=60)
+        rsp = requests.get(url, headers={'Accept': 'application/json', "X-STC-API-Session": self.session}, timeout=60)
 
         if rsp.status_code == 200:
             self.errorInfo = None
             return rsp.json()
 
         self.log("GET %s -> code %d - %s" % (url, rsp.status_code, rsp.content))
-        self.errorInfo = "failed - url:%s - code:%d - content:%s!" % (
-            url, rsp.status_code, rsp.content)
+        self.errorInfo = "failed - url:%s - code:%d - content:%s!" % (url, rsp.status_code, rsp.content)
         return None

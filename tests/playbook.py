@@ -2,7 +2,7 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:09:07
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-13 16:21:15
+# @Last Modified time: 2020-01-14 12:04:40
 
 import yaml
 import json
@@ -25,8 +25,7 @@ def testPlaybook(playbook, server):
     for task in playbook:
 
         if "stc" in task:
-            print("\033[93m------------ TASK %s ------------\033[0m" %
-                  task["name"])
+            print("\033[93m------------ TASK %s ------------\033[0m" % task["name"])
             start = time.time()
             model = MetaModel(server)
 
@@ -36,14 +35,12 @@ def testPlaybook(playbook, server):
             count = task["stc"]["count"] if "count" in task["stc"] else 1
             perobject = int(elapsed * 10000 / count) / 10
 
-            print("task executed in ", int(elapsed * 1000), "ms", "ms (",
-                  perobject, "ms per object)")
+            print("task executed in ", int(elapsed * 1000), "ms", "ms (", perobject, "ms per object)")
             print("Result: \033[96m" + json.dumps(result) + "\033[0m")
 
     elapsed = time.time() - pbstart
     perobject = int(elapsed * 10000 / count) / 10
-    print("playbook executed in ", int(elapsed * 1000), "ms", "ms (",
-          perobject, "ms per object)")
+    print("playbook executed in ", int(elapsed * 1000), "ms", "ms (", perobject, "ms per object)")
 
 
 def testPlaybooks(path, server):
