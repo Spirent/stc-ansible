@@ -9,7 +9,7 @@
   name: Create session
   register: result
   stc: 
-    action: new_session
+    action: session
     user: ansible
     name: basic-device
 

@@ -8,7 +8,7 @@
 - 
   name: Create session
   stc: 
-    action: new_session
+    action: session
     user: ansible
     name: datamodel-loader
 

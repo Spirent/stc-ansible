@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-13 17:27:21
+# @Last Modified time: 2020-01-14 09:33:44
 
 try:
     from ansible.module_utils.templater import Templater
@@ -39,7 +39,7 @@ class MetaModel:
     def action(self, params):
 
         action = params["action"]
-        if action == "new_session":
+        if action == "session":
 
             result = self.new_session(params["user"], params["name"])
 
