@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 12:02:55
+# @Last Modified time: 2020-01-14 15:03:12
 
 import requests
 import pickle
@@ -140,6 +140,11 @@ class NodeSelector:
 
     def select(self, element, attrKey=None, attrVal=None):
 
+        negativeSelection = False
+        if attrKey != None and attrKey.endswith("!"):
+            negativeSelection = True
+            attrKey = attrKey[:-1]
+
         selection = []
         for node in self.nodes:
 
@@ -164,7 +169,7 @@ class NodeSelector:
                             self.log("| Checking object=%s -> No such attribute %s" % (node, attrKey))
                             continue
 
-                        if attr[attrKey].lower() != attrVal:
+                        if (attr[attrKey].lower() != attrVal )^ negativeSelection:
                             self.log("| Checking object=%s -> Wrong attribute %s: %s!=%s" %
                                      (node, attrKey, attr[attrKey].lower(), attrVal))
                             continue
