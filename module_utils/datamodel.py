@@ -12,6 +12,7 @@ import os
 
 
 class DataModel:
+
     def __init__(self):
         self._session = None
         self._verbose = False
@@ -95,6 +96,7 @@ class DataModel:
 
 
 class ObjectModel:
+
     def __init__(self, handle, attributes, parent):
         self.handle = handle
         self.children = {}

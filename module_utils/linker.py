@@ -12,6 +12,7 @@ import os
 
 
 class Linker:
+
     def __init__(self, datamodel):
         self.datamodel = datamodel
         self._verbose = False

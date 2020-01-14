@@ -25,6 +25,7 @@ import re
 
 
 class MetaModel:
+
     def __init__(self, server="127.0.0.1"):
         self.datamodel = DataModel()
         self.linker = Linker(self.datamodel)
@@ -297,8 +298,7 @@ class MetaModel:
 
                 params = obj["children"][key]
                 params["object_type"] = key
-                newObject = self.datamodel.insert(handle, params,
-                                                  obj["object"])
+                newObject = self.datamodel.insert(handle, params, obj["object"])
                 if self._verbose:
                     print("\033[91m" + handle + "\033[0m-->",
                           json.dumps(params, indent=4))
@@ -323,8 +323,8 @@ class MetaModel:
                 val = refs[key]
                 nobj = self.linker.resolve(val, obj["object"], parent)
                 if nobj == None:
-                    print("Reference \033[91m" + val + "\033[0m failure (",
-                          key, ")")
+                    print("Reference \033[91m" + val + "\033[0m failure (", key,
+                          ")")
                     continue
 
                 config[key] = nobj.handle

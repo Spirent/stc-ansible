@@ -6,6 +6,7 @@
 
 
 class ObjectTree:
+
     def __init__(self, objects):
         self.objects = []
         self.create(objects, "", {}, "", {})

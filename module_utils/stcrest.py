@@ -176,8 +176,7 @@ class StcRest:
             self.errorInfo = None
             return rsp.json()
 
-        self.log("GET %s -> code %d - %s" %
-                 (url, rsp.status_code, rsp.content))
+        self.log("GET %s -> code %d - %s" % (url, rsp.status_code, rsp.content))
         self.errorInfo = "failed - url:%s - code:%d - content:%s!" % (
             url, rsp.status_code, rsp.content)
         return None

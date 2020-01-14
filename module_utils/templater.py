@@ -21,6 +21,7 @@ import re
 
 
 class Templater:
+
     def __init__(self, val):
         self.val = val
 
