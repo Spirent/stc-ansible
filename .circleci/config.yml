@@ -1,0 +1,23 @@
+version: 2
+jobs:
+  build:
+
+    docker:
+      - image: circleci/python:3.7
+
+    working_directory: ~/repo
+
+    steps:
+
+      - checkout
+
+      - run:
+          name: install dependencies
+          command: |
+            sudo pip install pipenv
+            pipenv install
+
+      - run:
+          name: run tests
+          command: |
+            pytest -v

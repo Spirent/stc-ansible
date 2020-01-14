@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-13 12:39:40
+# @Last Modified time: 2020-01-14 10:53:41
 
 import requests
 import pickle
@@ -61,74 +61,101 @@ class Linker:
 
         self.log("Looking for %s from %s>%s" % (ref, parent, current))
 
-        depth = 1
-        selection = [current]
+        selection = NodeSelector(current)
+
         for element in ref.lower().split("/"):
 
-            self.log("+")
-            self.log("+ %s" % (element))
-            self.log("+")
-            attributeKey = None
-            attributeVal = None
-
             #Look for, eg "port[name=port1]" or "port[*]"
-            #/port[name=Port1]/EmulatedDevice[Name=IGMP Client $item]/Ipv4If
+            #/port[name=Port1]/EmulatedDevice[*]/Ipv4If
 
-            parts = re.findall("([a-zA-Z]+)\\[(.*?)\\]", element)
-            if len(parts) == 1:
-                parts = parts[0]
-                attributeKey = parts[1].split("=")[0]
-                attributeVal = parts[1].split("=")[1]
-                element = parts[0]
+            attrKey = None
+            attrVal = None
+            match = re.findall("([a-zA-Z]+)\\[(.*?)\\]", element)
 
-            elif len(parts) != 0:
+            if len(match) == 1:
+                match = match[0]
+                p = match[1].split("=")
+                attrKey = p[0]
+                attrVal = p[1] if len(p) > 1 else None
+                element = match[0]
+
+            elif len(match) != 0:
                 raise Exception("reference syntax error: '%s' from '%s'" %
                                 (element, ref))
 
-            nselection = []
-            for node in selection:
-                for node in node.children.values():
-                    attr = node.attributes
-                    if not ("object_type" in attr):
-                        self.log("| Checking object=%s -> No object type!!" %
-                                 (node))
-                        continue
-
-                    objType = attr["object_type"]
-
-                    # self.log("| Checkingtype=%s  attribute=%s -> looking for type '%s'"%(attr["object_type"],attributeKey,ref))
-
-                    if objType.lower() == element:
-
-                        if attributeKey != None:
-
-                            if not (attributeKey in attr):
-                                self.log(
-                                    "| Checking object=%s -> No such attribute %s"
-                                    % (node, attributeKey))
-                                continue
-
-                            if attr[attributeKey].lower() != attributeVal:
-                                self.log(
-                                    "| Checking object=%s -> Wrong attribute %s: %s!=%s"
-                                    %
-                                    (node, attributeKey,
-                                     attr[attributeKey].lower(), attributeVal))
-                                continue
-
-                        self.log("| Checking object=%s -> Using it" % (node))
-                        nselection.append(node)
-
-                    else:
-
-                        self.log("| Checking object=%s -> Wrong type" % (node))
-
-            if len(nselection) == 0:
+            if selection.select(element, attrKey, attrVal) == 0:
                 self.log("| Can not find object %s from %s [%s]" %
                          (ref, current, ref[:1]))
                 return None
 
-            selection = nselection
+        self.log("%s from %s -> %s" % (ref, current, selection))
+        return selection.firstNode()
 
-        self.log("%s from %s -> %s" % (ref, current, selection[0]))
-        return selection[0]
+
+class NodeSelector:
+
+    def __init__(self, node):
+        self.nodes = [node]
+
+    def log(self, m):
+        # print("[selector] " + m)
+        pass
+
+    def __str__(self):
+        s = ""
+        for node in self.nodes:
+            s += "," if len(s) > 0 else ""
+            s += str(node)
+        return "[" + s + "]"
+
+    def count(self):
+        return self.nodes
+
+    def firstNode(self):
+        return self.nodes[0]
+
+    def select(self, element, attrKey=None, attrVal=None):
+
+        selection = []
+        for node in self.nodes:
+
+            for node in node.children.values():
+
+                # self.log("| Checking object=%s"%node)
+                attr = node.attributes
+
+                if not ("object_type" in attr):
+                    self.log("| Checking object=%s -> No object type!!" %
+                             (node))
+                    continue
+
+                objType = attr["object_type"]
+
+                # self.log("| Checkingtype=%s  attribute=%s -> looking for type '%s'"%(attr["object_type"],attrKey,ref))
+
+                if objType.lower() == element:
+
+                    if attrKey != None and attrKey != "*":
+
+                        if not (attrKey in attr):
+                            self.log(
+                                "| Checking object=%s -> No such attribute %s" %
+                                (node, attrKey))
+                            continue
+
+                        if attr[attrKey].lower() != attrVal:
+                            self.log(
+                                "| Checking object=%s -> Wrong attribute %s: %s!=%s"
+                                %
+                                (node, attrKey, attr[attrKey].lower(), attrVal))
+                            continue
+
+                    self.log("| Checking object=%s -> Using it" % (node))
+                    selection.append(node)
+
+                else:
+
+                    self.log("| Checking object=%s -> Wrong type" % (node))
+
+        self.nodes = selection
+        return len(selection)
