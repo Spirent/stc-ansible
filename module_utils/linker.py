@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 10:53:41
+# @Last Modified time: 2020-01-14 12:02:55
 
 import requests
 import pickle
@@ -24,14 +24,31 @@ class Linker:
         if self._verbose:
             print("[linker] " + m)
 
-    def resolve(self, ref, current=None, parent=None):
+    def resolveSingleObject(self, ref):
+
+        selection = self._resolve(ref)
+        if selection == None:
+            return
+
+        if selection != None and selection.count() > 1:
+            raise Exception("There are too many choices for reference %s: %s" % (ref, selection))
+
+        return selection.firstNode()
+
+    def resolveHandles(self, ref, current=None):
+        selection = self._resolve(ref, current)
+        if selection == None or selection.count() == 0:
+            return None
+        return selection.handles()
+
+    def _resolve(self, ref, current=None):
 
         root = self.datamodel.root
 
         ref = ref.lower()
         if ref == "/project":
             if "project1" in root:
-                return root["project1"]
+                return NodeSelector(root["project1"])
             return None
 
         if ref[:2] == "./":
@@ -41,12 +58,14 @@ class Linker:
             ref = ref[2:]
 
         if ref[:3] == "../":
-            if parent == None:
-                if current != None:
-                    parent = current.parent
-            if parent == None:
+            if current == None:
+                print("Trying to resolve %s ... but current is None!" % ref)
                 return None
-            current = parent
+            if current.parent == None:
+                print("Trying to resolve %s ... but current's parent is None!" % ref)
+                return None
+            print("Resolve(%s): Using parent %s for object %s" % (ref, current.parent, current))
+            current = current.parent
             ref = ref[3:]
 
         if ref[:1] == "/":
@@ -55,12 +74,12 @@ class Linker:
                 ref = ref[1:]
 
         if current == None:
-            self.log("Can not find object %s --- curent in None!!!! [%s]" %
-                     (ref, ref[:1]))
+            self.log("Can not find object %s --- curent in None!!!! [%s]" % (ref, ref[:1]))
             return None
 
-        self.log("Looking for %s from %s>%s" % (ref, parent, current))
+        self.log("Looking for %s from %s" % (ref, current))
 
+        hasWildcard = False
         selection = NodeSelector(current)
 
         for element in ref.lower().split("/"):
@@ -77,19 +96,18 @@ class Linker:
                 p = match[1].split("=")
                 attrKey = p[0]
                 attrVal = p[1] if len(p) > 1 else None
+                hasWildcard |= hasWildcard or attrKey == "*"
                 element = match[0]
 
             elif len(match) != 0:
-                raise Exception("reference syntax error: '%s' from '%s'" %
-                                (element, ref))
+                raise Exception("reference syntax error: '%s' from '%s'" % (element, ref))
 
             if selection.select(element, attrKey, attrVal) == 0:
-                self.log("| Can not find object %s from %s [%s]" %
-                         (ref, current, ref[:1]))
+                self.log("| Can not find object %s from %s [%s]" % (ref, current, ref[:1]))
                 return None
 
         self.log("%s from %s -> %s" % (ref, current, selection))
-        return selection.firstNode()
+        return selection
 
 
 class NodeSelector:
@@ -109,10 +127,16 @@ class NodeSelector:
         return "[" + s + "]"
 
     def count(self):
-        return self.nodes
+        return len(self.nodes)
+
+    def get(self, n):
+        return self.nodes[n]
 
     def firstNode(self):
         return self.nodes[0]
+
+    def handles(self):
+        return " ".join([n.handle for n in self.nodes])
 
     def select(self, element, attrKey=None, attrVal=None):
 
@@ -125,8 +149,7 @@ class NodeSelector:
                 attr = node.attributes
 
                 if not ("object_type" in attr):
-                    self.log("| Checking object=%s -> No object type!!" %
-                             (node))
+                    self.log("| Checking object=%s -> No object type!!" % (node))
                     continue
 
                 objType = attr["object_type"]
@@ -138,16 +161,12 @@ class NodeSelector:
                     if attrKey != None and attrKey != "*":
 
                         if not (attrKey in attr):
-                            self.log(
-                                "| Checking object=%s -> No such attribute %s" %
-                                (node, attrKey))
+                            self.log("| Checking object=%s -> No such attribute %s" % (node, attrKey))
                             continue
 
                         if attr[attrKey].lower() != attrVal:
-                            self.log(
-                                "| Checking object=%s -> Wrong attribute %s: %s!=%s"
-                                %
-                                (node, attrKey, attr[attrKey].lower(), attrVal))
+                            self.log("| Checking object=%s -> Wrong attribute %s: %s!=%s" %
+                                     (node, attrKey, attr[attrKey].lower(), attrVal))
                             continue
 
                     self.log("| Checking object=%s -> Using it" % (node))

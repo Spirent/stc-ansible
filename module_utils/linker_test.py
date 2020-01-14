@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 10:44:02
+# @Last Modified time: 2020-01-14 11:48:32
 
 from module_utils.datamodel import DataModel
 from module_utils.linker import NodeSelector, Linker
@@ -14,24 +14,13 @@ class TestSelector:
         self.dm = DataModel()
         self.dm.new("dummy-session")
 
-        self.root = project1 = self.dm.insert("project1",
-                                              {"object_type": "project"})
+        self.root = project1 = self.dm.insert("project1", {"object_type": "project"})
 
-        dev1 = self.dm.insert("emulateddevice1", {
-            "object_type": "emulateddevice",
-            "name": "Device 1"
-        }, project1)
-        self.dm.insert("ipv4if1", {
-            "object_type": "ipv4if",
-            "name": "ipv4if 1"
-        }, dev1)
+        dev1 = self.dm.insert("emulateddevice1", {"object_type": "emulateddevice", "name": "Device 1"}, project1)
+        self.dm.insert("ipv4if1", {"object_type": "ipv4if", "name": "ipv4if 1"}, dev1)
 
-        dev2 = self.dm.insert("emulateddevice2",
-                              {"object_type": "emulateddevice"}, project1)
-        self.dm.insert("ipv4if2", {
-            "object_type": "ipv4if",
-            "name": "ipv4if 2"
-        }, dev2)
+        dev2 = self.dm.insert("emulateddevice2", {"object_type": "emulateddevice"}, project1)
+        self.dm.insert("ipv4if2", {"object_type": "ipv4if", "name": "ipv4if 2"}, dev2)
 
     def test1(self):
         self.createModel()
@@ -99,48 +88,34 @@ class TestLinker:
         self.dm = DataModel()
         self.dm.new("dummy-session")
 
-        self.root = project1 = self.dm.insert("project1",
-                                              {"object_type": "project"})
+        self.root = project1 = self.dm.insert("project1", {"object_type": "project"})
 
-        self.port = port1 = self.dm.insert("port1", {
-            "object_type": "port",
-            "name": "port 1"
-        }, project1)
+        self.port = port1 = self.dm.insert("port1", {"object_type": "port", "name": "port 1"}, project1)
 
-        self.dev1 = self.dm.insert("emulateddevice1", {
-            "object_type": "emulateddevice",
-            "name": "Device 1"
-        }, port1)
-        self.ip1 = self.dm.insert("ipv4if1", {
-            "object_type": "ipv4if",
-            "name": "ipv4if 1"
-        }, self.dev1)
+        self.dev1 = self.dm.insert("emulateddevice1", {"object_type": "emulateddevice", "name": "Device 1"}, port1)
+        self.ip1 = self.dm.insert("ipv4if1", {"object_type": "ipv4if", "name": "ipv4if 1"}, self.dev1)
 
-        self.dev2 = self.dm.insert("emulateddevice2",
-                                   {"object_type": "emulateddevice"}, port1)
-        self.ip2 = self.dm.insert("ipv4if2", {
-            "object_type": "ipv4if",
-            "name": "ipv4if 2"
-        }, self.dev2)
+        self.dev2 = self.dm.insert("emulateddevice2", {"object_type": "emulateddevice"}, port1)
+        self.ip2 = self.dm.insert("ipv4if2", {"object_type": "ipv4if", "name": "ipv4if 2"}, self.dev2)
 
         return self.dm
 
     def test1(self):
         linker = Linker(self.createModel())
-        node = linker.resolve("/port[name=port 1]")
-        assert node == self.port
+        nodes = linker._resolve("/port[name=port 1]")
+        assert nodes.count() == 1 and nodes.get(0) == self.port
 
     def test2(self):
         linker = Linker(self.createModel())
-        node = linker.resolve("/port[name=port 1]/emulateddevice")
-        assert node == self.dev1
+        nodes = linker._resolve("/port[name=port 1]/emulateddevice")
+        assert nodes.count() == 1 and nodes.get(0) == self.dev1
 
     def test2(self):
         linker = Linker(self.createModel())
-        node = linker.resolve("/port[name=port 1]/emulateddevice[*]")
-        assert node == self.dev1
+        nodes = linker._resolve("/port[name=port 1]/emulateddevice[*]")
+        assert nodes.count() == 2 and nodes.get(0) == self.dev1 and nodes.get(1) == self.dev2
 
     def test3(self):
         linker = Linker(self.createModel())
-        node = linker.resolve("/port[name=port 1]/emulateddevice[*]/ipv4if")
-        assert node == self.ip1
+        nodes = linker._resolve("/port[name=port 1]/emulateddevice[*]/ipv4if")
+        assert nodes.count() == 2 and nodes.get(0) == self.ip1 and nodes.get(1) == self.ip2

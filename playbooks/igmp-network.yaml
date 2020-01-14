@@ -73,7 +73,7 @@
       IgmpHostConfig:
         Active: true
 
-        UsesIf: ref:../Ipv4If
+        UsesIf: ref:./Ipv4If
         IgmpGroupMembership:
           name: "IgmpGroupMembership $item"
           MulticastGroup: ref:/Ipv4Group

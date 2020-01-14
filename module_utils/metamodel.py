@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 09:33:44
+# @Last Modified time: 2020-01-14 12:00:37
 
 try:
     from ansible.module_utils.templater import Templater
@@ -61,9 +61,7 @@ class MetaModel:
         elif action == "perform":
 
             count = params["count"] if "count" in params else 1
-            result = self.perform(params["command"],
-                                  params["properties"],
-                                  count=count)
+            result = self.perform(params["command"], params["properties"], count=count)
 
         elif action == "load":
 
@@ -113,12 +111,11 @@ class MetaModel:
         for i in range(0, count):
 
             ref = Templater(objref[4:]).instance(i)
-            obj = self.linker.resolve(ref)
+            obj = self.linker.resolveSingleObject(ref)
             if obj == None:
                 raise Exception("Can not find parent object %s" % ref)
 
-            handles[i] = self.configObject(obj,
-                                           Templater(properties).instance(i))
+            handles[i] = self.configObject(obj, Templater(properties).instance(i))
         return handles
 
     def create(self, objects, under=None, count=1):
@@ -130,7 +127,7 @@ class MetaModel:
             parent = None
             if under != None:
                 ref = Templater(under[4:]).instance(i)
-                parent = self.linker.resolve(ref)
+                parent = self.linker.resolveSingleObject(ref)
                 if parent == None:
                     raise Exception("Can not find parent object %s" % ref)
 
@@ -161,10 +158,10 @@ class MetaModel:
 
             val = props[key]
             if type(val) is str and val[0:4] == "ref:":
-                nobj = self.linker.resolve(val[4:])
-                if nobj == None:
+                handles = self.linker.resolveHandles(val[4:])
+                if handles == None:
                     raise Exception("Failed to resolve: %s" % val)
-                val = nobj.handle
+                val = handles
             params[key] = val
 
         result = self.rest.perform(command, params)
@@ -181,8 +178,7 @@ class MetaModel:
             # Add the new object to the internal data model
 
             attributes["object_type"] = "EmulatedDevice"
-            self.datamodel.insert(handle, attributes,
-                                  self.datamodel.root["project1"])
+            self.datamodel.insert(handle, attributes, self.datamodel.root["project1"])
 
         return handles
 
@@ -228,15 +224,14 @@ class MetaModel:
 
                 val = props[key]
                 if type(val) is str and val[0:4] == "ref:":
-                    nobj = self.linker.resolve(val[4:])
-                    if nobj == None:
+                    handles = self.linker.resolveHandles(val[4:])
+                    if handles == None:
                         references[key] = val[4:]
                         continue
                     if self._verbose:
-                        print("Reference \033[92m" + val + "\033[0m-->",
-                              nobj.handle)
-                    val = nobj.handle
-                # print(type(val),":",key,val)
+                        print("Reference \033[92m" + val + "\033[0m-->", handle)
+                    val = handles
+
                 params[key] = val
 
             obj["references"] = references
@@ -244,19 +239,14 @@ class MetaModel:
             if not isConfig:
 
                 # print("Creating",json.dumps(params,indent=4))
-                fparams = {
-                    key: value
-                    for (key, value) in params.items()
-                    if key.find(".object_type") < 0
-                }
+                fparams = {key: value for (key, value) in params.items() if key.find(".object_type") < 0}
                 # print("Creating",json.dumps(fparams,indent=4))
                 handle = self.rest.create(obj["type"], fparams)
 
                 params["object_type"] = obj["type"]
                 newObject = self.datamodel.insert(handle, params, under)
                 if self._verbose:
-                    print("\033[91m" + handle + "\033[0m-->",
-                          json.dumps(params, indent=4))
+                    print("\033[91m" + handle + "\033[0m-->", json.dumps(params, indent=4))
 
                 newObjects[obj["type"]] = newObject
                 obj["object"] = newObject
@@ -265,11 +255,7 @@ class MetaModel:
             else:
 
                 # Remove the "object_type" property has it can fail
-                fparams = {
-                    key: value
-                    for (key, value) in params.items()
-                    if key.find("object_type") < 0
-                }
+                fparams = {key: value for (key, value) in params.items() if key.find("object_type") < 0}
                 handle = self.rest.config(parent.handle, fparams)
                 obj["object"] = parent
 
@@ -300,16 +286,14 @@ class MetaModel:
                 params["object_type"] = key
                 newObject = self.datamodel.insert(handle, params, obj["object"])
                 if self._verbose:
-                    print("\033[91m" + handle + "\033[0m-->",
-                          json.dumps(params, indent=4))
+                    print("\033[91m" + handle + "\033[0m-->", json.dumps(params, indent=4))
 
             #Check for any new children which was added with beeing queried
             for handle in children:
                 if not handle in obj["object"].children:
                     otype = re.sub(r'^(.*?)([0-9]*)$', r'\1', handle)
                     params = {"object_type": otype, "!discovered": True}
-                    newObject = self.datamodel.insert(handle, params,
-                                                      obj["object"])
+                    newObject = self.datamodel.insert(handle, params, obj["object"])
 
         # ---- Step 3: resolve the references
 
@@ -321,16 +305,14 @@ class MetaModel:
             for key in refs.keys():
 
                 val = refs[key]
-                nobj = self.linker.resolve(val, obj["object"], parent)
-                if nobj == None:
-                    print("Reference \033[91m" + val + "\033[0m failure (", key,
-                          ")")
+                handles = self.linker.resolveHandles(val, obj["object"])
+                if handles == None:
+                    print("Failed to resolve '\033[91m%s\033[0m' for property %s in %s" % (val, key, obj["object"]))
                     continue
 
-                config[key] = nobj.handle
+                config[key] = handles
                 if self._verbose:
-                    print("Reference \033[92m" + key + "\033[0m-->",
-                          nobj.handle)
+                    print("Reference \033[92m" + key + "\033[0m-->", nobj.handle)
 
             if config != {}:
                 self.rest.config(obj["object"].handle, config)
