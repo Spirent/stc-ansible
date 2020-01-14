@@ -2,7 +2,7 @@
 # @Author: ronanjs
 # @Date:   2019-03-05 08:49:39
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 12:17:48
+# @Last Modified time: 2020-01-14 14:31:28
 
 import requests, json
 
@@ -37,8 +37,7 @@ class MintakaConfig:
     def getLabServer(self):
         return self.labserver
 
-    def getPorts(self, *args, **kwargs):
-        count = kwargs.get('count', 2)
+    def getPorts(self, count=2):
         # Make sure the ports have the same hostip
 
         hostips = {}
