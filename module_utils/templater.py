@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 13:49:11
+# @Last Modified time: 2020-01-14 14:51:08
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -17,6 +17,7 @@ import requests
 import pickle
 import time
 import json
+import math
 import re
 
 
@@ -56,29 +57,36 @@ class Templater:
 
             raise Exception("Templater - unknown type: %s" % (type(val)))
 
-    def _evaluate(self, val, index):
+    def _evaluate(self, value, index):
 
-        val = val.replace("$item", str(index + 1))
-        val = val.replace("${item}", str(index + 1))
-        val = val.replace("${item+1}", str(index + 2))
+        value = value.replace("$item", str(index))
 
-        # FixME
-        if val.find("${chassis-item}") >= 0:
+        matches = re.findall(r"\${(.*?item.*?)}", value)
+        for match in matches:
+            key = "${"+match+"}"
+            val = eval(match,{"item":index,"math":math})
+            # print(index,">>>",key,val)
+            value = value.replace(key, str(val))
+
+
+
+        if value.find("${chassis-item}") >= 0:
             chassis = self.datamodel.getChassis(index)
             if chassis == None:
-                print("Can not get chassis %d" % (index + 1))
+                print("Can not get chassis %d" % (index))
                 chassis = "(Offline)"
-            val = val.replace("${chassis-item}", chassis)
+            value = value.replace("${chassis-item}", chassis)
 
-        elif val.find("${chassis-") >= 0:
+        elif value.find("${chassis-") >= 0:
 
-            match = re.findall(r"\${chassis-([0-9]*)}", val)
+            match = re.findall(r"\${chassis-([0-9]*)}", value)
             if len(match) > 0:
                 index = match[0]
                 chassis = self.datamodel.getChassis(int(index) - 1)
                 if chassis == None:
-                    print("Can not get chassis %d" % (index))
+                    print("Can not get chassis %s" % (index))
                     chassis = "(Offline)"
-                val = val.replace("${chassis-" + index + "}", chassis)
+                value = value.replace("${chassis-" + index + "}", chassis)
 
-        return val
+        # print(value)
+        return value
