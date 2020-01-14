@@ -6,7 +6,9 @@ This is an *experimental* Ansible plugin to configure STC data models and execut
 
 This STC Ansible module requires a recent version (>=2.5) of the Ansible client. 
 
-This STC Ansible module can be used to remote configure an STC Lab Server. Configuration of STC-web is currently not supported.
+This STC Ansible module can be used to remote configure an STC Lab Server. 
+
+Configuration of STC-web is currently not supported.
 
 ### Installation
 
@@ -20,6 +22,7 @@ pip install -r requirements.txt
 
 There are several example playbooks in the `playbooks` folder. 
 To run all of them, just use `make play`, and it will create an STC session for each of the playbooks.
+(You can also use `make debug` to run ansible with extra verbose output).
 
 # Ansible Configuration
 
@@ -190,6 +193,66 @@ If declaring your own data model is too complex, you can also import an existing
 ```
 
 Note that you must first copy the data model to the STC Lab Server before you are able to import it.
+
+
+### Attaching to real chassis
+
+In the previous task, the chassis where defined as offline. It is howerver possible to add a list of chassis to the inventory,
+and reference them in the tasks. 
+
+The first step is to declare the chassis in the inventory. For instance, this will add the two chassis `10.61.67.128` and `10.61.67.131` to the playbook.
+
+```ini
+[labservers:vars]
+chassis = 10.61.67.128 10.61.67.131
+```
+
+Then, when creating the session, specify the chassis property:
+
+```yaml
+- name: Create a session with predefined chassis
+  stc: 
+    action: session
+    user: ansible
+    name: basic-device
+    chassis: "{{ hostvars[groups['labservers'][0]].chassis }}"
+```
+
+The `{{ hostvars[groups['labservers'][0]].chassis }}` is used to reference to the chassis defined in the inventory. Alternatively, you can directly specify the chassis IP in the task, such `chassis: "10.61.67.128 10.61.67.131"`
+
+Once the chassis are defined, the `session` task will automatically connect to them when the session is created. Then, in order to reference the chassis IP address from the task, one can use the keywork `${chassis-1}` ... `${chassis-2}` or even `${chassis-item}`.
+
+```yaml
+- name: Create the base ports
+  register: result
+  stc: 
+    action: create
+    objects: 
+      - project: 
+          - port: 
+              location: "//${chassis-1}/1/1"
+              name: Port1
+
+          - port: 
+              location: "//${chassis-2}/1/1"
+              name: Port2
+```
+
+Voila, last step is to add a task to attach to the ports:
+
+```yaml
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port[*]
+```
+
+Notice the reference `ref:/port[*]`. The `[*]` means that all the port handles should be returned.
+
 
 ### Starting the Traffic
 

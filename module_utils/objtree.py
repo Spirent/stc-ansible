@@ -2,7 +2,7 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:02:28
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-13 14:12:10
+# @Last Modified time: 2020-01-14 13:50:53
 
 
 class ObjectTree:
@@ -55,6 +55,9 @@ class ObjectTree:
                     properties[nodeid] = val
 
                 elif type(val) is bool:
+                    properties[nodeid] = val
+
+                elif type(val) is unicode:
                     properties[nodeid] = val
 
                 else:

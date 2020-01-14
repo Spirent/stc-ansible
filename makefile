@@ -2,6 +2,9 @@
 play:
 	ansible-playbook main.yaml
 
+debug:
+	ansible-playbook main.yaml -vvvv
+
 unittest: 
 	pytest
 

@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-18 10:08:41
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-13 16:19:18
+# @Last Modified time: 2020-01-14 13:42:57
 
 from ansible.module_utils.basic import *
 from ansible.module_utils.metamodel import MetaModel
@@ -41,12 +41,16 @@ def main():
             "type": "str"
         },
 
-        # new_session
+        # session
         "user": {
             "required": False,
             "type": "str"
         },
         "name": {
+            "required": False,
+            "type": "str"
+        },
+        "chassis": {
             "required": False,
             "type": "str"
         },

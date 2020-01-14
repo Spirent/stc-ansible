@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-13 13:49:10
+# @Last Modified time: 2020-01-14 13:57:22
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -44,6 +44,15 @@ class StcRest:
         print(">>>", rsp.content, "|", rsp)
         raise Exception("Failed to create session: " + str(rsp.content))
 
+    def connect(self, chassis_list):
+        params = {chassis: True for chassis in chassis_list}
+        params['action'] = 'connect'
+        result = self._post("connections", params)
+        if result == None:
+            raise Exception("Failed to connect to the chassis: " + self.errorInfo)
+        # print("Connection", result, "<", params)
+        return True
+
     def get(self, handle, properties=[]):
         container = "objects/" + handle
         if len(properties) > 0:
@@ -54,7 +63,10 @@ class StcRest:
         return response
 
     def children(self, handle, properties=[]):
-        return self.get(handle, ["children"]).split(" ")
+        l = self.get(handle, ["children"])
+        if l == None:
+            return []
+        return l.split(" ")
 
     def config(self, handle, params):
         """ Creates an object in the data moderl
@@ -106,7 +118,7 @@ class StcRest:
             paramters of the object to be created
         """
 
-        if not command.lower().endswith("Command"):
+        if not command.lower().endswith("command"):
             command = command + "Command"
         params["command"] = command
         res = self._post("perform", params)

@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 12:00:37
+# @Last Modified time: 2020-01-14 13:57:44
 
 try:
     from ansible.module_utils.templater import Templater
@@ -31,6 +31,7 @@ class MetaModel:
         self.linker = Linker(self.datamodel)
         self._verbose = False
         self.rest = StcRest(server, self.datamodel.session())
+        self.templater = Templater(self.datamodel)
 
     def verbose(self):
         #self.datamodel.verbose()
@@ -42,7 +43,10 @@ class MetaModel:
         action = params["action"]
         if action == "session":
 
-            result = self.new_session(params["user"], params["name"])
+            chassis = params["chassis"] if "chassis" in params else ""
+            if chassis == None:
+                chassis = ""
+            result = self.new_session(params["user"], params["name"], chassis.split(" "))
 
         elif action == "create":
 
@@ -88,9 +92,10 @@ class MetaModel:
         if self._verbose:
             print(m)
 
-    def new_session(self, user_name, session_name):
-        self.datamodel.new(session_name + " - " + user_name),
-        return self.rest.new_session(user_name, session_name)
+    def new_session(self, user_name, session_name, chassis=[]):
+        self.datamodel.new(session_name + " - " + user_name, chassis),
+        self.rest.new_session(user_name, session_name)
+        self.rest.connect(chassis)
 
     def load_datamodel(self, filename):
 
@@ -110,29 +115,28 @@ class MetaModel:
         handles = {}
         for i in range(0, count):
 
-            ref = Templater(objref[4:]).instance(i)
+            ref = self.templater.get(objref[4:], i)
             obj = self.linker.resolveSingleObject(ref)
             if obj == None:
                 raise Exception("Can not find parent object %s" % ref)
 
-            handles[i] = self.configObject(obj, Templater(properties).instance(i))
+            handles[i] = self.configObject(obj, self.templater.get(properties, i))
         return handles
 
     def create(self, objects, under=None, count=1):
 
         handles = {}
-        xobjects = Templater(objects)
         for i in range(0, count):
 
             parent = None
             if under != None:
-                ref = Templater(under[4:]).instance(i)
+                ref = self.templater.get(under[4:], i)
                 parent = self.linker.resolveSingleObject(ref)
                 if parent == None:
                     raise Exception("Can not find parent object %s" % ref)
 
             # print(i,">",json.dumps(xobjects.instance(i),indent=4),"<<",json.dumps(objects,indent=4))
-            handles[i] = self.createObject(xobjects.instance(i), parent)
+            handles[i] = self.createObject(self.templater.get(objects, i), parent)
         return handles
 
     def perform(self, command, properties, count=1):
@@ -140,7 +144,7 @@ class MetaModel:
         handles = {}
         name = properties["name"] if "name" in properties else ""
         for i in range(0, count):
-            props = Templater(properties).instance(i)
+            props = self.templater.get(properties, i)
             if command == "DeviceCreate":
                 props["name"] = name
             handles[i] = self.performConfig(command, props)
@@ -168,12 +172,15 @@ class MetaModel:
         if command != "DeviceCreate" or not ("name" in props):
             return result
 
+        if not "ReturnList" in result or result["ReturnList"] == None:
+            print("No handles returned!")
+            return None
+
         handles = result["ReturnList"].split(" ")
         print("There are %d handles to configure" % len(handles))
-        name = Templater(props["name"])
         for i in range(len(handles)):
             handle = handles[i]
-            attributes = {"name": name.instance(i)}
+            attributes = {"name": self.templater.get(props["name"], i)}
             self.rest.config(handle, attributes)
             # Add the new object to the internal data model
 

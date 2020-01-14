@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 10:20:24
+# @Last Modified time: 2020-01-14 13:49:00
 
 import requests
 import pickle
@@ -16,6 +16,7 @@ class DataModel:
     def __init__(self):
         self._session = None
         self._verbose = False
+        self._chassis = []
         self.unserialize()
 
     def verbose(self):
@@ -28,9 +29,14 @@ class DataModel:
     def session(self):
         return self._session
 
-    def new(self, session):
+    def new(self, session, chassis):
         self._session = session
+        self._chassis = chassis
         self.root = {}
+
+    def getChassis(self, i):
+        if i < len(self._chassis):
+            return self._chassis[i]
 
     def unserialize(self):
         self.root = {}
@@ -40,6 +46,7 @@ class DataModel:
                 model = json.load(json_file)
 
                 self._session = model["session"]
+                self._chassis = model["chassis"]
                 project1 = model["model"]["project1"]
                 project = ObjectModel("project1", project1["attributes"], None)
                 project.unserialize(model["model"])
@@ -56,7 +63,7 @@ class DataModel:
 
         filename = "model-temp/stc-ansible-datamodel.json"
         with open(filename, 'w') as outfile:
-            data = {"model": {}, "session": self._session}
+            data = {"model": {}, "session": self._session, "chassis": self._chassis}
             if "project1" in self.root:
                 data["model"] = self.root["project1"].serialize()
             json.dump(data, outfile, indent=4)

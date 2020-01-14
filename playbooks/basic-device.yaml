@@ -5,13 +5,15 @@
 # @Last Modified time: 2020-01-13 15:45:28
 
 
+
 - 
   name: Create session
-  register: result
   stc: 
     action: session
     user: ansible
     name: basic-device
+    chassis: "{{ hostvars[groups['labservers'][0]].chassis }}"
+
 
 - 
   name: Create the base ports
@@ -21,11 +23,11 @@
     objects: 
       - project: 
           - port: 
-              location: "//(Offline)/1/1"
+              location: "//${chassis-1}/1/1"
               name: Port1
 
           - port: 
-              location: "//(Offline)/2/1"
+              location: "//${chassis-2}/1/1"
               name: Port2
 
 -
@@ -57,3 +59,21 @@
           Address: 10.0.$item.1
 
 
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port[*]
+
+
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port[*]
