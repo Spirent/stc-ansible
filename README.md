@@ -1,33 +1,31 @@
-
 # STC Ansible
 
+This is an *experimental* Ansible plugin to configure STC data models and execute tests. 
 
-This is an *experimental* Ansible plugin to configure STC data-models. 
+### Requirements
 
-### Requirement
+This STC Ansible module requires a recent version (>=2.5) of the Ansible client. 
 
-This STC ansible module requires a recent version (>=2.5) of the Ansible client. 
-
-This STC ansible module can be used to remote configure a lab-server. Configuration of STC-web is currently not supported.
+This STC Ansible module can be used to remote configure an STC Lab Server. Configuration of STC-web is currently not supported.
 
 ### Installation
 
-First, you need to install the Python depencies for the Ansible client:
+First, you need to install Python dependencies for the Ansible client:
 
 ```sh
 pip install -r requirements.txt
 ```
 
-### Running and STC playbook
+### Running an STC Ansible Playbook
 
 There are several example playbooks in the `playbooks` folder. 
-To run all of them, just use `make play`, and it will create an STC session for each of the playbook.
+To run all of them, just use `make play`, and it will create an STC session for each of the playbooks.
 
 # Ansible Configuration
 
 ### Inventory
 
-In your inventory (`inventory.ini`), declare the lab servers you want the ansible playbook to connect to:
+In your inventory (`inventory.ini`), declare the STC Lab Servers you want the Ansible playbook to connect to:
 
 ```ini
 [labservers]
@@ -42,30 +40,27 @@ ansible_ssh_common_args=/bin/ssh
 ansible_paramiko_pty=no
 ```
 
-Note that `ansible_paramiko_pty` MUST be set to `no` as it will otherwise fail to connect to the Lab Server.
+Note that `ansible_paramiko_pty` MUST be set to `no` as it will otherwise fail to connect to the STC Lab Server.
 
 ### Ansible STC Module
 
-If you want to use the STC module out-side of this direction, you will need to copy the content of the `module_utils` and `library` into the folder from which you are running your ansible playbook.
+If you want to use the STC module outside of this direction, you will need to copy the content of the `module_utils` and `library` into the folder from which you are running your Ansible playbook.
 
+# Let's Make an STC Ansible Playbook
 
+### Basic STC Ansible Actions
 
-# Let's make an STC playbook
+The `stc` Ansible module makes it possible to execute one of the following five actions:
 
-### Basic STC ansible actions
+| action      | description                                                                                                                                                                                                                  |
+| -------     | -------------                                                                                                                                                                                                                |
+| session.    | Attach to an existing session. If the session does not exsit, a new session is created. If the session exists, the data model is first reset to the default data model.                                                      |
+| load        | Loads a predefined XML data model. Note that the model must first be copied to the target STC Lab Server using the `copy` module. Check the [datamodel-loader.yaml](playbooks/datamodel-loader.yaml) playbook for reference. |
+| create      | Creates a new object in the data model.                                                                                                                                                                                      |
+| config      | Configures an existing object in the data model.                                                                                                                                                                             |
+| perform     | Perform a command against the data model.                                                                                                                                                                                    |
 
-The `stc` ansible module makes it possible to execute one of the following 5 actions:
-
-action | description |
--------|-------------|
-session | Attach to an exist session. If the session does not exsits, a new session is created. If the session exists, the data model is first reset to the default data-model |
-load | loads a predefined XML data model. Note that the model must first be copied to the target lab-server using the `copy` module. Check the [datamodel-loader.yaml](playbooks/datamodel-loader.yaml) playbook for reference. |
-...|...|
-create | creates a new object in the data model
-config | configures an existing object in the data model
-perform | perform a command agains the data model
-
-### Attach to a session
+### Attach to a Session
 
 The first task of the playbook must be to attach to an STC session:
 
@@ -77,7 +72,7 @@ The first task of the playbook must be to attach to an STC session:
     name: datamodel-loader
 ```
 
-### Create a few ports
+### Create a Few Ports
 
 You can then declare your own emulated device:
 
@@ -96,7 +91,7 @@ You can then declare your own emulated device:
               name: Port 2
 ```
 
-The STC ansible module has a special iterator construct, which can be used to create several objects in an iterative way. For that, you only need to define the `count` property under `stc`. You can then use the keyword `${item}` as a template - The item will be replace with the values from 1 to _count_.
+The STC Ansible module has a special iterator construct, which can be used to create several objects in an iterative way. For that, you only need to define the `count` property under `stc`. You can then use the keyword `${item}` as a template. The item will be replace with the values from 1 to _count_.
 
 ```yaml
 - name: Create the 18 ports
@@ -112,10 +107,9 @@ The STC ansible module has a special iterator construct, which can be used to cr
 
 This will create 18 ports with the names ["Port 1".... "Port 18"], located at "//(Offline)/1/1" ... "//(Offline)/1/18".
 
+### Create a Few Emulated Devices - Easiest Way
 
-### Create a few emulated devices - easiest way
-
-One the ports are created, the next step is to create the emulated device. The easiest solution is to use the `perform` _Create Device Command_ task, which takes care of creating the interface stack:
+Once the ports are created, the next step is to create the emulated device. The easiest solution is to use the `perform` _Create Device Command_ task, which takes care of creating the interface stack:
 
 ```yaml
   name: create 20 device-blocks of 50 emulated devices each
@@ -133,12 +127,11 @@ One the ports are created, the next step is to create the emulated device. The e
       name: "Device ${item}"
 ```
 
-Note the `ref:/port[Name=Port 1]`. This is a special construct (called _reference_ later), which allows the task to reference another object in the data-model. If the object does not exists, an exception is raised and the playbook stops. 
+Note the `ref:/port[Name=Port 1]`. This is a special construct (called a _reference_), which allows the task to reference another object in the data model. If the object does not exist, an exception is raised and the playbook stops. 
 
-### Create a few emulated devices - extensive way
+### Create a Few Emulated Devices - Extensive Way
 
-Creating the emulated device can alos be done using the `create` method, but requires to configure all of the indiviudal properties such as the IP address and Interface stacking:
-
+Creating the emulated device can also be done using the `create` method, but requires configuration of all of the indiviudal properties such as the IP address and Interface stacking:
 
 ```yaml
   name: Create 20 blocks of emulated devices
@@ -163,9 +156,9 @@ Creating the emulated device can alos be done using the `create` method, but req
           stackedon: ref:./EthIIIf
 ```
 
-### Reconfiguring a data-model
+### Reconfiguring a Data Model
 
-One an object is created, it is possible to update its configuration. What is needed is to provide the reference `object` of the object which has to be updated. Since there can be several objects, you usually use a named reference - `ref:/EmulatedDevice[Name= Device ${item}]` in this case.
+Once an object is created, it is possible to update its configuration. The reference `object` of the updated object must be provided. Since there can be several objects, you usually use a named reference - `ref:/EmulatedDevice[Name= Device ${item}]` in this case:
 
 ```yaml
 - name: configure the server device block
@@ -180,11 +173,9 @@ One an object is created, it is possible to update its configuration. What is ne
         Authentication: CHAP_MD5
 ```
 
+### Loading an XML Data Model
 
-
-### Loading an XML data model
-
-If declarating your own data model is to complex, you can also import an existing XML data-model:
+If declaring your own data model is too complex, you can also import an existing XML data model:
 
 ```yaml
 - name: Copy the data model
@@ -198,9 +189,9 @@ If declarating your own data model is to complex, you can also import an existin
     datamodel: /tmp/datamodel.xml
 ```
 
-Note that you must first copy the data model to the lab-server, before beeing able to import it.
+Note that you must first copy the data model to the STC Lab Server before you are able to import it.
 
-### Starting the traffic
+### Starting the Traffic
 
 Starting the traffic is as simple as performing a command:
 
@@ -213,13 +204,12 @@ Starting the traffic is as simple as performing a command:
       GeneratorList: ref:/project 
 ```
 
-### More examples
+### More Examples
 
 Check the [playbook](playbooks) folder for more examples.
 
-# Implementation Design 
+# Implementation and Design 
 
-The STC ansible module does connect directly to the Lab Server via Rest API. Instead, it first `ssh` into the lab-server, and then uses the Rest API to connect to the BLL server. 
-
+The STC Ansible module does not connect directly to the STC Lab Server via the STC REST API. Instead, it first `ssh` into the STC Lab Server, and then uses the REST API to connect to the BLL. 
 
 ![System Design](docs/sysdes.png)
