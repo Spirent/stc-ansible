@@ -2,9 +2,12 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:02:28
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 13:50:53
+# @Last Modified time: 2020-01-14 14:39:59
 
-
+import sys
+if sys.version_info[0] >= 3:
+    unicode = str
+    
 class ObjectTree:
 
     def __init__(self, objects):
