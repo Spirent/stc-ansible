@@ -6,7 +6,6 @@
 
 - 
   name: Create session
-  register: result
   stc: 
     action: session
     user: ansible
@@ -14,7 +13,6 @@
 
 - 
   name: Create 18 base ports
-  register: result
   stc: 
     action: create
     count: 18
@@ -42,7 +40,6 @@
 
 -
   name: Create 18 blocks of emulated devices
-  register: result
   stc: 
     action: create
     under: ref:/project

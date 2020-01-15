@@ -6,13 +6,16 @@
     - name: Create a basic device
       include_tasks: playbooks/basic-device.yaml
 
-    - name: Create a few PPPoE device
-      include_tasks: playbooks/pppoe-device.yaml
-
     - name: Create an IGMP network
       include_tasks: playbooks/igmp-network.yaml
 
+    - name: Creates a network mesh
+      include_tasks: playbooks/stream-mesh.yaml
+
     - name: Load a predefined XML datamodel
       include_tasks: playbooks/datamodel-loader.yaml
+
+    - name: Create a few PPPoE device
+      include_tasks: playbooks/pppoe-device.yaml
 
 

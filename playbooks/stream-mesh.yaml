@@ -6,7 +6,6 @@
 
 - 
   name: Create session
-  register: result
   stc: 
     action: session
     user: ansible
@@ -26,7 +25,6 @@
 
 -
   name: Create 5 emulated devices - one of each port
-  register: result
   stc: 
     action: create
     under: ref:/project
