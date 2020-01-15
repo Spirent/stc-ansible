@@ -2,28 +2,26 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-15 13:30:25
+# @Last Modified time: 2020-01-15 14:53:51
+
+try:
+    from ansible.module_utils.logger import Logger
+except ImportError:
+    from module_utils.logger import Logger
 
 import requests
-import pickle
 import json
 import re
 import os
+
+log = Logger("linker")
 
 
 class Linker:
 
     def __init__(self, datamodel, rest=None):
         self.datamodel = datamodel
-        self._verbose = False
         self.rest = rest
-
-    def verbose(self):
-        self._verbose = True
-
-    def log(self, m):
-        if self._verbose:
-            print("[linker] " + m)
 
     def resolveSingleObject(self, ref):
 
@@ -75,10 +73,10 @@ class Linker:
                 ref = ref[1:]
 
         if current == None:
-            self.log("Can not find object %s --- curent in None!!!! [%s]" % (ref, ref[:1]))
+            log.warning("Can not find object %s --- curent in None!!!! [%s]" % (ref, ref[:1]))
             return None
 
-        self.log("Looking for %s from %s" % (ref, current))
+        log.info("Looking for %s from %s" % (ref, current))
 
         hasWildcard = False
         selection = NodeSelector(current)
@@ -106,10 +104,10 @@ class Linker:
             self.discoverChildren(selection, element)
 
             if selection.select(element, attrKey, attrVal) == 0:
-                self.log("| Can not find object %s from %s [%s]" % (ref, current, ref[:1]))
+                log.warning("| Can not find object %s from %s [%s]" % (ref, current, ref[:1]))
                 return None
 
-        self.log("%s from %s -> %s" % (ref, current, selection))
+        log.info("%s from %s -> %s" % (ref, current, selection))
         return selection
 
     def discoverChildren(self, selection, object_type):
@@ -117,15 +115,15 @@ class Linker:
         for node in selection.nodes:
 
             if len(node.children) != 0:
-                #print("[dicovering] node %s already has children"%(node))
+                log.debug("[dicovering] node %s already has children" % (node))
                 continue
 
             children = self.rest.children(node.handle)
             if len(children) == 0:
-                #print("[dicovering] node %s has no children"%(node))
+                log.debug("[dicovering] node %s has no children" % (node))
                 continue
 
-            print("[dicovering] node %s 's children are %s." % (node, children))
+            log.info("[dicovering] node %s 's children are %s." % (node, children))
 
             for handle in children:
                 attr = self.rest.get(handle)

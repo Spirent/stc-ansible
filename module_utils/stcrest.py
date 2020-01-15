@@ -2,17 +2,21 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-15 13:38:56
+# @Last Modified time: 2020-01-15 14:50:38
 
 try:
     from ansible.module_utils.datamodel import DataModel
+    from ansible.module_utils.logger import Logger
 except ImportError:
     from module_utils.datamodel import DataModel
+    from module_utils.logger import Logger
 
 import requests
 import pickle
 import json
 import re
+
+log = Logger("stc-rest")
 
 
 class StcRest:
@@ -23,14 +27,6 @@ class StcRest:
         self.server = server
         self.session = session
         self.errorInfo = None
-        self._verbose = False
-
-    def verbose(self):
-        self._verbose = True
-
-    def log(self, m):
-        if self._verbose:
-            print(m)
 
     def new_session(self, user_name, session_name):
 
@@ -88,7 +84,7 @@ class StcRest:
 
         if rsp.status_code == 200 or rsp.status_code == 204:
             self.errorInfo = None
-            self.log("CONFIG %s %s -> %s" % (url, json.dumps(params, indent=4), rsp.content))
+            log.error("CONFIG %s %s -> %s" % (url, json.dumps(params, indent=4), rsp.content))
             return None
 
         self.errorInfo = "config failed\n - url:%s\n - code:%d\n - response:%s\n - params:%s\n - session:%s!" % (
@@ -152,6 +148,7 @@ class StcRest:
 
     def _post(self, container, params={}):
         url = "http://" + self.server + "/stcapi/" + container
+        log.info("POST %s %s" % (url, json.dumps(params, indent=4)))
         rsp = requests.post(url,
                             headers={
                                 'Accept': 'application/json',
@@ -162,21 +159,24 @@ class StcRest:
 
         if rsp.status_code == 200 or rsp.status_code == 201:
             self.errorInfo = None
-            self.log("POST %s %s -> %s" % (url, json.dumps(params, indent=4), json.dumps(rsp.json(), indent=4)))
+            log.info("POST status_code: %d -> %s" % (rsp.status_code, json.dumps(rsp.json(), indent=4)))
             return rsp.json()
 
-        self.errorInfo = "post failed\n - url:%s\n - code:%d\n - response:%s\n - params:%s\n - session:%s!" % (
+        self.errorInfo = "failed\n - url:%s\n - code:%d\n - response:%s\n - params:%s\n - session:%s!" % (
             url, rsp.status_code, rsp.content, params, self.session)
+        log.error("POST " + self.errorInfo)
         return None
 
     def _get(self, container):
         url = "http://" + self.server + "/stcapi/" + container
+        log.info("GET %s" % (url))
         rsp = requests.get(url, headers={'Accept': 'application/json', "X-STC-API-Session": self.session}, timeout=60)
 
         if rsp.status_code == 200:
             self.errorInfo = None
+            log.info("GET status_code: %d -> %s" % (rsp.status_code, json.dumps(rsp.json(), indent=4)))
             return rsp.json()
 
-        self.log("GET %s -> code %d - %s" % (url, rsp.status_code, rsp.content))
         self.errorInfo = "failed - url:%s - code:%d - content:%s!" % (url, rsp.status_code, rsp.content)
+        log.error("GET " + self.errorInfo)
         return None

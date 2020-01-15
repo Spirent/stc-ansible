@@ -2,7 +2,12 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 13:49:00
+# @Last Modified time: 2020-01-15 14:56:31
+
+try:
+    from ansible.module_utils.logger import Logger
+except ImportError:
+    from module_utils.logger import Logger
 
 import requests
 import pickle
@@ -10,21 +15,15 @@ import json
 import re
 import os
 
+log = Logger("data-model")
+
 
 class DataModel:
 
     def __init__(self):
         self._session = None
-        self._verbose = False
         self._chassis = []
         self.unserialize()
-
-    def verbose(self):
-        self._verbose = True
-
-    def log(self, m):
-        if self._verbose:
-            print(m)
 
     def session(self):
         return self._session
@@ -90,12 +89,12 @@ class DataModel:
             nodes = parent.children
 
         if handle in nodes:
-            self.log("[data-model] Object %s already exists..." % obj)
+            log.info("[data-model] Object %s already exists..." % obj)
             return nodes[handle]
 
         nodes[handle] = obj
 
-        self.log("[data-model] Inserting object '%s' under %s" % (obj, parent))
+        log.info("[data-model] Inserting object '%s' under %s" % (obj, parent))
 
         return obj
 

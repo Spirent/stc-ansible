@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-15 13:32:45
+# @Last Modified time: 2020-01-15 14:57:25
 
 try:
     from ansible.module_utils.templater import Templater
@@ -10,12 +10,14 @@ try:
     from ansible.module_utils.objtree import ObjectTree
     from ansible.module_utils.stcrest import StcRest
     from ansible.module_utils.linker import Linker
+    from ansible.module_utils.logger import Logger
 except ImportError:
     from module_utils.templater import Templater
     from module_utils.datamodel import DataModel
     from module_utils.objtree import ObjectTree
     from module_utils.stcrest import StcRest
     from module_utils.linker import Linker
+    from module_utils.logger import Logger
 
 import requests
 import pickle
@@ -23,26 +25,23 @@ import time
 import json
 import re
 
+log = Logger("metamodel")
+
 
 class MetaModel:
 
     def __init__(self, server="127.0.0.1"):
-        self._verbose = False
-
         self.datamodel = DataModel()
         self.rest = StcRest(server, self.datamodel.session())
         self.linker = Linker(self.datamodel, self.rest)
         self.templater = Templater(self.datamodel)
 
-    def verbose(self):
-        #self.datamodel.verbose()
-        self.rest.verbose()
-        self._verbose = True
-
     def action(self, params):
 
         action = params["action"]
         count = params["count"] if "count" in params else 1
+
+        log.info("Action: %s" % json.dumps(params, indent=4))
 
         if action == "session":
 
@@ -79,7 +78,10 @@ class MetaModel:
 
         else:
 
+            log.error("Unknown action: %s" % action)
             raise Exception("Unknown action " + action)
+
+        log.info("action %s result: %s" % (action, json.dumps(result, indent=4)))
 
         self.serialize()
         return result
@@ -93,10 +95,6 @@ class MetaModel:
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
-
-    def log(self, m):
-        if self._verbose:
-            print(m)
 
     def new_session(self, user_name, session_name, chassis=[]):
         self.datamodel.new(session_name + " - " + user_name, chassis),
@@ -141,7 +139,6 @@ class MetaModel:
                 if parent == None:
                     raise Exception("Can not find parent object %s" % ref)
 
-            # print(i,">",json.dumps(xobjects.instance(i),indent=4),"<<",json.dumps(objects,indent=4))
             handles[i] = self.createObject(self.templater.get(objects, i), parent)
         return handles
 
@@ -282,8 +279,6 @@ class MetaModel:
     def createOrConfigObject(self, objects, parent, isConfig):
 
         tree = ObjectTree(objects)
-        # if self._verbose:
-        # print("Creating:",parent,json.dumps(tree.objects,indent=4))
 
         # ---- Step 1: create all objects
 
@@ -306,10 +301,10 @@ class MetaModel:
                 if type(val) is str and val[0:4] == "ref:":
                     handles = self.linker.resolveHandles(val[4:])
                     if handles == None:
+                        log.info("reference \033[92m%s\033[0m is not resolved yet" % (val))
                         references[key] = val[4:]
                         continue
-                    if self._verbose:
-                        print("Reference \033[92m" + val + "\033[0m-->", handle)
+                    log.info("reference \033[92m%s\033[0m resolved to %s" % (val, handle))
                     val = " ".join(handles)
 
                 params[key] = val
@@ -325,8 +320,8 @@ class MetaModel:
 
                 params["object_type"] = obj["type"]
                 newObject = self.datamodel.insert(handle, params, under)
-                if self._verbose:
-                    print("\033[91m" + handle + "\033[0m-->", json.dumps(params, indent=4))
+
+                log.info("New object created. Handle %s props %s" % (handle, json.dumps(params, indent=4)))
 
                 newObjects[obj["type"]] = newObject
                 obj["object"] = newObject
@@ -365,8 +360,8 @@ class MetaModel:
                 params = obj["children"][key]
                 params["object_type"] = key
                 newObject = self.datamodel.insert(handle, params, obj["object"])
-                if self._verbose:
-                    print("\033[91m" + handle + "\033[0m-->", json.dumps(params, indent=4))
+
+                log.info("New child object added. Handle %s props %s" % (handle, json.dumps(params, indent=4)))
 
             #Check for any new children which was added with beeing queried
             for handle in children:
@@ -377,7 +372,6 @@ class MetaModel:
 
         # ---- Step 3: resolve the references
 
-        # self.datamodel.verbose()
         for obj in tree.objects:
 
             config = {}
@@ -387,12 +381,11 @@ class MetaModel:
                 val = refs[key]
                 handles = self.linker.resolveHandles(val, obj["object"])
                 if handles == None:
-                    print("Failed to resolve '\033[91m%s\033[0m' for property %s in %s" % (val, key, obj["object"]))
+                    log.error("Failed to resolve '\033[91m%s\033[0m' for property %s in %s" % (val, key, obj["object"]))
                     continue
 
                 config[key] = " ".join(handles)
-                if self._verbose:
-                    print("Reference \033[92m" + key + "\033[0m-->", nobj.handle)
+                log.info("Reference '\033[92m%s\033[0m' resolved to %s" % (val, handles))
 
             if config != {}:
                 self.rest.config(obj["object"].handle, config)
