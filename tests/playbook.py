@@ -2,7 +2,7 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:09:07
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 14:09:22
+# @Last Modified time: 2020-01-15 13:29:32
 
 import yaml
 import json
@@ -42,7 +42,9 @@ def testPlaybook(playbook, labServer, ports):
             perobject = int(elapsed * 10000 / count) / 10
 
             print("task executed in ", int(elapsed * 1000), "ms", "ms (", perobject, "ms per object)")
-            # print("Result: \033[96m" + json.dumps(result) + "\033[0m")
+
+            if "register" in task:
+                print("Result: \033[96m" + json.dumps(result, indent=4) + "\033[0m")
 
     elapsed = time.time() - pbstart
     perobject = int(elapsed * 10000 / count) / 10

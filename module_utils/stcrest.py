@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 13:57:22
+# @Last Modified time: 2020-01-15 13:38:56
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -64,7 +64,7 @@ class StcRest:
 
     def children(self, handle, properties=[]):
         l = self.get(handle, ["children"])
-        if l == None:
+        if l == None or l == '':
             return []
         return l.split(" ")
 

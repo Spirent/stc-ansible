@@ -9,7 +9,8 @@
   stc: 
     action: session
     user: ansible
-    name: basic-device
+    name: pppoe-device
+    chassis: "{{ hostvars[groups['labservers'][0]].chassis }}"
 
 - 
   name: Create the base ports
@@ -18,12 +19,34 @@
     objects: 
       - project: 
           - port: 
-              location: "//(Offline)/1/1"
+              location: "//${chassis-0}/1/1"
               name: Port1
+              PppoxPortConfig:
+                EmulationType: Client
+                SessionOutstanding: 1000
+                DisconnectRate: 1000
+                ConnectRate: 1000
 
           - port: 
-              location: "//(Offline)/2/1"
+              location: "//${chassis-1}/1/1"
               name: Port2
+              PppoxPortConfig:
+                EmulationType: Server
+                SessionOutstanding: 1000
+                DisconnectRate: 1000
+                ConnectRate: 1000
+
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port[*]
+
+
+# ----------------- Client config ------------------
 
 -
   name: create the client device block
@@ -33,7 +56,7 @@
     properties: 
       ParentList:  ref:/project
       CreateCount: 1
-      DeviceCount: 100
+      DeviceCount: 300
       Port: ref:/port[Name=Port1]
       IfStack: Ipv4If PppIf PppoeIf EthIIIf
       IfCount: '1 1 1 1'
@@ -51,6 +74,7 @@
         Authentication: CHAP_MD5
 
 
+# ----------------- Server config ------------------
 
 -
   name: create the server device block
@@ -76,11 +100,13 @@
         AcName: mintaka
         Authentication: CHAP_MD5
         ConnectRate: 1000
-        TotalClients: 10
+        TotalClients: 1000
         PppoeServerIpv4PeerPool: 
           Ipv4PeerPoolAddr: 10.0.0.1
           NetworkCount: 100000
           PrefixLength: 24
+
+# ----------------- then bind the devices ------------------
 
 -
   name: Start the server ...
@@ -90,6 +116,15 @@
     properties: 
       BlockList: ref:/EmulatedDevice[Name=PPPoE Server]/PppoeServerBlockConfig
 
+
+-
+  name: Wait for the server to be ready
+  stc: 
+    action: wait
+    object: ref:/EmulatedDevice[Name=PPPoE Server]/PppoeServerBlockConfig
+    until: BlockState=CONNECTING
+    
+
 -
   name: And then bind the clients...
   stc: 
@@ -97,3 +132,23 @@
     command: PppoxConnect
     properties: 
       BlockList: ref:/EmulatedDevice[Name=PPPoE Client]/PppoeClientBlockConfig
+
+
+-
+  name: Wait for the clients to be bound
+  stc: 
+    action: wait
+    object: ref:/EmulatedDevice[Name=PPPoE Client]/PppoeClientBlockConfig
+    until: BlockState=CONNECTED
+
+- 
+  name: Get the binding results
+  register: results
+  stc:
+    action: get
+    object: ref:/EmulatedDevice[Name=PPPoE Server]/PppoeServerBlockConfig/PppoeServerBlockResults
+
+- 
+  debug:
+    var: result
+

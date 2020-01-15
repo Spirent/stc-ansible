@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 14:51:08
+# @Last Modified time: 2020-01-15 10:20:05
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -27,9 +27,6 @@ class Templater:
         self.datamodel = datamodel
 
     def get(self, val, index):
-        return self._get(val, index)
-
-    def _get(self, val, index):
 
         if type(val) is str:
 
@@ -39,14 +36,14 @@ class Templater:
 
             xval = []
             for v in val:
-                xval.append(self._get(v, index))
+                xval.append(self.get(v, index))
             return xval
 
         elif type(val) is dict:
 
             xval = {}
             for i in val.keys():
-                xval[i] = self._get(val[i], index)
+                xval[i] = self.get(val[i], index)
             return xval
 
         elif not val or type(val) is int or type(val) is bool:
@@ -63,12 +60,10 @@ class Templater:
 
         matches = re.findall(r"\${(.*?item.*?)}", value)
         for match in matches:
-            key = "${"+match+"}"
-            val = eval(match,{"item":index,"math":math})
+            key = "${" + match + "}"
+            val = eval(match, {"item": index, "math": math})
             # print(index,">>>",key,val)
             value = value.replace(key, str(val))
-
-
 
         if value.find("${chassis-item}") >= 0:
             chassis = self.datamodel.getChassis(index)

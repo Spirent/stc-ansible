@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 13:57:44
+# @Last Modified time: 2020-01-15 13:32:45
 
 try:
     from ansible.module_utils.templater import Templater
@@ -27,10 +27,11 @@ import re
 class MetaModel:
 
     def __init__(self, server="127.0.0.1"):
-        self.datamodel = DataModel()
-        self.linker = Linker(self.datamodel)
         self._verbose = False
+
+        self.datamodel = DataModel()
         self.rest = StcRest(server, self.datamodel.session())
+        self.linker = Linker(self.datamodel, self.rest)
         self.templater = Templater(self.datamodel)
 
     def verbose(self):
@@ -41,6 +42,8 @@ class MetaModel:
     def action(self, params):
 
         action = params["action"]
+        count = params["count"] if "count" in params else 1
+
         if action == "session":
 
             chassis = params["chassis"] if "chassis" in params else ""
@@ -51,21 +54,24 @@ class MetaModel:
         elif action == "create":
 
             under = params["under"] if "under" in params else None
-            count = params["count"] if "count" in params else 1
-
             result = self.create(params["objects"], under, count=count)
 
         elif action == "config":
 
             parent = params["object"] if "object" in params else None
-            count = params["count"] if "count" in params else 1
-
             result = self.config(params["properties"], parent, count=count)
 
         elif action == "perform":
 
-            count = params["count"] if "count" in params else 1
             result = self.perform(params["command"], params["properties"], count=count)
+
+        elif action == "wait":
+
+            result = self.wait(params["object"], params["until"], count=count)
+
+        elif action == "get":
+
+            result = self.get(params["object"], count=count)
 
         elif action == "load":
 
@@ -151,6 +157,73 @@ class MetaModel:
 
         return handles
 
+    def wait(self, obj, until, count=1):
+
+        allhandles = self._getAllHandles(obj, count)
+
+        start = time.time()
+        while time.time() - start < 60:
+            failed = 0
+            for handle in allhandles:
+                # Evaluate the condition
+                if not self.evaluateCondition(handle, until):
+                    failed += 1
+                    pass
+            if failed == 0:
+                break
+            time.sleep(1)
+
+        if failed > 0:
+            raise Exception("[wait] failed on condition %s" % until)
+
+        return allhandles
+
+    def get(self, obj, count=1):
+
+        allhandles = self._getAllHandles(obj, count)
+
+        handles = {}
+        for handle in allhandles:
+            obj = self.rest.get(handle)
+            handles[handle] = obj
+
+        return handles
+
+    def _getAllHandles(self, obj, count=1):
+        allhandles = []
+        for i in range(0, count):
+            ref = self.templater.get(obj[4:], i)
+            handles = self.linker.resolveHandles(ref)
+            if handles == None:
+                raise Exception("Failed to resolve: %s [%s]" % (ref, obj))
+            allhandles += handles
+
+        if len(allhandles) == 0:
+            raise Exception("Can not find any object for %s" % ref)
+
+        return allhandles
+
+    # --------------------------------------------------------------------
+    # --------------------------------------------------------------------
+    # --------------------------------------------------------------------
+
+    def evaluateCondition(self, handle, condition):
+
+        match = re.findall(r"^\s*(\S+)\s*=\s*(\S+)\s*$", condition)
+        if len(match) != 1:
+            raise Exception("Failed to parse condition: %s" % condition)
+        key = match[0][0]
+        val = match[0][1]
+
+        obj = self.rest.get(handle)
+
+        if not (key in obj):
+            raise Exception("Object %s does not have any property %s" % (obj, key))
+
+        name = (" (" + obj["name"] + ")") if "name" in obj else ""
+        print("[evaluate] handle %s%s key %s val %s expected %s" % (handle, name, key, obj[key], val))
+        return obj[key] == val
+
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
@@ -165,7 +238,7 @@ class MetaModel:
                 handles = self.linker.resolveHandles(val[4:])
                 if handles == None:
                     raise Exception("Failed to resolve: %s" % val)
-                val = handles
+                val = " ".join(handles)
             params[key] = val
 
         result = self.rest.perform(command, params)
@@ -237,7 +310,7 @@ class MetaModel:
                         continue
                     if self._verbose:
                         print("Reference \033[92m" + val + "\033[0m-->", handle)
-                    val = handles
+                    val = " ".join(handles)
 
                 params[key] = val
 
@@ -317,7 +390,7 @@ class MetaModel:
                     print("Failed to resolve '\033[91m%s\033[0m' for property %s in %s" % (val, key, obj["object"]))
                     continue
 
-                config[key] = handles
+                config[key] = " ".join(handles)
                 if self._verbose:
                     print("Reference \033[92m" + key + "\033[0m-->", nobj.handle)
 

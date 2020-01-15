@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 15:03:12
+# @Last Modified time: 2020-01-15 13:30:25
 
 import requests
 import pickle
@@ -13,9 +13,10 @@ import os
 
 class Linker:
 
-    def __init__(self, datamodel):
+    def __init__(self, datamodel, rest=None):
         self.datamodel = datamodel
         self._verbose = False
+        self.rest = rest
 
     def verbose(self):
         self._verbose = True
@@ -102,12 +103,34 @@ class Linker:
             elif len(match) != 0:
                 raise Exception("reference syntax error: '%s' from '%s'" % (element, ref))
 
+            self.discoverChildren(selection, element)
+
             if selection.select(element, attrKey, attrVal) == 0:
                 self.log("| Can not find object %s from %s [%s]" % (ref, current, ref[:1]))
                 return None
 
         self.log("%s from %s -> %s" % (ref, current, selection))
         return selection
+
+    def discoverChildren(self, selection, object_type):
+
+        for node in selection.nodes:
+
+            if len(node.children) != 0:
+                #print("[dicovering] node %s already has children"%(node))
+                continue
+
+            children = self.rest.children(node.handle)
+            if len(children) == 0:
+                #print("[dicovering] node %s has no children"%(node))
+                continue
+
+            print("[dicovering] node %s 's children are %s." % (node, children))
+
+            for handle in children:
+                attr = self.rest.get(handle)
+                attr["object_type"] = re.sub(r'^(.*?)([0-9]*)$', r'\1', handle)
+                self.datamodel.insert(handle, attr, node)
 
 
 class NodeSelector:
@@ -136,7 +159,7 @@ class NodeSelector:
         return self.nodes[0]
 
     def handles(self):
-        return " ".join([n.handle for n in self.nodes])
+        return [n.handle for n in self.nodes]
 
     def select(self, element, attrKey=None, attrVal=None):
 
@@ -169,7 +192,7 @@ class NodeSelector:
                             self.log("| Checking object=%s -> No such attribute %s" % (node, attrKey))
                             continue
 
-                        if (attr[attrKey].lower() != attrVal )^ negativeSelection:
+                        if (attr[attrKey].lower() != attrVal) ^ negativeSelection:
                             self.log("| Checking object=%s -> Wrong attribute %s: %s!=%s" %
                                      (node, attrKey, attr[attrKey].lower(), attrVal))
                             continue
