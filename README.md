@@ -2,6 +2,8 @@
 
 This is an *experimental* Ansible plugin to configure STC data models and execute tests. 
 
+[![CircleCI](https://circleci.com/gh/Spirent/stc-ansible.svg?style=svg)](https://circleci.com/gh/Spirent/stc-ansible)
+
 ### Requirements
 
 This STC Ansible module requires a recent version (>=2.5) of the Ansible client. 
