@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-15 14:57:25
+# @Last Modified time: 2020-01-15 15:20:13
 
 try:
     from ansible.module_utils.templater import Templater
@@ -66,7 +66,8 @@ class MetaModel:
 
         elif action == "wait":
 
-            result = self.wait(params["object"], params["until"], count=count)
+            timeout = int(params["timeout"]) if "timeout" in params else 60
+            result = self.wait(params["object"], params["until"], timeout=timeout, count=count)
 
         elif action == "get":
 
@@ -154,12 +155,12 @@ class MetaModel:
 
         return handles
 
-    def wait(self, obj, until, count=1):
+    def wait(self, obj, until, timeout=60, count=1):
 
         allhandles = self._getAllHandles(obj, count)
 
         start = time.time()
-        while time.time() - start < 60:
+        while time.time() - start < timeout:
             failed = 0
             for handle in allhandles:
                 # Evaluate the condition
@@ -304,7 +305,7 @@ class MetaModel:
                         log.info("reference \033[92m%s\033[0m is not resolved yet" % (val))
                         references[key] = val[4:]
                         continue
-                    log.info("reference \033[92m%s\033[0m resolved to %s" % (val, handle))
+                    log.info("reference \033[92m%s\033[0m resolved to %s" % (val, handles))
                     val = " ".join(handles)
 
                 params[key] = val

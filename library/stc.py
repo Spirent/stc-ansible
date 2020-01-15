@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-18 10:08:41
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-15 15:13:07
+# @Last Modified time: 2020-01-15 15:20:34
 
 from ansible.module_utils.basic import *
 from ansible.module_utils.logger import Logger
@@ -68,6 +68,12 @@ def main():
         "datamodel": {
             "required": False,
             "type": "str"
+        },
+
+        # wait
+        "timeout": {
+            "required": False,
+            "type": "int"
         },
     }
 
