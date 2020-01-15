@@ -2,13 +2,16 @@
 # @Author: rjezequel
 # @Date:   2019-12-18 10:08:41
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 13:42:57
+# @Last Modified time: 2020-01-15 15:13:07
 
 from ansible.module_utils.basic import *
+from ansible.module_utils.logger import Logger
 from ansible.module_utils.metamodel import MetaModel
 
 
 def main():
+
+    log = Logger("main")
 
     fields = {
         "action": {
@@ -77,6 +80,7 @@ def main():
         module.exit_json(changed=False, meta=result)
 
     except Exception as error:
+        log.error("Exception %s",error)
         print("Oooops...", error)
         module.fail_json(msg=error)
         return
