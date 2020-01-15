@@ -64,6 +64,8 @@ The `stc` Ansible module makes it possible to execute one of the following five 
 | create      | Creates a new object in the data model.                                                                                                                                                                                      |
 | config      | Configures an existing object in the data model.                                                                                                                                                                             |
 | perform     | Perform a command against the data model.                                                                                                                                                                                    |
+| get         | Returns the value of a given attribute of one or more objects - this can be used for instance to check results                                                                                                  |
+| wait        | Waits for one of several object attribute to become a specific value (eg wait for the attritube `BlockState` of the PPPoE object `PppoeClientBlockConfig` to become `CONNECTING` )                                           |
 
 ### Attach to a Session
 
@@ -268,6 +270,36 @@ Starting the traffic is as simple as performing a command:
     properties: 
       GeneratorList: ref:/project 
 ```
+
+
+### Waiting for a condition
+
+When using learned addresses, such as for PPPoE, it can be usefull to wait for all the clients to have their IP address learned. This can be done using the `wait` command. For instance, this will wait for emulated device _PPPoE Client_ to have all of it's IP resolved: 
+
+```yaml
+- name: Wait for the clients to be bound
+  stc: 
+    action: wait
+    object: ref:/EmulatedDevice[Name=PPPoE Client]/PppoeClientBlockConfig
+    until: BlockState=CONNECTED
+```
+
+
+### Getting and displaying results
+
+Last, once the test is finished, it is possible to get some results from the properties of the result object defined in the data model. The following example get the values of the `PppoeServerBlockResults` object, and prints it.
+
+```yaml
+- name: Get the binding results
+  register: results
+  stc:
+    action: get
+    object: ref:/EmulatedDevice[Name=PPPoE Server]/PppoeServerBlockConfig/PppoeServerBlockResults
+
+- debug:
+    var: result
+```
+
 
 ### More Examples
 

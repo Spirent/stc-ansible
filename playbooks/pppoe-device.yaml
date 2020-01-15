@@ -45,7 +45,6 @@
       RevokeOwner: true
       PortList: ref:/port[*]
 
-
 # ----------------- Client config ------------------
 
 -
@@ -69,7 +68,7 @@
     object: ref:/EmulatedDevice[Name=PPPoE Client]
     properties:
       PppoeClientBlockConfig:
-        ConnectRate: 1000
+        ConnectRate: 100
         DisconnectRate: 1000
         Authentication: CHAP_MD5
 
@@ -84,7 +83,7 @@
     properties: 
       ParentList:  ref:/project
       CreateCount: 1
-      DeviceCount: 1
+      DeviceCount: 1000
       Port: ref:/port[Name=Port2]
       IfStack: Ipv4If PppIf PppoeIf EthIIIf
       IfCount: '1 1 1 1'
@@ -105,6 +104,9 @@
           Ipv4PeerPoolAddr: 10.0.0.1
           NetworkCount: 100000
           PrefixLength: 24
+        PppoeServerBlockResults:
+          Name: "Server Results"
+
 
 # ----------------- then bind the devices ------------------
 
