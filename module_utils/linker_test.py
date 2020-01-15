@@ -12,7 +12,7 @@ class TestSelector:
 
     def createModel(self):
         self.dm = DataModel()
-        self.dm.new("dummy-session",[])
+        self.dm.new("dummy-session", [])
 
         self.root = project1 = self.dm.insert("project1", {"object_type": "project"})
 
@@ -86,7 +86,7 @@ class TestLinker:
 
     def createModel(self):
         self.dm = DataModel()
-        self.dm.new("dummy-session",[])
+        self.dm.new("dummy-session", [])
 
         self.root = project1 = self.dm.insert("project1", {"object_type": "project"})
 

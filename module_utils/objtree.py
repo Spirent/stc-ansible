@@ -7,7 +7,8 @@
 import sys
 if sys.version_info[0] >= 3:
     unicode = str
-    
+
+
 class ObjectTree:
 
     def __init__(self, objects):
