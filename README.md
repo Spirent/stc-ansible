@@ -55,7 +55,7 @@ If you want to use the STC module outside of this direction, you will need to co
 
 ### Basic STC Ansible Actions
 
-The `stc` Ansible module makes it possible to execute one of the following five actions:
+The `stc` Ansible module makes it possible to execute one of the following seven actions:
 
 | action      | description                                                                                                                                                                                                                  |
 | -------     | -------------                                                                                                                                                                                                                |
