@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-15 14:50:38
+# @Last Modified time: 2020-01-15 15:18:22
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -84,11 +84,12 @@ class StcRest:
 
         if rsp.status_code == 200 or rsp.status_code == 204:
             self.errorInfo = None
-            log.error("CONFIG %s %s -> %s" % (url, json.dumps(params, indent=4), rsp.content))
+            log.info("CONFIG %s %s -> %s" % (url, json.dumps(params, indent=4), rsp.content))
             return None
 
         self.errorInfo = "config failed\n - url:%s\n - code:%d\n - response:%s\n - params:%s\n - session:%s!" % (
             url, rsp.status_code, rsp.content, params, self.session)
+        log.error("CONFIG " + self.errorInfo)
         raise Exception(self.errorInfo)
 
     def create(self, object_type, params={}):
