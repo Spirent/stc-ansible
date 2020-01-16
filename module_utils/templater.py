@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-17 02:28:32
+# @Last Modified time: 2020-01-17 05:00:17
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -61,7 +61,7 @@ class Templater:
         matches = re.findall(r"\${(.*?item.*?)}", value)
         for match in matches:
             key = "${" + match + "}"
-            val = eval(match, {"item": index, "math": math})
+            val = eval(match, {"item": index, "math": math, "chassis":self.datamodel.chassis})
             # print(index,">>>",key,val)
             value = value.replace(key, str(val))
 

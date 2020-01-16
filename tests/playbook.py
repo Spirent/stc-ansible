@@ -2,7 +2,7 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:09:07
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-17 03:52:36
+# @Last Modified time: 2020-01-17 04:58:37
 
 import yaml
 import json
@@ -61,7 +61,7 @@ class PlaybookEmulator:
                 start = time.time()
                 model = MetaModel(self.labServer)
 
-                if task["stc"]["action"] == "session":
+                if task["stc"]["action"] == "session" and len(self.chassis)>0:
                     task["stc"]["chassis"] = " ".join(self.chassis)
 
                 result = model.action(task["stc"])
