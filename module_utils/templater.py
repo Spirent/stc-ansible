@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-15 10:20:05
+# @Last Modified time: 2020-01-17 02:28:32
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -11,7 +11,7 @@ try:
 except ImportError:
     from module_utils.datamodel import DataModel
     from module_utils.stcrest import StcRest
-    from module_utils.linker import Linker
+    from module_utils.xpath import Linker
 
 import requests
 import pickle

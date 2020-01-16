@@ -2,21 +2,21 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-15 15:20:13
+# @Last Modified time: 2020-01-17 02:28:21
 
 try:
     from ansible.module_utils.templater import Templater
     from ansible.module_utils.datamodel import DataModel
     from ansible.module_utils.objtree import ObjectTree
     from ansible.module_utils.stcrest import StcRest
-    from ansible.module_utils.linker import Linker
+    from ansible.module_utils.xpath import Linker
     from ansible.module_utils.logger import Logger
 except ImportError:
     from module_utils.templater import Templater
     from module_utils.datamodel import DataModel
     from module_utils.objtree import ObjectTree
     from module_utils.stcrest import StcRest
-    from module_utils.linker import Linker
+    from module_utils.xpath import Linker
     from module_utils.logger import Logger
 
 import requests

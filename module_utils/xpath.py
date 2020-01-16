@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-15 14:53:51
+# @Last Modified time: 2020-01-17 03:00:16
 
 try:
     from ansible.module_utils.logger import Logger
@@ -10,6 +10,7 @@ except ImportError:
     from module_utils.logger import Logger
 
 import requests
+import enum
 import json
 import re
 import os
@@ -86,35 +87,26 @@ class Linker:
             #Look for, eg "port[name=port1]" or "port[*]"
             #/port[name=Port1]/EmulatedDevice[*]/Ipv4If
 
-            attrKey = None
-            attrVal = None
-            match = re.findall("([a-zA-Z]+)\\[(.*?)\\]", element)
+            selector = Selector(element)
+            self.discoverChildren(selection, selector.element)
 
-            if len(match) == 1:
-                match = match[0]
-                p = match[1].split("=")
-                attrKey = p[0]
-                attrVal = p[1] if len(p) > 1 else None
-                hasWildcard |= hasWildcard or attrKey == "*"
-                element = match[0]
-
-            elif len(match) != 0:
-                raise Exception("reference syntax error: '%s' from '%s'" % (element, ref))
-
-            self.discoverChildren(selection, element)
-
-            if selection.select(element, attrKey, attrVal) == 0:
+            if selection.select(selector) == 0:
                 log.warning("| Can not find object %s from %s [%s]" % (ref, current, ref[:1]))
                 return None
 
         log.info("%s from %s -> %s" % (ref, current, selection))
         return selection
 
+
+
     def discoverChildren(self, selection, object_type):
+
+        if self.rest == None:
+            return
 
         for node in selection.nodes:
 
-            if len(node.children) != 0:
+            if len(node.children) != 0 and node.hasChild(object_type):
                 log.debug("[dicovering] node %s already has children" % (node))
                 continue
 
@@ -126,9 +118,23 @@ class Linker:
             log.info("[dicovering] node %s 's children are %s." % (node, children))
 
             for handle in children:
+                if handle in node.children:
+                    continue
                 attr = self.rest.get(handle)
                 attr["object_type"] = re.sub(r'^(.*?)([0-9]*)$', r'\1', handle)
                 self.datamodel.insert(handle, attr, node)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class NodeSelector:
@@ -137,8 +143,7 @@ class NodeSelector:
         self.nodes = [node]
 
     def log(self, m):
-        # print("[selector] " + m)
-        pass
+        print("[selector] " + m)
 
     def __str__(self):
         s = ""
@@ -159,48 +164,124 @@ class NodeSelector:
     def handles(self):
         return [n.handle for n in self.nodes]
 
-    def select(self, element, attrKey=None, attrVal=None):
-
-        negativeSelection = False
-        if attrKey != None and attrKey.endswith("!"):
-            negativeSelection = True
-            attrKey = attrKey[:-1]
+    def select(self, selector):
 
         selection = []
         for node in self.nodes:
 
+            nodeIndex = 0
             for node in node.children.values():
 
                 # self.log("| Checking object=%s"%node)
-                attr = node.attributes
-
-                if not ("object_type" in attr):
+                if not ("object_type" in node.attributes):
                     self.log("| Checking object=%s -> No object type!!" % (node))
                     continue
 
-                objType = attr["object_type"]
+                objType = node.attributes["object_type"].lower()
+                if objType != selector.element:
+                    continue
 
-                # self.log("| Checkingtype=%s  attribute=%s -> looking for type '%s'"%(attr["object_type"],attrKey,ref))
-
-                if objType.lower() == element:
-
-                    if attrKey != None and attrKey != "*":
-
-                        if not (attrKey in attr):
-                            self.log("| Checking object=%s -> No such attribute %s" % (node, attrKey))
-                            continue
-
-                        if (attr[attrKey].lower() != attrVal) ^ negativeSelection:
-                            self.log("| Checking object=%s -> Wrong attribute %s: %s!=%s" %
-                                     (node, attrKey, attr[attrKey].lower(), attrVal))
-                            continue
-
-                    self.log("| Checking object=%s -> Using it" % (node))
+                if selector.check(node,nodeIndex):
                     selection.append(node)
-
-                else:
-
-                    self.log("| Checking object=%s -> Wrong type" % (node))
+                nodeIndex += 1
 
         self.nodes = selection
         return len(selection)
+
+
+
+class SelectorType(enum.Enum): 
+    indexing = 1
+    equal = 2
+    different = 3
+    contains = 4
+    startswith = 5
+
+class Selector:
+
+
+    def __init__(self,element):
+
+            #a[contains(@href, '://')]
+        match = re.findall("(\\w+)\\s*(\\[.*\\])?", element)
+        if len(match)!=1:
+            raise Exception("[xpath] Syntax error with selector '%s'"%element)
+
+        selectors = []
+        self.element = match[0][0]
+        for selector in re.findall("\\[\\s*(.*?)\\s*\\]", match[0][1]):
+
+            if re.search("^[0-9]*$",selector):
+                selectors.append({"type": SelectorType.indexing, "val": int(selector)})
+                continue
+
+            if re.search("^\\s*\\*\\s*$",selector):
+                #Legacy selector
+                continue
+
+            operators = {
+                "=":SelectorType.equal,
+                "!=":SelectorType.different,
+                "\\*=":SelectorType.contains,
+                "\\~=":SelectorType.contains,
+                "\\^=":SelectorType.startswith,
+            }
+
+            found = False
+            for operator,id in operators.items():
+                matcher = "^(\\w+)\\s*"+operator+"\\s*(.*)$"
+                if re.search(matcher,selector)!=None:   
+
+                    match = re.findall(matcher,selector)    
+                    selectors.append({"type": id, "val": match[0][1], "key": match[0][0]})
+                    found = True
+                    break
+
+            if not found:
+                raise Exception("[xpath] Syntax error with expression '%s' selector: '%s'"%(element,selector))
+
+
+        self.selectors = selectors
+
+    def check(self, node, nodeIndex):
+
+        attr = node.attributes
+        for selector in self.selectors:
+
+            if selector["type"]==SelectorType.indexing:
+
+                return nodeIndex == selector["val"]
+
+            else:
+
+                attrKey = selector["key"]
+                if not (attrKey in attr):
+                    #self.log("| Checking object=%s -> No such attribute %s" % (node, attrKey))
+                    return False
+
+                isValid = False
+                selectorValue = selector["val"]
+                value = attr[attrKey].lower()
+                if selector["type"]==SelectorType.equal:
+
+                    isValid = (value == selectorValue)
+
+                elif selector["type"]==SelectorType.different:
+
+                    isValid = (value != selectorValue)
+
+                elif selector["type"]==SelectorType.contains:
+
+                    isValid = (value.find(selectorValue)>=0)
+
+                elif selector["type"]==SelectorType.startswith:
+
+                    isValid = (value.find(selectorValue)==0)
+
+                if not isValid:
+
+                    # self.log("| Checking object=%s -> Wrong attribute %s: %s!=%s" %
+                    #          (node, attrKey, value, selectorValue))
+                    return False
+
+        return True
