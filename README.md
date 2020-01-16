@@ -26,6 +26,7 @@ There are several example playbooks in the `playbooks` folder.
 To run all of them, just use `make play`, and it will create an STC session for each of the playbooks.
 (You can also use `make debug` to run ansible with extra verbose output).
 
+
 # Ansible Configuration
 
 ### Inventory
@@ -252,10 +253,10 @@ Voila, last step is to add a task to attach to the ports:
     command: AttachPorts
     properties:
       RevokeOwner: true
-      PortList: ref:/port[*]
+      PortList: ref:/port
 ```
 
-Notice the reference `ref:/port[*]`. The `[*]` means that all the port handles should be returned.
+Notice the reference `ref:/port`: It refers to all the port handles.
 
 
 ### Starting the Traffic
@@ -299,6 +300,17 @@ Last, once the test is finished, it is possible to get some results from the pro
 - debug:
     var: result
 ```
+
+
+### Debugging
+
+Debugging can be difficult when using Ansible. To make it easier to troubleshoot your playbook, you can use the STC ansible emulator. For example:
+
+```
+./emulator.py -labserver lab-serverIP-address you-playbook.yaml
+```
+
+
 
 
 ### More Examples
