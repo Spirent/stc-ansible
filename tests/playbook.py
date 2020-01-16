@@ -2,12 +2,13 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:09:07
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-17 03:03:01
+# @Last Modified time: 2020-01-17 03:52:36
 
 import yaml
 import json
 import time
 import glob
+import shutil 
 import sys, os
 from module_utils.metamodel import MetaModel
 from tests.mintaka import MintakaConfig
@@ -73,6 +74,9 @@ class PlaybookEmulator:
 
                 if "register" in task:
                     print("Result: \033[96m" + json.dumps(result, indent=4) + "\033[0m")
+
+            elif "copy" in task:
+                shutil.copyfile(task["copy"]["src"], task["copy"]["dest"])
 
             elif not "debug" in task:
                 print("\033[93m------------ UNKNOWN TASK ------------\033[0m" )
