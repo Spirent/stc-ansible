@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-17 03:00:32
+# @Last Modified time: 2020-01-17 03:18:30
 
 from module_utils.datamodel import DataModel
 from module_utils.xpath import NodeSelector, Linker, Selector
@@ -96,10 +96,10 @@ class TestLinker:
         self.dev1 = self.dm.insert("emulateddevice1", {"object_type": "emulateddevice", "name": "Device 1"}, port1)
         self.ip1 = self.dm.insert("ipv4if1", {"object_type": "ipv4if", "name": "ipv4if 1"}, self.dev1)
 
-        self.dev2 = self.dm.insert("emulateddevice2", {"object_type": "emulateddevice"}, port1)
+        self.dev2 = self.dm.insert("emulateddevice2", {"object_type": "emulateddevice", "name": "dev 2", "count":3}, port1)
         self.ip2 = self.dm.insert("ipv4if2", {"object_type": "ipv4if", "name": "ipv4if 2"}, self.dev2)
 
-        self.dev3 = self.dm.insert("emulateddevice2", {"object_type": "emulateddevice"}, port2)
+        self.dev3 = self.dm.insert("emulateddevice2", {"object_type": "emulateddevice", "name": "dev 3"}, port2)
         self.ip3 = self.dm.insert("ipv4if2", {"object_type": "ipv4if", "name": "ipv4if 3"}, self.dev3)
 
         return self.dm
@@ -168,3 +168,8 @@ class TestLinker:
         linker = Linker(self.createModel())
         nodes = linker._resolve("/port[2]/emulateddevice/ipv4if")
         assert nodes == None
+
+    def test9a(self):
+        linker = Linker(self.createModel())
+        nodes = linker._resolve("/port/emulateddevice[name *= dev][count = 3]/ipv4if")
+        assert nodes.count() == 1

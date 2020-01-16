@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-17 03:00:16
+# @Last Modified time: 2020-01-17 03:18:21
 
 try:
     from ansible.module_utils.logger import Logger
@@ -261,7 +261,7 @@ class Selector:
 
                 isValid = False
                 selectorValue = selector["val"]
-                value = attr[attrKey].lower()
+                value = str(attr[attrKey]).lower()
                 if selector["type"]==SelectorType.equal:
 
                     isValid = (value == selectorValue)
