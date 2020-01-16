@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-17 02:28:21
+# @Last Modified time: 2020-01-17 03:59:22
 
 try:
     from ansible.module_utils.templater import Templater
@@ -115,13 +115,19 @@ class MetaModel:
     def load_datamodel(self, filename):
 
         with open(filename) as dmfile:
-            dm = dmfile.read()
+
             res = self.rest.perform("LoadFromXml", {
-                "InputConfigString": dm,
+                "InputConfigString": dmfile.read(),
                 "Filename": "",
             })
             if res != None:
                 res["InputConfigString"] = "..."
+
+            #Then reset the data-model
+            self.datamodel.reset()
+
+
+
             return res
         return "Ooops"
 

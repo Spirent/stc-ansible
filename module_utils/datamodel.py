@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-15 14:56:31
+# @Last Modified time: 2020-01-17 03:59:10
 
 try:
     from ansible.module_utils.logger import Logger
@@ -36,6 +36,12 @@ class DataModel:
     def getChassis(self, i):
         if i < len(self._chassis):
             return self._chassis[i]
+
+    def reset(self):
+        self.root = {}
+        project = ObjectModel("project1", {}, None)
+        self.root["project1"] = project
+
 
     def unserialize(self):
         self.root = {}
