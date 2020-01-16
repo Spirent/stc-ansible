@@ -26,6 +26,13 @@
     datamodel: /tmp/datamodel.xml
 
 - 
+  name: Get the list of all ports
+  register: results
+  stc:
+    action: get
+    object: ref:/port
+
+- 
   debug:
     var: result
 

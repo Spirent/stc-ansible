@@ -30,7 +30,7 @@
               name: Port2
 
 -
-  name: create 20 device-blocks of 50 emulated devices each
+  name: create 20 block of 50 devices
   stc: 
     action: perform
     command: DeviceCreate
@@ -41,15 +41,15 @@
       Port: ref:/port[Name=Port1]
       IfStack: Ipv4If PppIf PppoeIf EthIIIf
       IfCount: '1 1 1 1'
-      name: "Device $item"
+      name: "dev-$item"
 
 
 -
-  name: Configure the IP address of each device
+  name: Configure each device IP address
   stc: 
     action: config
     count: 20
-    object: ref:/EmulatedDevice[Name=Device $item]
+    object: ref:/EmulatedDevice[Name=dev-$item]
     properties:
         Ipv4If: 
           AddrStep: 0.0.0.1
@@ -63,7 +63,7 @@
     command: AttachPorts
     properties:
       RevokeOwner: true
-      PortList: ref:/port[*]
+      PortList: ref:/port
 
 
 

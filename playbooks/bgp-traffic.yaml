@@ -1,0 +1,279 @@
+# -*- coding: utf-8 -*-
+# @Author: West for bgp and traffic
+# @Date:   2019-12-20 09:18:14
+# @Last Modified by:   ronanjs
+# @Last Modified time: 2020-01-16 12:30:28
+
+
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: bgp-traffic
+    chassis: "192.168.100.105"
+
+
+- 
+  name: Create the base ports
+  stc: 
+    action: create
+    objects: 
+      - project: 
+          - port: 
+              location: "//${chassis-1}/1/1"
+              name: Port1
+
+          - port: 
+              location: "//${chassis-2}/1/1"
+              name: Port2
+
+-
+  name: create 1 bgp device under port1
+  register: result
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[Name=Port1]
+      IfStack: Ipv4If EthIIIf
+      IfCount: '1 1'
+      name: "BGPDevice1"
+
+
+-
+  name: Configure the IP address of device
+  register: result
+  stc: 
+    action: config
+    count: 1
+    object: ref:/EmulatedDevice[Name=BGPDevice1]
+    properties:
+        Ipv4If: 
+          Gateway: 10.0.0.3
+          Address: 10.0.0.2
+
+-
+  name: create bgp on this device
+  register: result
+  stc: 
+    action: create
+    under: ref:/EmulatedDevice[Name=BGPDevice1]
+    count: 1
+    objects: 
+    - BgpRouterConfig: 
+        AsNum: 1111
+        DutAsNum: 2222
+        name: "BGPRouter1"
+
+-
+  name: create ipv4 route
+  register: result
+  stc: 
+    action: create
+    under: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]
+    count: 1
+    objects: 
+    - BgpIpv4RouteConfig: 
+        name: "BGPV4Route"
+        AsPath: 1111
+
+-
+  name: config ipv4 route
+  register: result
+  stc: 
+    action: config
+    count: 1
+    object: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]
+    properties:
+        BgpIpv4RouteConfig:
+           Ipv4NetworkBlock: 
+             NetworkCount: 100
+             StartIpList: 1.1.1.1
+
+  name: create 1 bgp device under port2
+  register: result
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[Name=Port2]
+      IfStack: Ipv4If EthIIIf
+      IfCount: '1 1'
+      name: "BGPDevice2"
+
+
+-
+  name: Configure the IP address of device
+  register: result
+  stc: 
+    action: config
+    count: 1
+    object: ref:/EmulatedDevice[Name=BGPDevice2]
+    properties:
+        Ipv4If: 
+          Gateway: 10.0.0.2
+          Address: 10.0.0.3
+
+-
+  name: create bgp on this device
+  register: result
+  stc: 
+    action: create
+    under: ref:/EmulatedDevice[Name=BGPDevice2]
+    count: 1
+    objects: 
+    - BgpRouterConfig: 
+        AsNum: 2222
+        DutAsNum: 1111
+        name: "BGPRouter2"
+
+-
+  name: create ipv4 route
+  register: result
+  stc: 
+    action: create
+    under: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]
+    count: 1
+    objects: 
+    - BgpIpv4RouteConfig: 
+        name: "BGPV4Route2"
+        AsPath: 2222
+
+-
+  name: config ipv4 route
+  register: result
+  stc: 
+    action: config
+    count: 1
+    object: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]
+    properties:
+        BgpIpv4RouteConfig:
+           Ipv4NetworkBlock: 
+             NetworkCount: 100
+             StartIpList: 2.2.2.2
+             
+  name: Configure the traffic generator
+  stc: 
+    count: 1
+    action: create
+    under: ref:/project
+    objects: 
+    - StreamBlock: 
+        TrafficPattern: Mesh
+        EnableStreamOnlyGeneration: true
+        SrcBinding-targets: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]/BgpIpv4RouteConfig/Ipv4NetworkBlock
+        DstBinding-targets: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]/BgpIpv4RouteConfig/Ipv4NetworkBlock
+        AffiliationStreamBlockLoadProfile: 
+          Load: 10
+
+
+  name: Configure the traffic generator
+  stc: 
+    count: 1
+    action: create
+    under: ref:/project
+    objects: 
+    - StreamBlock: 
+        TrafficPattern: Mesh
+        EnableStreamOnlyGeneration: true
+        SrcBinding-targets: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]/BgpIpv4RouteConfig/Ipv4NetworkBlock
+        DstBinding-targets: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]/BgpIpv4RouteConfig/Ipv4NetworkBlock
+        AffiliationStreamBlockLoadProfile: 
+          Load: 10
+
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port
+
+-
+  name: start devices
+  stc: 
+    action: perform
+    command: DeviceStart
+
+-
+  name: Wait for the BGP to be established
+  stc: 
+    action: wait
+    object: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]
+    until: RouterState=ESTABLISHED
+
+-
+  name: Wait for the BGP to be established
+  stc: 
+    action: wait
+    object: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]
+    until: RouterState=ESTABLISHED
+
+
+- name: wait 10 sec
+  pause: 
+    seconds: 10
+
+-
+  name: Start the traffic
+  stc: 
+    action: perform
+    command: GeneratorStart
+    properties: 
+      GeneratorList: ref:/project 
+
+
+-
+  name: subscribe to streamblock results
+  stc: 
+    action: perform
+    command: SubscribeResultsView
+    properties: 
+      ExecuteSynchronous: true
+      TemplateUri: "Result Views/Stream Results/Stream Block Results.xml"
+
+- name: wait 10 sec
+  pause: 
+    seconds: 10
+
+
+-
+  name: Stop the traffic
+  stc: 
+    action: perform
+    command: GeneratorStop
+    properties: 
+      GeneratorList: ref:/project 
+
+- name: wait 10 sec
+  pause: 
+    seconds: 10
+
+-
+  name: get StreamBlock Rx Results
+  stc: 
+    action: get
+    objects: ref:/StreamBlock/RxStreamBlockResults 
+
+
+-
+  name: get StreamBlock Results
+  stc: 
+    action: get
+    objects: ref:/StreamBlock/TxStreamBlockResults 
+# -
+  # name: Take the ports offline
+  # stc: 
+    # action: perform
+    # command: DetachPortsCommand
+    # properties:
+      # PortList: ref:/port

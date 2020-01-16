@@ -1,0 +1,32 @@
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: ports-online
+
+-
+  name: Create the base ports
+  stc:
+    action: create
+    objects:
+      - project:
+          - port:
+              location: "//192.168.100.105/1/1"
+              name: Port1
+          - port:
+              location: "//192.168.100.105/1/2"
+              name: Port2
+
+
+-
+  name: Get the actual port configuration
+  register: result
+  stc:
+    action: get
+    objects: ref:/port
+
+- 
+  debug:
+    var: result
+
