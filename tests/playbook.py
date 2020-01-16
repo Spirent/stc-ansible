@@ -2,7 +2,7 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:09:07
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-15 13:29:32
+# @Last Modified time: 2020-01-17 03:03:01
 
 import yaml
 import json
@@ -13,42 +13,74 @@ from module_utils.metamodel import MetaModel
 from tests.mintaka import MintakaConfig
 
 
-def testPlaybook(playbook, labServer, ports):
+class PlaybookEmulator:
 
-    print("Testing playbook %s with lab server %s and ports %s" % (playbook, labServer, ports))
-    try:
-        with open(playbook, 'r') as stream:
-            playbook = yaml.safe_load(stream)
-    except yaml.YAMLError as exc:
-        print("Invalid YAML:", exc)
-        return
+    def __init__(self, labServer, chassis=[]):
 
-    pbstart = time.time()
-    for task in playbook:
+        if labServer[0]=='@':
+            config = MintakaConfig(labServer[1:], "5")
+            labServer = config.getLabServer()
+            chassis = config.getPorts(2)
 
-        count = 1
-        if "stc" in task:
-            print("\033[93m------------ TASK %s ------------\033[0m" % task["name"])
-            start = time.time()
-            model = MetaModel(labServer)
+        self.labServer = labServer
+        self.chassis = chassis
 
-            if task["stc"]["action"] == "session":
-                task["stc"]["chassis"] = " ".join(ports)
 
-            result = model.action(task["stc"])
+    def play(self, playbook):
 
-            elapsed = time.time() - start
-            count = task["stc"]["count"] if "count" in task["stc"] else 1
-            perobject = int(elapsed * 10000 / count) / 10
+        print("Testing playbook %s with lab server %s and chassis %s" % (playbook, self.labServer, self.chassis))
+        try:
+            with open(playbook, 'r') as stream:
+                playbook = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print("Invalid YAML:", exc)
+            return
 
-            print("task executed in ", int(elapsed * 1000), "ms", "ms (", perobject, "ms per object)")
+        pbstart = time.time()
+        for task in playbook:
 
-            if "register" in task:
-                print("Result: \033[96m" + json.dumps(result, indent=4) + "\033[0m")
+            count = 1
+            if "pause" in task:
+                print("\033[93m------------ PAUSING ------------\033[0m")
+                if "pause" in task:
+                    if "seconds" in task["pause"]:
+                        print("Waiting for %s seconds"%task["pause"]["seconds"])
+                        time.sleep(int(task["pause"]["seconds"]))
+                    elif "minutes" in task["pause"]:
+                        print("Waiting for %s minutes"%task["pause"]["minutes"])
+                        time.sleep(int(task["pause"]["minutes"])*60)
+                    else:
+                        print("Sorry, I do not understand this task... %s"%task)
+                else:
+                    print("Sorry, I do not understand this task... %s"%task)
 
-    elapsed = time.time() - pbstart
-    perobject = int(elapsed * 10000 / count) / 10
-    print("playbook executed in ", int(elapsed * 1000), "ms", "ms (", perobject, "ms per object)")
+
+            elif "stc" in task:
+                print("\033[93m------------ TASK %s ------------\033[0m" % task["name"])
+                start = time.time()
+                model = MetaModel(self.labServer)
+
+                if task["stc"]["action"] == "session":
+                    task["stc"]["chassis"] = " ".join(self.chassis)
+
+                result = model.action(task["stc"])
+
+                elapsed = time.time() - start
+                count = task["stc"]["count"] if "count" in task["stc"] else 1
+                perobject = int(elapsed * 10000 / count) / 10
+
+                print("task executed in ", int(elapsed * 1000), "ms", "ms (", perobject, "ms per object)")
+
+                if "register" in task:
+                    print("Result: \033[96m" + json.dumps(result, indent=4) + "\033[0m")
+
+            elif not "debug" in task:
+                print("\033[93m------------ UNKNOWN TASK ------------\033[0m" )
+                print("Sorry, I do not understand this task... %s"%task)
+
+        elapsed = time.time() - pbstart
+        perobject = int(elapsed * 10000 / count) / 10
+        print("playbook executed in ", int(elapsed * 1000), "ms", "ms (", perobject, "ms per object)")
 
 
 def testPlaybooks(path, labServer, ports):
@@ -61,11 +93,6 @@ def testPlaybooks(path, labServer, ports):
 
 if __name__ == "__main__":
 
-    config = MintakaConfig("cal", "5")
-    labServer = config.getLabServer()
-    ports = config.getPorts(2)
-
-    testPlaybooks("playbooks/*.yaml", labServer, ports)
-
-    # testPlaybook("playbooks/basic-device.yaml", labServer, ports)
-    # testPlaybook("playbooks/igmp-network.yaml", labServer, ports)
+    emulator = PlaybookEmulator("@bdc")
+    for file in glob.glob("./playbooks/*.yaml"):
+        emulator.play(file)

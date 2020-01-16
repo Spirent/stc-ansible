@@ -33,7 +33,7 @@ class MetaModel:
     def __init__(self, server="127.0.0.1"):
         self.datamodel = DataModel()
         self.rest = StcRest(server, self.datamodel.session())
-        self.linker = Linker(self.datamodel, self.rest)
+        self.xpath = Linker(self.datamodel, self.rest)
         self.templater = Templater(self.datamodel)
 
     def action(self, params):
@@ -48,6 +48,8 @@ class MetaModel:
             chassis = params["chassis"] if "chassis" in params else ""
             if chassis == None:
                 chassis = ""
+
+            print("new session: user:%s name:%s chassis:%s"%(params["user"], params["name"],chassis))
             result = self.new_session(params["user"], params["name"], chassis.split(" "))
 
         elif action == "create":
@@ -62,7 +64,8 @@ class MetaModel:
 
         elif action == "perform":
 
-            result = self.perform(params["command"], params["properties"], count=count)
+            properties = params["properties"] if "properties" in params else {}
+            result = self.perform(params["command"], properties, count=count)
 
         elif action == "wait":
 
@@ -71,7 +74,14 @@ class MetaModel:
 
         elif action == "get":
 
-            result = self.get(params["object"], count=count)
+            objects = params["objects"] if "objects" in params else None
+            if objects == None and "object" in params:
+                objects = params["object"]
+            if objects == None:
+                log.error("No object specified tor get actions: %s" % params)
+                raise Exception("No object specified tor get actions: %s" % params)
+
+            result = self.get(objects, count=count)
 
         elif action == "load":
 
@@ -121,7 +131,7 @@ class MetaModel:
         for i in range(0, count):
 
             ref = self.templater.get(objref[4:], i)
-            obj = self.linker.resolveSingleObject(ref)
+            obj = self.xpath.resolveSingleObject(ref)
             if obj == None:
                 raise Exception("Can not find parent object %s" % ref)
 
@@ -136,7 +146,7 @@ class MetaModel:
             parent = None
             if under != None:
                 ref = self.templater.get(under[4:], i)
-                parent = self.linker.resolveSingleObject(ref)
+                parent = self.xpath.resolveSingleObject(ref)
                 if parent == None:
                     raise Exception("Can not find parent object %s" % ref)
 
@@ -191,7 +201,7 @@ class MetaModel:
         allhandles = []
         for i in range(0, count):
             ref = self.templater.get(obj[4:], i)
-            handles = self.linker.resolveHandles(ref)
+            handles = self.xpath.resolveHandles(ref)
             if handles == None:
                 raise Exception("Failed to resolve: %s [%s]" % (ref, obj))
             allhandles += handles
@@ -233,7 +243,7 @@ class MetaModel:
 
             val = props[key]
             if type(val) is str and val[0:4] == "ref:":
-                handles = self.linker.resolveHandles(val[4:])
+                handles = self.xpath.resolveHandles(val[4:])
                 if handles == None:
                     raise Exception("Failed to resolve: %s" % val)
                 val = " ".join(handles)
@@ -300,7 +310,7 @@ class MetaModel:
 
                 val = props[key]
                 if type(val) is str and val[0:4] == "ref:":
-                    handles = self.linker.resolveHandles(val[4:])
+                    handles = self.xpath.resolveHandles(val[4:])
                     if handles == None:
                         log.info("reference \033[92m%s\033[0m is not resolved yet" % (val))
                         references[key] = val[4:]
@@ -380,7 +390,7 @@ class MetaModel:
             for key in refs.keys():
 
                 val = refs[key]
-                handles = self.linker.resolveHandles(val, obj["object"])
+                handles = self.xpath.resolveHandles(val, obj["object"])
                 if handles == None:
                     log.error("Failed to resolve '\033[91m%s\033[0m' for property %s in %s" % (val, key, obj["object"]))
                     continue
