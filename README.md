@@ -1,9 +1,8 @@
 # STC Ansible
 
-This is an *experimental* Ansible plugin to configure Spirent Test Center data models and execute tests. 
+This is an *experimental* [Ansible](https://www.ansible.com/) plugin to configure Spirent Test Center data models and execute tests. 
 
-[[!](https://cdn2.hubspot.net/hubfs/4682592/Logo-Red_Hat-Ansible-A-Reverse-SVG.svg)](https://www.ansible.com/) + 
-
+[![CircleCI](https://circleci.com/gh/Spirent/stc-ansible.svg?style=svg)](https://circleci.com/gh/Spirent/stc-ansible)
 
 ### Requirements
 
