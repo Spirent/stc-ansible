@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-17 03:18:21
+# @Last Modified time: 2020-01-17 18:45:55
 
 try:
     from ansible.module_utils.logger import Logger
@@ -10,7 +10,6 @@ except ImportError:
     from module_utils.logger import Logger
 
 import requests
-import enum
 import json
 import re
 import os
@@ -190,14 +189,13 @@ class NodeSelector:
 
 
 
-class SelectorType(enum.Enum): 
+class Selector:
+
     indexing = 1
     equal = 2
     different = 3
     contains = 4
     startswith = 5
-
-class Selector:
 
 
     def __init__(self,element):
@@ -212,7 +210,7 @@ class Selector:
         for selector in re.findall("\\[\\s*(.*?)\\s*\\]", match[0][1]):
 
             if re.search("^[0-9]*$",selector):
-                selectors.append({"type": SelectorType.indexing, "val": int(selector)})
+                selectors.append({"type": Selector.indexing, "val": int(selector)})
                 continue
 
             if re.search("^\\s*\\*\\s*$",selector):
@@ -220,11 +218,11 @@ class Selector:
                 continue
 
             operators = {
-                "=":SelectorType.equal,
-                "!=":SelectorType.different,
-                "\\*=":SelectorType.contains,
-                "\\~=":SelectorType.contains,
-                "\\^=":SelectorType.startswith,
+                "=":Selector.equal,
+                "!=":Selector.different,
+                "\\*=":Selector.contains,
+                "\\~=":Selector.contains,
+                "\\^=":Selector.startswith,
             }
 
             found = False
@@ -248,7 +246,7 @@ class Selector:
         attr = node.attributes
         for selector in self.selectors:
 
-            if selector["type"]==SelectorType.indexing:
+            if selector["type"]==Selector.indexing:
 
                 return nodeIndex == selector["val"]
 
@@ -262,19 +260,19 @@ class Selector:
                 isValid = False
                 selectorValue = selector["val"]
                 value = str(attr[attrKey]).lower()
-                if selector["type"]==SelectorType.equal:
+                if selector["type"]==Selector.equal:
 
                     isValid = (value == selectorValue)
 
-                elif selector["type"]==SelectorType.different:
+                elif selector["type"]==Selector.different:
 
                     isValid = (value != selectorValue)
 
-                elif selector["type"]==SelectorType.contains:
+                elif selector["type"]==Selector.contains:
 
                     isValid = (value.find(selectorValue)>=0)
 
-                elif selector["type"]==SelectorType.startswith:
+                elif selector["type"]==Selector.startswith:
 
                     isValid = (value.find(selectorValue)==0)
 

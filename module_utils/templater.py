@@ -2,12 +2,12 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-17 05:00:17
+# @Last Modified time: 2020-01-17 18:26:49
 
 try:
     from ansible.module_utils.datamodel import DataModel
     from ansible.module_utils.stcrest import StcRest
-    from ansible.module_utils.linker import Linker
+    from ansible.module_utils.xpath import Linker
 except ImportError:
     from module_utils.datamodel import DataModel
     from module_utils.stcrest import StcRest
