@@ -108,4 +108,5 @@ if __name__ == "__main__":
 
     emulator = PlaybookEmulator("@bdc")
     for file in glob.glob("./playbooks/*.yaml"):
+        print("\n\n%s %s %s\n\n" % (Color.blue("=" * 60), Color.bold(file), Color.blue("=" * 60)))
         emulator.play(file)
