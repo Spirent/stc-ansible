@@ -167,7 +167,6 @@
     under: ref:/project
     objects: 
     - StreamBlock: 
-        TrafficPattern: Mesh
         EnableStreamOnlyGeneration: true
         SrcBinding-targets: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]/BgpIpv4RouteConfig/Ipv4NetworkBlock
         DstBinding-targets: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]/BgpIpv4RouteConfig/Ipv4NetworkBlock
@@ -182,7 +181,6 @@
     under: ref:/project
     objects: 
     - StreamBlock: 
-        TrafficPattern: Mesh
         EnableStreamOnlyGeneration: true
         SrcBinding-targets: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]/BgpIpv4RouteConfig/Ipv4NetworkBlock
         DstBinding-targets: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]/BgpIpv4RouteConfig/Ipv4NetworkBlock
@@ -262,18 +260,19 @@
   name: get StreamBlock Rx Results
   stc: 
     action: get
-    objects: ref:/StreamBlock/RxStreamBlockResults 
+    objects: ref:/port/StreamBlock/RxStreamBlockResults 
 
 
 -
   name: get StreamBlock Results
   stc: 
     action: get
-    objects: ref:/StreamBlock/TxStreamBlockResults 
-# -
-  # name: Take the ports offline
-  # stc: 
-    # action: perform
-    # command: DetachPortsCommand
-    # properties:
-      # PortList: ref:/port
+    objects: ref:/port/StreamBlock/TxStreamBlockResults 
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port

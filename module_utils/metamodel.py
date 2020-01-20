@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-20 12:32:49
+# @Last Modified time: 2020-01-20 13:06:33
 
 try:
     from ansible.module_utils.templater import Templater
@@ -248,11 +248,10 @@ class MetaModel:
         for i in range(0, count):
             for obj in objects:
                 ref = self.templater.get(obj, i)
-                log.debug("Get all handles [%d/%d] -> %s" % (i, count, ref))
                 handles = self.xpath.resolveHandles(ref)
-                if handles == None:
-                    return Result.error(self.rest.errorInfo)
-                allhandles += handles
+                log.debug("Get all handles [%d/%d] -> %s -> %s" % (i, count, ref, handles))
+                if handles != None:
+                    allhandles += handles
 
         if len(allhandles) == 0:
             return Result.error("Can not find any object matching %s (count=%d)" % (obj, count))
