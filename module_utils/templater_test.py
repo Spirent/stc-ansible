@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-20 12:51:37
+# @Last Modified time: 2020-01-20 15:53:41
 
 from module_utils.templater import Templater
 from module_utils.datamodel import DataModel
@@ -29,4 +29,4 @@ class TestTemplater:
     def test3(self):
         t = self.createTemplater()
         v = t.get("${item+1}", 1)
-        assert v == 2
+        assert v == '2'
