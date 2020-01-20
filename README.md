@@ -208,8 +208,8 @@ and reference them in the tasks.
 The first step is to declare the chassis in the inventory. For instance, this will add the two chassis `10.61.67.128` and `10.61.67.131` to the playbook.
 
 ```ini
-[labservers:vars]
-chassis = 10.61.67.128 10.61.67.131
+[labservers]
+my-labserver-1 ansible_host=10.61.67.200 chassis = "10.61.67.128 10.61.67.131"
 ```
 
 Then, when creating the session, specify the chassis property:
@@ -225,7 +225,7 @@ Then, when creating the session, specify the chassis property:
 
 The `{{ hostvars[groups['labservers'][0]].chassis }}` is used to reference to the chassis defined in the inventory. Alternatively, you can directly specify the chassis IP in the task, such `chassis: "10.61.67.128 10.61.67.131"`
 
-Once the chassis are defined, the `session` task will automatically connect to them when the session is created. Then, in order to reference the chassis IP address from the task, one can use the keywork `${chassis-1}` ... `${chassis-2}` or even `${chassis-item}`.
+Once the chassis are defined, the `session` task will automatically connect to them when the session is created. Then, in order to reference the chassis IP address from the task, one can use the keywork `${chassis[0]}` ... `${chassis[1]}` or even `${chassis[item]}`.
 
 ```yaml
 - name: Create the base ports
@@ -235,11 +235,11 @@ Once the chassis are defined, the `session` task will automatically connect to t
     objects: 
       - project: 
           - port: 
-              location: "//${chassis-1}/1/1"
+              location: "//${chassis[0]}/1/1"
               name: Port1
 
           - port: 
-              location: "//${chassis-2}/1/1"
+              location: "//${chassis[1]}/1/1"
               name: Port2
 ```
 
