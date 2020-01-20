@@ -96,7 +96,11 @@ class TestLinker:
         self.dev1 = self.dm.insert("emulateddevice1", {"object_type": "emulateddevice", "name": "Device 1"}, port1)
         self.ip1 = self.dm.insert("ipv4if1", {"object_type": "ipv4if", "name": "ipv4if 1"}, self.dev1)
 
-        self.dev2 = self.dm.insert("emulateddevice2", {"object_type": "emulateddevice", "name": "dev 2", "count":3}, port1)
+        self.dev2 = self.dm.insert("emulateddevice2", {
+            "object_type": "emulateddevice",
+            "name": "dev 2",
+            "count": 3
+        }, port1)
         self.ip2 = self.dm.insert("ipv4if2", {"object_type": "ipv4if", "name": "ipv4if 2"}, self.dev2)
 
         self.dev3 = self.dm.insert("emulateddevice2", {"object_type": "emulateddevice", "name": "dev 3"}, port2)

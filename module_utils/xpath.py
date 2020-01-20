@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-17 18:45:55
+# @Last Modified time: 2020-01-20 12:31:51
 
 try:
     from ansible.module_utils.logger import Logger
@@ -42,6 +42,8 @@ class Linker:
 
     def _resolve(self, ref, current=None):
 
+        if ref[0:4] == "ref:":
+            ref = ref[4:]
         root = self.datamodel.root
 
         ref = ref.lower()
@@ -96,8 +98,6 @@ class Linker:
         log.info("%s from %s -> %s" % (ref, current, selection))
         return selection
 
-
-
     def discoverChildren(self, selection, object_type):
 
         if self.rest == None:
@@ -122,18 +122,6 @@ class Linker:
                 attr = self.rest.get(handle)
                 attr["object_type"] = re.sub(r'^(.*?)([0-9]*)$', r'\1', handle)
                 self.datamodel.insert(handle, attr, node)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class NodeSelector:
@@ -180,13 +168,12 @@ class NodeSelector:
                 if objType != selector.element:
                     continue
 
-                if selector.check(node,nodeIndex):
+                if selector.check(node, nodeIndex):
                     selection.append(node)
                 nodeIndex += 1
 
         self.nodes = selection
         return len(selection)
-
 
 
 class Selector:
@@ -197,47 +184,45 @@ class Selector:
     contains = 4
     startswith = 5
 
+    def __init__(self, element):
 
-    def __init__(self,element):
-
-            #a[contains(@href, '://')]
+        #a[contains(@href, '://')]
         match = re.findall("(\\w+)\\s*(\\[.*\\])?", element)
-        if len(match)!=1:
-            raise Exception("[xpath] Syntax error with selector '%s'"%element)
+        if len(match) != 1:
+            raise Exception("[xpath] Syntax error with selector '%s'" % element)
 
         selectors = []
         self.element = match[0][0]
         for selector in re.findall("\\[\\s*(.*?)\\s*\\]", match[0][1]):
 
-            if re.search("^[0-9]*$",selector):
+            if re.search("^[0-9]*$", selector):
                 selectors.append({"type": Selector.indexing, "val": int(selector)})
                 continue
 
-            if re.search("^\\s*\\*\\s*$",selector):
+            if re.search("^\\s*\\*\\s*$", selector):
                 #Legacy selector
                 continue
 
             operators = {
-                "=":Selector.equal,
-                "!=":Selector.different,
-                "\\*=":Selector.contains,
-                "\\~=":Selector.contains,
-                "\\^=":Selector.startswith,
+                "=": Selector.equal,
+                "!=": Selector.different,
+                "\\*=": Selector.contains,
+                "\\~=": Selector.contains,
+                "\\^=": Selector.startswith,
             }
 
             found = False
-            for operator,id in operators.items():
-                matcher = "^(\\w+)\\s*"+operator+"\\s*(.*)$"
-                if re.search(matcher,selector)!=None:   
+            for operator, id in operators.items():
+                matcher = "^(\\w+)\\s*" + operator + "\\s*(.*)$"
+                if re.search(matcher, selector) != None:
 
-                    match = re.findall(matcher,selector)    
+                    match = re.findall(matcher, selector)
                     selectors.append({"type": id, "val": match[0][1], "key": match[0][0]})
                     found = True
                     break
 
             if not found:
-                raise Exception("[xpath] Syntax error with expression '%s' selector: '%s'"%(element,selector))
-
+                raise Exception("[xpath] Syntax error with expression '%s' selector: '%s'" % (element, selector))
 
         self.selectors = selectors
 
@@ -246,7 +231,7 @@ class Selector:
         attr = node.attributes
         for selector in self.selectors:
 
-            if selector["type"]==Selector.indexing:
+            if selector["type"] == Selector.indexing:
 
                 return nodeIndex == selector["val"]
 
@@ -260,21 +245,21 @@ class Selector:
                 isValid = False
                 selectorValue = selector["val"]
                 value = str(attr[attrKey]).lower()
-                if selector["type"]==Selector.equal:
+                if selector["type"] == Selector.equal:
 
                     isValid = (value == selectorValue)
 
-                elif selector["type"]==Selector.different:
+                elif selector["type"] == Selector.different:
 
                     isValid = (value != selectorValue)
 
-                elif selector["type"]==Selector.contains:
+                elif selector["type"] == Selector.contains:
 
-                    isValid = (value.find(selectorValue)>=0)
+                    isValid = (value.find(selectorValue) >= 0)
 
-                elif selector["type"]==Selector.startswith:
+                elif selector["type"] == Selector.startswith:
 
-                    isValid = (value.find(selectorValue)==0)
+                    isValid = (value.find(selectorValue) == 0)
 
                 if not isValid:
 

@@ -3,7 +3,7 @@
 # @Author: ronanjs
 # @Date:   2020-01-16 22:32:09
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-17 01:17:48
+# @Last Modified time: 2020-01-19 22:29:28
 
 from tests.playbook import PlaybookEmulator
 from module_utils.logger import Logger
@@ -22,5 +22,9 @@ args = parser.parse_args()
 if args.verbose:
 	Logger.setVerbose()
 
-emulator = PlaybookEmulator(args.labserver, args.chassis.split(","))
+chassis = []
+if len(args.chassis)>0:
+	chassis = args.chassis.split(",")
+
+emulator = PlaybookEmulator(args.labserver, chassis)
 emulator.play(args.playbook)

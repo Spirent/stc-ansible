@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-17 03:59:22
+# @Last Modified time: 2020-01-20 12:32:49
 
 try:
     from ansible.module_utils.templater import Templater
@@ -11,6 +11,7 @@ try:
     from ansible.module_utils.stcrest import StcRest
     from ansible.module_utils.xpath import Linker
     from ansible.module_utils.logger import Logger
+    from ansible.module_utils.utils import *
 except ImportError:
     from module_utils.templater import Templater
     from module_utils.datamodel import DataModel
@@ -18,6 +19,7 @@ except ImportError:
     from module_utils.stcrest import StcRest
     from module_utils.xpath import Linker
     from module_utils.logger import Logger
+    from module_utils.utils import *
 
 import requests
 import pickle
@@ -49,8 +51,11 @@ class MetaModel:
             if chassis == None:
                 chassis = ""
 
-            print("new session: user:%s name:%s chassis:%s"%(params["user"], params["name"],chassis))
+            print(">>> new session <<< user:%s name:%s chassis:%s" %
+                  (Color.blue(params["user"]), Color.blue(params["name"]), Color.green(str(chassis))))
+
             result = self.new_session(params["user"], params["name"], chassis.split(" "))
+            result = Result.value(result)
 
         elif action == "create":
 
@@ -69,8 +74,15 @@ class MetaModel:
 
         elif action == "wait":
 
+            objects = params["objects"] if "objects" in params else None
+            if objects == None and "object" in params:
+                objects = params["object"]
+            if objects == None:
+                log.error("No object specified tor get actions: %s" % params)
+                return Result.error("No object specified for the wait actions: %s" % params)
+
             timeout = int(params["timeout"]) if "timeout" in params else 60
-            result = self.wait(params["object"], params["until"], timeout=timeout, count=count)
+            result = self.wait(objects, params["until"], timeout=timeout, count=count)
 
         elif action == "get":
 
@@ -79,7 +91,7 @@ class MetaModel:
                 objects = params["object"]
             if objects == None:
                 log.error("No object specified tor get actions: %s" % params)
-                raise Exception("No object specified tor get actions: %s" % params)
+                return Result.error("No object specified for the get actions: %s" % params)
 
             result = self.get(objects, count=count)
 
@@ -90,9 +102,9 @@ class MetaModel:
         else:
 
             log.error("Unknown action: %s" % action)
-            raise Exception("Unknown action " + action)
+            result = Result.error("Unknown action %s" % action)
 
-        log.info("action %s result: %s" % (action, json.dumps(result, indent=4)))
+        # log.info("action %s result: %s" % (action, json.dumps(result.val, indent=4)))
 
         self.serialize()
         return result
@@ -122,13 +134,13 @@ class MetaModel:
             })
             if res != None:
                 res["InputConfigString"] = "..."
+            else:
+                return Result.error(self.rest.errorInfo)
 
             #Then reset the data-model
             self.datamodel.reset()
 
-
-
-            return res
+            return Result.value(res)
         return "Ooops"
 
     def config(self, properties, objref=None, count=1):
@@ -136,13 +148,20 @@ class MetaModel:
         handles = {}
         for i in range(0, count):
 
-            ref = self.templater.get(objref[4:], i)
+            ref = self.templater.get(objref, i)
             obj = self.xpath.resolveSingleObject(ref)
             if obj == None:
-                raise Exception("Can not find parent object %s" % ref)
+                return Result.error("config: Can not find parent object %s" % ref)
 
-            handles[i] = self.configObject(obj, self.templater.get(properties, i))
-        return handles
+            r = self.configObject(obj, self.templater.get(properties, i))
+            if r.isError():
+                return r
+
+            handles[i] = r.val
+
+        if count == 1:
+            handles = handles[0]
+        return Result.value(handles)
 
     def create(self, objects, under=None, count=1):
 
@@ -151,13 +170,20 @@ class MetaModel:
 
             parent = None
             if under != None:
-                ref = self.templater.get(under[4:], i)
+                ref = self.templater.get(under, i)
                 parent = self.xpath.resolveSingleObject(ref)
                 if parent == None:
-                    raise Exception("Can not find parent object %s" % ref)
+                    return Result.error("create: Can not find parent object %s" % ref)
 
-            handles[i] = self.createObject(self.templater.get(objects, i), parent)
-        return handles
+            r = self.createObject(self.templater.get(objects, i), parent)
+            if r.isError():
+                return r
+
+            handles[i] = r.val
+
+        if count == 1:
+            handles = handles[0]
+        return Result.value(handles)
 
     def perform(self, command, properties, count=1):
 
@@ -167,18 +193,26 @@ class MetaModel:
             props = self.templater.get(properties, i)
             if command == "DeviceCreate":
                 props["name"] = name
-            handles[i] = self.performConfig(command, props)
+            r = self.performConfig(command, props)
+            if r.isError():
+                return r
 
-        return handles
+            handles[i] = r.val
 
-    def wait(self, obj, until, timeout=60, count=1):
+        if count == 1:
+            handles = handles[0]
+        return Result.value(handles)
 
-        allhandles = self._getAllHandles(obj, count)
+    def wait(self, objects, until, timeout=60, count=1):
+
+        allhandles = self._getAllHandles(objects, count)
+        if allhandles.isError():
+            return allhandles
 
         start = time.time()
         while time.time() - start < timeout:
             failed = 0
-            for handle in allhandles:
+            for handle in allhandles.val:
                 # Evaluate the condition
                 if not self.evaluateCondition(handle, until):
                     failed += 1
@@ -192,30 +226,38 @@ class MetaModel:
 
         return allhandles
 
-    def get(self, obj, count=1):
+    def get(self, objects, count=1):
 
-        allhandles = self._getAllHandles(obj, count)
+        allhandles = self._getAllHandles(objects, count)
+        if allhandles.isError():
+            return allhandles
 
         handles = {}
-        for handle in allhandles:
+        for handle in allhandles.val:
             obj = self.rest.get(handle)
             handles[handle] = obj
 
-        return handles
+        return Result.value(handles)
 
-    def _getAllHandles(self, obj, count=1):
+    def _getAllHandles(self, objects, count=1):
+        if not type(objects) is list:
+            objects = [objects]
+        log.debug("Get all handles %s/%d" % (objects, count))
+
         allhandles = []
         for i in range(0, count):
-            ref = self.templater.get(obj[4:], i)
-            handles = self.xpath.resolveHandles(ref)
-            if handles == None:
-                raise Exception("Failed to resolve: %s [%s]" % (ref, obj))
-            allhandles += handles
+            for obj in objects:
+                ref = self.templater.get(obj, i)
+                log.debug("Get all handles [%d/%d] -> %s" % (i, count, ref))
+                handles = self.xpath.resolveHandles(ref)
+                if handles == None:
+                    return Result.error(self.rest.errorInfo)
+                allhandles += handles
 
         if len(allhandles) == 0:
-            raise Exception("Can not find any object for %s" % ref)
+            return Result.error("Can not find any object matching %s (count=%d)" % (obj, count))
 
-        return allhandles
+        return Result.value(allhandles)
 
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
@@ -249,32 +291,36 @@ class MetaModel:
 
             val = props[key]
             if type(val) is str and val[0:4] == "ref:":
-                handles = self.xpath.resolveHandles(val[4:])
+                handles = self.xpath.resolveHandles(val)
                 if handles == None:
-                    raise Exception("Failed to resolve: %s" % val)
+                    return result.Error("Failed to resolve: %s" % val)
                 val = " ".join(handles)
             params[key] = val
 
         result = self.rest.perform(command, params)
+        if result == None:
+            return Result.error(self.rest.errorInfo)
+
         if command != "DeviceCreate" or not ("name" in props):
-            return result
+            return Result.value(result)
 
         if not "ReturnList" in result or result["ReturnList"] == None:
-            print("No handles returned!")
-            return None
+            return Result.value("No handles returned!")
 
         handles = result["ReturnList"].split(" ")
         print("There are %d handles to configure" % len(handles))
+
         for i in range(len(handles)):
             handle = handles[i]
             attributes = {"name": self.templater.get(props["name"], i)}
-            self.rest.config(handle, attributes)
-            # Add the new object to the internal data model
+            if not self.rest.config(handle, attributes):
+                return Result.error(self.rest.errorInfo)
 
+            # Add the new object to the internal data model
             attributes["object_type"] = "EmulatedDevice"
             self.datamodel.insert(handle, attributes, self.datamodel.root["project1"])
 
-        return handles
+        return Result.value(handles)
 
         # self.datamodel.dump()
 
@@ -316,10 +362,10 @@ class MetaModel:
 
                 val = props[key]
                 if type(val) is str and val[0:4] == "ref:":
-                    handles = self.xpath.resolveHandles(val[4:])
+                    handles = self.xpath.resolveHandles(val)
                     if handles == None:
                         log.info("reference \033[92m%s\033[0m is not resolved yet" % (val))
-                        references[key] = val[4:]
+                        references[key] = val
                         continue
                     log.info("reference \033[92m%s\033[0m resolved to %s" % (val, handles))
                     val = " ".join(handles)
@@ -334,6 +380,8 @@ class MetaModel:
                 fparams = {key: value for (key, value) in params.items() if key.find(".object_type") < 0}
                 # print("Creating",json.dumps(fparams,indent=4))
                 handle = self.rest.create(obj["type"], fparams)
+                if handle == None:
+                    return Result.error(self.rest.errorInfo)
 
                 params["object_type"] = obj["type"]
                 newObject = self.datamodel.insert(handle, params, under)
@@ -344,11 +392,16 @@ class MetaModel:
                 obj["object"] = newObject
                 obj["under"] = under
 
+                if obj["type"].lower() == "port" and "name" in params and "location" in params:
+                    print("Port %s created with location %s -> handle %s" %
+                          (Color.green(params["name"]), Color.green(params["location"]), Color.blue(handle)))
+
             else:
 
                 # Remove the "object_type" property has it can fail
                 fparams = {key: value for (key, value) in params.items() if key.find("object_type") < 0}
-                handle = self.rest.config(parent.handle, fparams)
+                if not self.rest.config(parent.handle, fparams):
+                    return Result.error(self.rest.errorInfo)
                 obj["object"] = parent
 
         # print("children:", json.dumps(obj["children"], indent=4))
@@ -405,9 +458,11 @@ class MetaModel:
                 log.info("Reference '\033[92m%s\033[0m' resolved to %s" % (val, handles))
 
             if config != {}:
-                self.rest.config(obj["object"].handle, config)
+                if not self.rest.config(obj["object"].handle, config):
+                    return Result.error(self.rest.errorInfo)
 
         handles = []
         for obj in tree.objects:
             handles.append(obj["object"].handle)
-        return handles
+
+        return Result.value(handles)

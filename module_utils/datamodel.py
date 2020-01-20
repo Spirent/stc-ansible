@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-17 04:59:53
+# @Last Modified time: 2020-01-20 12:15:38
 
 try:
     from ansible.module_utils.logger import Logger
@@ -42,7 +42,6 @@ class DataModel:
         project = ObjectModel("project1", {}, None)
         self.root["project1"] = project
 
-
     def unserialize(self):
         self.root = {}
         try:
@@ -72,6 +71,10 @@ class DataModel:
             if "project1" in self.root:
                 data["model"] = self.root["project1"].serialize()
             json.dump(data, outfile, indent=4)
+
+    def tree(self):
+
+        return root["project1"].serialize()
 
     def dump(self, node=None, level=0):
 

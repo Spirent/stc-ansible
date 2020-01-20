@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-15 15:18:22
+# @Last Modified time: 2020-01-19 23:34:38
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -85,12 +85,12 @@ class StcRest:
         if rsp.status_code == 200 or rsp.status_code == 204:
             self.errorInfo = None
             log.info("CONFIG %s %s -> %s" % (url, json.dumps(params, indent=4), rsp.content))
-            return None
+            return True
 
         self.errorInfo = "config failed\n - url:%s\n - code:%d\n - response:%s\n - params:%s\n - session:%s!" % (
             url, rsp.status_code, rsp.content, params, self.session)
         log.error("CONFIG " + self.errorInfo)
-        raise Exception(self.errorInfo)
+        return False
 
     def create(self, object_type, params={}):
         """ Creates an object in the data model
@@ -102,7 +102,8 @@ class StcRest:
         params["object_type"] = object_type
         result = self._post("objects", params)
         if result == None or (not "handle" in result) or result["handle"] == None:
-            raise Exception("Failed to create object: " + self.errorInfo)
+            # raise Exception("Failed to create object: " + self.errorInfo)
+            return None
         return result["handle"]
 
     def perform(self, command, params={}):
@@ -120,7 +121,8 @@ class StcRest:
         params["command"] = command
         res = self._post("perform", params)
         if res == None:
-            raise Exception(self.errorInfo)
+            return None
+            # raise Exception(self.errorInfo)
         return res
 
     def delete(self, object_handle):

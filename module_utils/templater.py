@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-17 18:26:49
+# @Last Modified time: 2020-01-20 00:04:04
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -58,12 +58,11 @@ class Templater:
 
         value = value.replace("$item", str(index))
 
-        matches = re.findall(r"\${(.*?item.*?)}", value)
+        matches = re.findall(r"(\${(.*?((\bchassis\b)|(\bitem\b)).*?)})", value)
         for match in matches:
-            key = "${" + match + "}"
-            val = eval(match, {"item": index, "math": math, "chassis":self.datamodel.chassis})
-            # print(index,">>>",key,val)
-            value = value.replace(key, str(val))
+            key = match[0]
+            val = eval(match[1], {"item": index, "math": math, "chassis": BoundedArray(self.datamodel.chassis)})
+            value = value.replace(match[0], str(val))
 
         if value.find("${chassis-item}") >= 0:
             chassis = self.datamodel.getChassis(index)
@@ -85,3 +84,14 @@ class Templater:
 
         # print(value)
         return value
+
+
+class BoundedArray:
+
+    def __init__(self, l):
+        self.l = l
+
+    def __getitem__(self, index):
+        if index < len(self.l):
+            return self.l[index]
+        return "(no chassis [" + str(index) + "])"

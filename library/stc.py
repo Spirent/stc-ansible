@@ -2,11 +2,12 @@
 # @Author: rjezequel
 # @Date:   2019-12-18 10:08:41
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-15 15:20:34
+# @Last Modified time: 2020-01-20 12:15:37
 
 from ansible.module_utils.basic import *
 from ansible.module_utils.logger import Logger
 from ansible.module_utils.metamodel import MetaModel
+import traceback
 
 
 def main():
@@ -83,12 +84,27 @@ def main():
         mm = MetaModel()
         result = mm.action(module.params)
         mm.serialize()
-        module.exit_json(changed=False, meta=result)
+
+        if result.isError():
+
+            model = None
+            try:
+                model = mm.datamodel.tree()
+            except:
+                pass
+
+            module.fail_json(msg=str(result.err).split("\n"), logs=Logger.logs, model=model)
+
+        else:
+            module.exit_json(changed=True, result=result.val, logs=Logger.logs)
 
     except Exception as error:
-        log.error("Exception %s",error)
-        print("Oooops...", error)
-        module.fail_json(msg=error)
+
+        log.error("Exception %s" % error)
+        module.fail_json(msg="Oh no! Exception thrown...",
+                         result=str(error).split("\n"),
+                         trace=traceback.format_exc().split("\n"),
+                         logs=Logger.logs)
         return
 
 
