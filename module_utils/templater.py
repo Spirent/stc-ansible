@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-20 00:04:04
+# @Last Modified time: 2020-01-20 12:38:25
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -71,18 +71,6 @@ class Templater:
                 chassis = "(Offline)"
             value = value.replace("${chassis-item}", chassis)
 
-        elif value.find("${chassis-") >= 0:
-
-            match = re.findall(r"\${chassis-([0-9]*)}", value)
-            if len(match) > 0:
-                index = match[0]
-                chassis = self.datamodel.getChassis(int(index) - 1)
-                if chassis == None:
-                    print("Can not get chassis %s" % (index))
-                    chassis = "(Offline)"
-                value = value.replace("${chassis-" + index + "}", chassis)
-
-        # print(value)
         return value
 
 

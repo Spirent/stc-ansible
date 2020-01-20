@@ -22,11 +22,11 @@
     objects: 
       - project: 
           - port: 
-              location: "//${chassis-1}/1/1"
+              location: "//${chassis[0]}/1/1"
               name: Port1
 
           - port: 
-              location: "//${chassis-2}/1/1"
+              location: "//${chassis[1]}/1/1"
               name: Port2
 
 -

@@ -19,7 +19,7 @@
     objects: 
       - project: 
           - port: 
-              location: "//${chassis-0}/1/1"
+              location: "//${chassis[0]}/1/1"
               name: Port1
               PppoxPortConfig:
                 EmulationType: Client
@@ -28,7 +28,7 @@
                 ConnectRate: 1000
 
           - port: 
-              location: "//${chassis-1}/1/1"
+              location: "//${chassis[1]}/1/1"
               name: Port2
               PppoxPortConfig:
                 EmulationType: Server
