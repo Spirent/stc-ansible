@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 19:34:10
+# @Last Modified time: 2020-01-23 10:31:40
 
 try:
     from ansible.module_utils.templater import Templater
@@ -348,7 +348,7 @@ class MetaModel:
             if type(val) is str and val[0:4] == "ref:":
                 objects = self.xpath.resolveObjects(val)
                 if objects == None:
-                    return result.Error("Failed to resolve: %s" % val)
+                    return Result.error("Failed to resolve: %s" % val)
                 val = " ".join(objects.handles())
             params[key] = val
 

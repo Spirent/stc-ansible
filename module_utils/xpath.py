@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 23:08:06
+# @Last Modified time: 2020-01-22 23:54:16
 
 try:
     from ansible.module_utils.logger import Logger
@@ -168,7 +168,7 @@ class Selector:
     def __init__(self, element):
 
         #a[contains(@href, '://')]
-        match = re.findall("(\\w+|\\*)\\s*(\\[.*\\])?", element)
+        match = re.findall("^(\\w+|\\*)\\s*(\\[.*\\])?\\s*$", element)
         if len(match) != 1:
             raise Exception("[xpath] Syntax error with selector '%s'" % element)
 
@@ -216,6 +216,9 @@ class Selector:
     def filterNodes(self, nodes):
 
         selection = []
+
+        # log.debug("Selector: filtering %s" % [str(n) for n in nodes])
+
         for node in nodes:
 
             for node in node.children.values():
@@ -232,9 +235,11 @@ class Selector:
 
                 selection.append(node)
 
+        # log.debug("Selector: candidates are %s" % [str(n) for n in selection])
+
         for selector in self.selectors:
 
-            nodes = []
+            # oselection = selection
             if selector["type"] == Selector.indexing:
                 idx = selector["val"]
                 if idx < len(selection) and idx >= 0:
@@ -244,7 +249,7 @@ class Selector:
             else:
                 selection = [node for node in selection if self.checkSelector(selector, node)]
 
-            log.debug("Selector %s -> %s" % (selector, selection))
+            # log.debug("Selector: %s: %s -> %s" % (selector, oselection, selection))
 
         return selection
 
@@ -275,4 +280,5 @@ class Selector:
 
             isValid = (value.find(selectorValue) == 0)
 
+        # log.debug("Node %s: %s (%s/%s)"%(node,isValid, value, selectorValue))
         return isValid

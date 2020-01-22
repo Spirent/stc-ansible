@@ -2,10 +2,11 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 23:08:33
+# @Last Modified time: 2020-01-22 23:53:45
 
 from module_utils.datamodel import DataModel
 from module_utils.xpath import NodeSelector, Linker, Selector
+import pytest
 
 
 class TestSelector:
@@ -207,3 +208,9 @@ class TestLinker:
         linker = Linker(self.createModel())
         nodes = linker._resolve("/port/*[@name *= dev][0]/ipv4if")
         assert nodes.count() == 1
+
+    def test10a(self):
+        # Syntax error
+        linker = Linker(self.createModel())
+        with pytest.raises(Exception):
+            assert linker._resolve("/port/emulateddevice[@name *= 'dev']'/ipv4if")

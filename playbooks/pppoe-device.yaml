@@ -126,8 +126,8 @@
   stc: 
     action: perform
     command: PppoxConnect
-    properties: 
-      BlockList: ref:/EmulatedDevice[@Name='PPPoE Server]'/PppoeServerBlockConfig
+    properties:
+      BlockList: ref:/EmulatedDevice[@Name='PPPoE Server']/PppoeServerBlockConfig
 
 
 -
