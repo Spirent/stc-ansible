@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 10:43:32
+# @Last Modified time: 2020-01-22 12:25:52
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -28,24 +28,47 @@ class StcRest:
         self.session = session
         self.errorInfo = None
 
-    def new_session(self, user_name, session_name):
+    def new_session(self, user_name, session_name, reset_existing=True, kill_existing=False):
+
+        url = "http://" + self.server + "/stcapi/system"
+        systemInfo = json.loads(requests.get(url, headers={'Accept': 'application/json'}).content)
+        log.info("SYSTEM %s -> %s" % (url, json.dumps(systemInfo, indent=4)))
 
         url = "http://" + self.server + "/stcapi/sessions"
-        params = {'userid': user_name, 'sessionname': session_name}
-        rsp = requests.post(url, headers={'Accept': 'application/json'}, data=params, timeout=60 * 2)
-        log.info("SESSION %s %s -> %s" % (url, json.dumps(params, indent=4), rsp.content))
+        existingSessions = json.loads(requests.get(url, headers={'Accept': 'application/json'}).content)
+        log.info("SESSIONS %s -> %s" % (url, json.dumps(existingSessions, indent=4)))
 
-        if rsp.status_code == 409 or rsp.status_code == 200 or rsp.status_code == 201:
-            self.session = session_name + " - " + user_name
-            if not self.perform("ResetConfig"):
-                log.error("SESSION: failed to reset the session")
+        newSession = True
+        sessionID = session_name + " - " + user_name
+        if sessionID in existingSessions:
+            if kill_existing:
+                log.info("Killing the session first")
+                rsp = requests.delete(url+"/"+sessionID, headers={'Accept': 'application/json'}, params="kill")
+                log.info("KILL SESSION -> [%d] %s" % (rsp.status_code, rsp.content))
+            else:
+                log.info("Session already exists... Skipping creation")
+                newSession= False
+
+        if newSession:
+            log.info("Creating the session now...")
+            params = {'userid': user_name, 'sessionname': session_name}
+            rsp = requests.post(url, headers={'Accept': 'application/json'}, data=params, timeout=60 * 2)
+            log.info("SESSION %s %s -> [%d] %s" % (url, json.dumps(params, indent=4), rsp.status_code, rsp.content))
+
+            if rsp.status_code != 409 and rsp.status_code != 200 and rsp.status_code != 201:
+                log.error("Failed to create a session: %s %s" %(rsp))
                 return False
 
-            return True
 
-        print(">>>", rsp.content, "|", rsp)
-        return False
-        # raise Exception("Failed to create session: " + str(rsp.content))
+        self.session = sessionID
+        if reset_existing and newSession and not self.perform("ResetConfig"):
+            log.error("SESSION: failed to reset the session")
+            return False
+
+        version = self.get("system1",["Version"])
+        log.info("SERVER VERSION: %s" % version)
+        return True
+
 
     def connect(self, chassis_list):
         params = {chassis: True for chassis in chassis_list}

@@ -80,6 +80,8 @@ The first task of the playbook must be to attach to an STC session:
     name: datamodel-loader
 ```
 
+There are two optional parameters: `kill_existing` and `reset_existing`: If the session already exists on the server, it will respectively be first killed, or reset (using the _ResetConfig_ command)
+
 ### Create a Few Ports
 
 You can then declare your own emulated device:

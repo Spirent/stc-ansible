@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-21 23:19:12
+# @Last Modified time: 2020-01-22 12:23:53
 
 try:
     from ansible.module_utils.templater import Templater
@@ -54,7 +54,9 @@ class MetaModel:
             print(">>> new session <<< user:%s name:%s chassis:%s" %
                   (Color.blue(params["user"]), Color.blue(params["name"]), Color.green(str(chassis))))
 
-            result = self.new_session(params["user"], params["name"], chassis.split(" "))
+            reset_existing  = ("reset_existing" in params and params["kill_existing"]) or True
+            kill_existing  = "kill_existing" in params and params["kill_existing"]
+            result = self.new_session(params["user"], params["name"], chassis.split(" "),reset_existing,kill_existing)
 
         elif action == "create":
 
@@ -118,13 +120,14 @@ class MetaModel:
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
 
-    def new_session(self, user_name, session_name, chassis=[]):
+    def new_session(self, user_name, session_name, chassis=[], reset_existing=True, kill_existing=False):
+
         self.datamodel.new(session_name + " - " + user_name, chassis),
-        if not self.rest.new_session(user_name, session_name):
-            return Result.error("Failed to create a session: " + self.rest.errorInfo)
+        if not self.rest.new_session(user_name, session_name,reset_existing,kill_existing):
+            return Result.error("Failed to create a session: %s" % self.rest.errorInfo)
 
         if not self.rest.connect(chassis):
-            return Result.error("Failed to connect to the chassis: " + self.rest.errorInfo)
+            return Result.error("Failed to connect to the chassis: %s" % self.rest.errorInfo)
 
         return Result.value(1)
 

@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-18 10:08:41
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-20 12:15:37
+# @Last Modified time: 2020-01-22 12:20:56
 
 from ansible.module_utils.basic import *
 from ansible.module_utils.logger import Logger
@@ -58,6 +58,14 @@ def main():
             "required": False,
             "type": "str"
         },
+        "reset_existing": {
+            "required": False,
+            "type": "bool"
+        },
+        "kill_existing": {
+            "required": False,
+            "type": "bool"
+        },
 
         # perform
         "command": {
@@ -87,11 +95,10 @@ def main():
 
         if result.isError():
 
-            model = None
             try:
                 model = mm.datamodel.tree()
             except:
-                pass
+                model = None
 
             module.fail_json(msg=str(result.err).split("\n"), logs=Logger.logs, model=model)
 
