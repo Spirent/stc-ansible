@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 14:24:34
+# @Last Modified time: 2020-01-22 16:56:04
 
 try:
     from ansible.module_utils.templater import Templater
@@ -97,6 +97,17 @@ class MetaModel:
                 return Result.error("No object specified for the get actions: %s" % params)
 
             result = self.get(objects, count=count)
+
+        elif action == "delete":
+
+            objects = params["objects"] if "objects" in params else None
+            if objects == None and "object" in params:
+                objects = params["object"]
+            if objects == None:
+                log.error("No object specified tor get actions: %s" % params)
+                return Result.error("No object specified for the get actions: %s" % params)
+
+            result = self.delete(objects, count=count)
 
         elif action == "load":
 
@@ -228,18 +239,34 @@ class MetaModel:
             handles = handles[0]
         return Result.value(handles)
 
+    def delete(self, objects, count=1):
+
+        nodes = self._getnodes(objects, count)
+        if nodes.isError():
+            return nodes
+
+        handles = []
+        for node in nodes.val:
+            if not self.rest.delete(node.handle):
+                return Result.error(self.rest.errorInfo)
+
+            self.datamodel.deleteNode(node)
+            handles.append(node.handle)
+
+        return Result.value(handles)
+
     def wait(self, objects, until, timeout=60, count=1):
 
-        allhandles = self._getAllHandles(objects, count)
-        if allhandles.isError():
-            return allhandles
+        nodes = self._getnodes(objects, count)
+        if nodes.isError():
+            return nodes
 
         start = time.time()
         while time.time() - start < timeout:
             failed = 0
-            for handle in allhandles.val:
+            for node in nodes.val:
                 # Evaluate the condition
-                if not self.evaluateCondition(handle, until):
+                if not self.evaluateCondition(node.handle, until):
                     failed += 1
                     pass
             if failed == 0:
@@ -249,39 +276,39 @@ class MetaModel:
         if failed > 0:
             raise Exception("[wait] failed on condition %s" % until)
 
-        return allhandles
+        return [n.handle for n in nodes]
 
     def get(self, objects, count=1):
 
-        allhandles = self._getAllHandles(objects, count)
-        if allhandles.isError():
-            return allhandles
+        nodes = self._getnodes(objects, count)
+        if nodes.isError():
+            return nodes
 
         handles = {}
-        for handle in allhandles.val:
-            obj = self.rest.get(handle)
-            handles[handle] = obj
+        for node in nodes.val:
+            obj = self.rest.get(node.handle)
+            handles[node.handle] = obj
 
         return Result.value(handles)
 
-    def _getAllHandles(self, objects, count=1):
+    def _getnodes(self, objects, count=1):
         if not type(objects) is list:
             objects = [objects]
         log.debug("Get all handles %s/%d" % (objects, count))
 
-        allhandles = []
+        nodes = []
         for i in range(0, count):
             for obj in objects:
                 ref = self.templater.get(obj, i)
-                handles = self.xpath.resolveHandles(ref)
-                log.debug("Get all handles [%d/%d] -> %s -> %s" % (i, count, ref, handles))
-                if handles != None:
-                    allhandles += handles
+                selection = self.xpath.resolveObjects(ref)
+                log.debug("Get all nodes [%d/%d] -> %s -> %s" % (i, count, ref, selection))
+                if selection != None:
+                    nodes += selection.nodes
 
-        if len(allhandles) == 0:
+        if len(nodes) == 0:
             return Result.error("Can not find any object matching %s (count=%d)" % (obj, count))
 
-        return Result.value(allhandles)
+        return Result.value(nodes)
 
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
@@ -315,10 +342,10 @@ class MetaModel:
 
             val = props[key]
             if type(val) is str and val[0:4] == "ref:":
-                handles = self.xpath.resolveHandles(val)
-                if handles == None:
+                objects = self.xpath.resolveObjects(val)
+                if objects == None:
                     return result.Error("Failed to resolve: %s" % val)
-                val = " ".join(handles)
+                val = " ".join(objects.handles())
             params[key] = val
 
         result = self.rest.perform(command, params)
@@ -386,13 +413,13 @@ class MetaModel:
 
                 val = props[key]
                 if type(val) is str and val[0:4] == "ref:":
-                    handles = self.xpath.resolveHandles(val)
-                    if handles == None:
+                    objects = self.xpath.resolveObjects(val)
+                    if objects == None:
                         log.info("reference \033[92m%s\033[0m is not resolved yet" % (val))
                         references[key] = val
                         continue
-                    log.info("reference \033[92m%s\033[0m resolved to %s" % (val, handles))
-                    val = " ".join(handles)
+                    log.info("reference \033[92m%s\033[0m resolved to %s" % (val, objects))
+                    val = " ".join(objects.handles())
 
                 params[key] = val
 
@@ -473,13 +500,13 @@ class MetaModel:
             for key in refs.keys():
 
                 val = refs[key]
-                handles = self.xpath.resolveHandles(val, obj["object"])
-                if handles == None:
+                objects = self.xpath.resolveObjects(val, obj["object"])
+                if objects == None:
                     log.error("Failed to resolve '\033[91m%s\033[0m' for property %s in %s" % (val, key, obj["object"]))
                     continue
 
-                config[key] = " ".join(handles)
-                log.info("Reference '\033[92m%s\033[0m' resolved to %s" % (val, handles))
+                config[key] = " ".join(objects.handles())
+                log.info("Reference '\033[92m%s\033[0m' resolved to %s" % (val, objects))
 
             if config != {}:
                 if not self.rest.config(obj["object"].handle, config):

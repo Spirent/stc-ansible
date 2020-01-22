@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-20 12:31:51
+# @Last Modified time: 2020-01-22 16:27:43
 
 try:
     from ansible.module_utils.logger import Logger
@@ -34,11 +34,11 @@ class Linker:
 
         return selection.firstNode()
 
-    def resolveHandles(self, ref, current=None):
+    def resolveObjects(self, ref, current=None):
         selection = self._resolve(ref, current)
         if selection == None or selection.count() == 0:
             return None
-        return selection.handles()
+        return selection
 
     def _resolve(self, ref, current=None):
 

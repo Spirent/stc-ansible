@@ -1,0 +1,35 @@
+
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: delete_object
+    kill_existing: true
+
+- 
+  name: Create the base ports
+  stc: 
+    action: create
+    objects: 
+      - project: 
+          - port: 
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+
+          - port: 
+              location: "//${chassis[1]}/1/1"
+              name: Port2
+
+- 
+  name: Delete port1
+  stc: 
+    action: delete
+    object: "ref:/port[name=Port1]" 
+
+- 
+  name: Get ports
+  stc: 
+    action: get
+    object: "ref:/port" 

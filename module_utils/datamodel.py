@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-20 12:15:38
+# @Last Modified time: 2020-01-22 16:47:05
 
 try:
     from ansible.module_utils.logger import Logger
@@ -106,6 +106,11 @@ class DataModel:
         log.info("[data-model] Inserting object '%s' under %s" % (obj, parent))
 
         return obj
+
+    def deleteNode(self, node):
+
+        if node.parent != None:
+            node.parent.children.pop(node.handle)
 
 
 class ObjectModel:

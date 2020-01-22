@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 14:34:58
+# @Last Modified time: 2020-01-22 15:20:10
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -198,6 +198,7 @@ class StcRest:
         """
 
         url = "http://" + self.server + "/stcapi/objects/" + object_handle
+        log.info("DELETE %s" % (url))
         rsp = requests.delete(url,
                               headers={
                                   'Accept': 'application/json',
@@ -205,13 +206,16 @@ class StcRest:
                               },
                               timeout=60)
 
-        if rsp.status_code == 200:
+        if rsp.status_code == 200 or rsp.status_code == 204:
+            log.info("DELETE status_code: %d -> %s" % (rsp.status_code, rsp.content))
             self.errorInfo = None
-            return rsp.json()
+            return True
 
         self.errorInfo = "delete failed\n - url:%s\n - code:%d\n - response:%s\n - session:%s!" % (
             url, rsp.status_code, rsp.content, self.session)
-        raise Exception(self.errorInfo)
+
+        log.error("DELETE " + self.errorInfo)
+        return None
 
     def _post(self, container, params={}):
         url = "http://" + self.server + "/stcapi/" + container
