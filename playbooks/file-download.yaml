@@ -1,0 +1,36 @@
+
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: file_download
+
+- name: list the available files
+  register: files
+  stc:
+    action: files
+
+- debug:
+    var: files
+
+
+- name: create temporary build directory
+  register: tempfolder
+  tempfile:
+    state: directory
+    suffix: build
+
+- name: download the all the session log from STC
+  register: files
+  stc:
+     action: download
+     file: "*.log"
+     dest: "{{ tempfolder.path }}"
+
+
+- fetch: 
+    src: "{{ tempfolder.path }}/{{ item }}"
+    dest: logs/
+  with_items: "{{ files.result }}"

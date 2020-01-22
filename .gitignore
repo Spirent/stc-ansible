@@ -5,3 +5,4 @@ log
 makefile.local
 docs/*
 tests/*
+logs/*

@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 12:23:53
+# @Last Modified time: 2020-01-22 14:24:34
 
 try:
     from ansible.module_utils.templater import Templater
@@ -47,16 +47,18 @@ class MetaModel:
 
         if action == "session":
 
-            chassis = params["chassis"] if "chassis" in params else ""
-            if chassis == None:
-                chassis = ""
+            chassis = params["chassis"] if "chassis" in params else None
+            if chassis != None and chassis != "":
+                chassis = chassis.split(" ")
+            else:
+                chassis = []
 
             print(">>> new session <<< user:%s name:%s chassis:%s" %
                   (Color.blue(params["user"]), Color.blue(params["name"]), Color.green(str(chassis))))
 
-            reset_existing  = ("reset_existing" in params and params["kill_existing"]) or True
-            kill_existing  = "kill_existing" in params and params["kill_existing"]
-            result = self.new_session(params["user"], params["name"], chassis.split(" "),reset_existing,kill_existing)
+            reset_existing = ("reset_existing" in params and params["kill_existing"]) or True
+            kill_existing = "kill_existing" in params and params["kill_existing"]
+            result = self.new_session(params["user"], params["name"], chassis, reset_existing, kill_existing)
 
         elif action == "create":
 
@@ -100,6 +102,22 @@ class MetaModel:
 
             result = self.load_datamodel(params["datamodel"])
 
+        elif action == "files":
+
+            files = self.rest.files()
+            if files == None:
+                return Result.error(self.rest.errorInfo)
+            return Result.value(files)
+
+        elif action == "download":
+
+            dest = params["dest"] if "dest" in params else "/tmp"
+            files = self.rest.download(params["file"], dest)
+            if files == None:
+                return Result.error(self.rest.errorInfo)
+
+            return Result.value(files)
+
         else:
 
             log.error("Unknown action: %s" % action)
@@ -123,10 +141,10 @@ class MetaModel:
     def new_session(self, user_name, session_name, chassis=[], reset_existing=True, kill_existing=False):
 
         self.datamodel.new(session_name + " - " + user_name, chassis),
-        if not self.rest.new_session(user_name, session_name,reset_existing,kill_existing):
+        if not self.rest.new_session(user_name, session_name, reset_existing, kill_existing):
             return Result.error("Failed to create a session: %s" % self.rest.errorInfo)
 
-        if not self.rest.connect(chassis):
+        if len(chassis) > 0 and not self.rest.connect(chassis):
             return Result.error("Failed to connect to the chassis: %s" % self.rest.errorInfo)
 
         return Result.value(1)

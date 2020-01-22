@@ -2,7 +2,7 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:09:07
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-19 23:36:10
+# @Last Modified time: 2020-01-22 12:45:59
 
 import yaml
 import json
@@ -39,6 +39,9 @@ class PlaybookEmulator:
 
         pbstart = time.time()
         for task in playbook:
+
+            if not "name" in task:
+                task["name"]="???"
 
             count = 1
             if "pause" in task:
@@ -82,7 +85,10 @@ class PlaybookEmulator:
                 print("task executed in ", int(elapsed * 1000), "ms", "ms (", perobject, "ms per object)")
 
                 if "register" in task:
-                    print("Result: \033[96m" + json.dumps(result, indent=4) + "\033[0m")
+                    if type(result) is str:
+                        print("Result: \033[96m" + result + "\033[0m")
+                    else:
+                        print("Result: \033[96m" + json.dumps(result, indent=4) + "\033[0m")
 
             elif "copy" in task:
                 shutil.copyfile(task["copy"]["src"], task["copy"]["dest"])
@@ -96,17 +102,12 @@ class PlaybookEmulator:
         print("playbook executed in ", int(elapsed * 1000), "ms", "ms (", perobject, "ms per object)")
 
 
-def testPlaybooks(path, labServer, ports):
-
-    for file in glob.glob(path):
-
-        print("\n\n\n", "=" * 50, "\n\n\n")
-        testPlaybook(file, labServer, ports)
-
-
 if __name__ == "__main__":
 
     emulator = PlaybookEmulator("@bdc")
+
+    # emulator.play("./playbooks/bgp-traffic.yaml")
+
     for file in glob.glob("./playbooks/*.yaml"):
         print("\n\n%s %s %s\n\n" % (Color.blue("=" * 60), Color.bold(file), Color.blue("=" * 60)))
         emulator.play(file)
