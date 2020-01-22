@@ -12,18 +12,25 @@
     user: ansible
     name: datamodel_loader
 
+
+- name: create temporary build directory
+  register: tempfolder
+  tempfile:
+    state: directory
+    suffix: build
+
 - 
   name: Copy the data model
   copy:
     src: asset/datamodel.xml
-    dest: /tmp/datamodel.xml
+    dest: "{{ tempfolder.path }}/datamodel.xml"
 
 -
   name: Load a data model
   register: result
   stc:
     action: load
-    datamodel: /tmp/datamodel.xml
+    datamodel: "{{ tempfolder.path }}/datamodel.xml"
 
 - 
   name: Get the list of all ports
