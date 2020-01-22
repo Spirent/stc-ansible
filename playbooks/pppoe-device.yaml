@@ -157,7 +157,7 @@
 
 
 - 
-  name: Get the binding results
+  name: Get the server binding results
   register: results
   stc:
     action: get
@@ -167,3 +167,20 @@
   debug:
     var: result
 
+
+- 
+  name: Get the client binding results
+  register: results
+  stc:
+    action: get
+    object: ref:/EmulatedDevice[Name=PPPoE Client][0]/PppoeClientBlockConfig/PppoeClientBlockResults
+
+- 
+  debug:
+    var: result
+
+
+- name: Check if all client results are ok
+  fail:
+    msg: "Failed to pass the test"
+    when: results.RetryCount > 0 

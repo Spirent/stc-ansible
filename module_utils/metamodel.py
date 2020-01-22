@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 18:33:51
+# @Last Modified time: 2020-01-22 18:56:53
 
 try:
     from ansible.module_utils.templater import Templater
@@ -284,12 +284,16 @@ class MetaModel:
         if nodes.isError():
             return nodes
 
-        handles = {}
+        result = {}
+        isSingleton = len(nodes.val) == 1
         for node in nodes.val:
             obj = self.rest.get(node.handle)
-            handles[node.handle] = obj
+            if isSingleton:
+                result = obj
+            else:
+                result[node.handle] = obj
 
-        return Result.value(handles)
+        return Result.value(result)
 
     def _getnodes(self, objects, count=1):
         if not type(objects) is list:
