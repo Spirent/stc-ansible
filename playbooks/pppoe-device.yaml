@@ -4,13 +4,18 @@
 # @Last Modified by:   ronanjs
 # @Last Modified time: 2020-01-13 15:45:28
 
+- debug:
+    var: "{{ hostvars[inventory_hostname] }}"
+
+
 - 
   name: Create session
   stc: 
     action: session
     user: ansible
     name: pppoe_device
-    chassis: "{{ hostvars[groups['labservers'][0]].chassis }}"
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
 
 - 
   name: Create the base ports

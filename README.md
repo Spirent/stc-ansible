@@ -224,7 +224,7 @@ Then, when creating the session, specify the chassis property:
     action: session
     user: ansible
     name: basic_device
-    chassis: "{{ hostvars[groups['labservers'][0]].chassis }}"
+    chassis: ""{{ hostvars[inventory_hostname].chassis }}""
 ```
 
 The `{{ hostvars[groups['labservers'][0]].chassis }}` is used to reference to the chassis defined in the inventory. Alternatively, you can directly specify the chassis IP in the task, such `chassis: "10.61.67.128 10.61.67.131"`
