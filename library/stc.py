@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-18 10:08:41
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 14:17:30
+# @Last Modified time: 2020-01-22 17:52:51
 
 from ansible.module_utils.basic import *
 from ansible.module_utils.logger import Logger
@@ -60,7 +60,8 @@ def main():
         },
         "reset_existing": {
             "required": False,
-            "type": "bool"
+            "type": "bool",
+            "default": True,
         },
         "kill_existing": {
             "required": False,
@@ -83,6 +84,10 @@ def main():
         "timeout": {
             "required": False,
             "type": "int"
+        },
+        "until": {
+            "required": False,
+            "type": "str"
         },
 
         # download

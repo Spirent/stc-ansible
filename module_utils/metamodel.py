@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 17:10:59
+# @Last Modified time: 2020-01-22 18:33:51
 
 try:
     from ansible.module_utils.templater import Templater
@@ -56,8 +56,7 @@ class MetaModel:
             print(">>> new session <<< user:%s name:%s chassis:%s" %
                   (Color.blue(params["user"]), Color.blue(params["name"]), Color.green(str(chassis))))
 
-            reset_existing = (not ("reset_existing" in params)) or ("reset_existing" in params and
-                                                                    params["kill_existing"])
+            reset_existing = (not ("reset_existing" in params)) or (params["reset_existing"] == True)
             kill_existing = "kill_existing" in params and params["kill_existing"]
             result = self.new_session(params["user"], params["name"], chassis, reset_existing, kill_existing)
 
@@ -73,7 +72,7 @@ class MetaModel:
 
         elif action == "perform":
 
-            properties = params["properties"] if "properties" in params else {}
+            properties = params["properties"] if "properties" in params and params["properties"] != None else {}
             result = self.perform(params["command"], properties, count=count)
 
         elif action == "wait":
@@ -85,8 +84,8 @@ class MetaModel:
                 log.error("No object specified tor get actions: %s" % params)
                 return Result.error("No object specified for the wait actions: %s" % params)
 
-            timeout = int(params["timeout"]) if "timeout" in params else 60
-            result = self.wait(objects, params["until"], timeout=timeout, count=count)
+            timeout = params["timeout"] if "timeout" in params and params["timeout"] != None else 60
+            result = self.wait(objects, params["until"], timeout=int(timeout), count=count)
 
         elif action == "get":
 
@@ -275,7 +274,7 @@ class MetaModel:
             time.sleep(1)
 
         if failed > 0:
-            raise Exception("[wait] failed on condition %s" % until)
+            return Result.error("[wait] failed on condition %s" % until)
 
         return Result.value([n.handle for n in nodes.val])
 
