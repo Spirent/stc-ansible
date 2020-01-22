@@ -1,8 +1,8 @@
 
-play: yapf
+play:
 	ansible-playbook main.yaml
 
-debug: yapf
+debug:
 	ansible-playbook main.yaml -vvvv
 
 unittest: yapf
