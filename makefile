@@ -1,11 +1,11 @@
 
-play:
+play: yapf
 	ansible-playbook main.yaml
 
-debug:
+debug: yapf
 	ansible-playbook main.yaml -vvvv
 
-unittest: 
+unittest: yapf
 	pytest
 
 test: yapf
