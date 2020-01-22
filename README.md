@@ -219,7 +219,7 @@ Then, when creating the session, specify the chassis property:
   stc: 
     action: session
     user: ansible
-    name: basic-device
+    name: basic_device
     chassis: "{{ hostvars[groups['labservers'][0]].chassis }}"
 ```
 

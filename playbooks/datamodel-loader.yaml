@@ -10,7 +10,7 @@
   stc: 
     action: session
     user: ansible
-    name: datamodel-loader
+    name: datamodel_loader
 
 - 
   name: Copy the data model

@@ -9,7 +9,7 @@
   stc: 
     action: session
     user: ansible
-    name: pppoe-device
+    name: pppoe_device
     chassis: "{{ hostvars[groups['labservers'][0]].chassis }}"
 
 - 

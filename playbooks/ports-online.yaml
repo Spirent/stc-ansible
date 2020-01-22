@@ -3,7 +3,7 @@
   stc: 
     action: session
     user: ansible
-    name: ports-online
+    name: ports_online
 
 -
   name: Create the base ports

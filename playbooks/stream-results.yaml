@@ -9,7 +9,7 @@
   stc: 
     action: session
     user: ansible
-    name: stream-results
+    name: stream_results
 
 - 
   name: Create 2 base ports

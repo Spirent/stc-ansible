@@ -9,7 +9,7 @@
   stc: 
     action: session
     user: ansible
-    name: stream-mesh
+    name: stream_mesh
 
 - 
   name: Create 5 base ports
