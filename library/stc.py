@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-18 10:08:41
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 12:51:23
+# @Last Modified time: 2020-01-22 14:17:30
 
 from ansible.module_utils.basic import *
 from ansible.module_utils.logger import Logger
@@ -87,6 +87,10 @@ def main():
 
         # download
         "file": {
+            "required": False,
+            "type": "str"
+        },
+        "dest": {
             "required": False,
             "type": "str"
         },
