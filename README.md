@@ -56,7 +56,7 @@ If you want to use the STC module outside of this direction, you will need to co
 
 ### Basic STC Ansible Actions
 
-The `stc` Ansible module makes it possible to execute one of the following seven actions:
+The `stc` Ansible module makes it possible to execute one of the following 8 actions:
 
 | action      | description                                                                                                                                                                                                                  |
 | -------     | -------------                                                                                                                                                                                                                |
@@ -65,8 +65,9 @@ The `stc` Ansible module makes it possible to execute one of the following seven
 | create      | Creates a new object in the data model.                                                                                                                                                                                      |
 | config      | Configures an existing object in the data model.                                                                                                                                                                             |
 | perform     | Perform a command against the data model.                                                                                                                                                                                    |
-| get         | Returns the value of a given attribute of one or more objects - this can be used for instance to check results                                                                                                  |
-| wait        | Waits for one of several object attribute to become a specific value (eg wait for the attritube `BlockState` of the PPPoE object `PppoeClientBlockConfig` to become `CONNECTING` )                                           |
+| get         | Returns the value of a given attribute of one or more objects - this can be used for instance to check results                                                                                                   |
+| wait        | Waits for one of several object attribute to become a specific value (eg wait for the attritube `BlockState` of the PPPoE object `PppoeClientBlockConfig` to become `CONNECTING` )                                        |
+| download     | Download files such as _bll.log_, _bll.session.log_, etc...                              |
 
 ### Attach to a Session
 
