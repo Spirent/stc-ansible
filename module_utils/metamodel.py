@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 16:56:04
+# @Last Modified time: 2020-01-22 17:10:59
 
 try:
     from ansible.module_utils.templater import Templater
@@ -56,7 +56,8 @@ class MetaModel:
             print(">>> new session <<< user:%s name:%s chassis:%s" %
                   (Color.blue(params["user"]), Color.blue(params["name"]), Color.green(str(chassis))))
 
-            reset_existing = ("reset_existing" in params and params["kill_existing"]) or True
+            reset_existing = (not ("reset_existing" in params)) or ("reset_existing" in params and
+                                                                    params["kill_existing"])
             kill_existing = "kill_existing" in params and params["kill_existing"]
             result = self.new_session(params["user"], params["name"], chassis, reset_existing, kill_existing)
 
@@ -276,7 +277,7 @@ class MetaModel:
         if failed > 0:
             raise Exception("[wait] failed on condition %s" % until)
 
-        return [n.handle for n in nodes]
+        return Result.value([n.handle for n in nodes.val])
 
     def get(self, objects, count=1):
 

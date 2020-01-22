@@ -2,7 +2,7 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:09:07
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 12:45:59
+# @Last Modified time: 2020-01-22 17:21:04
 
 import yaml
 import json
@@ -41,7 +41,7 @@ class PlaybookEmulator:
         for task in playbook:
 
             if not "name" in task:
-                task["name"]="???"
+                task["name"] = "???"
 
             count = 1
             if "pause" in task:
@@ -66,6 +66,9 @@ class PlaybookEmulator:
                 if task["stc"]["action"] == "session" and len(self.chassis) > 0:
                     print("[emulator] Overwritting Chassis with %s" % self.chassis)
                     task["stc"]["chassis"] = " ".join(self.chassis)
+
+                if "dest" in task["stc"]:
+                    task["stc"]["dest"] = task["stc"]["dest"].replace("{{ tempfolder.path }}", "/tmp")
 
                 result = model.action(task["stc"])
 

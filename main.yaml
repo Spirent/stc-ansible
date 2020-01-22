@@ -18,4 +18,8 @@
     - name: Create a few PPPoE device
       include_tasks: playbooks/pppoe-device.yaml
 
+    - name: Deletes an object
+      include_tasks: playbooks/delete-object.yaml
 
+    - name: Download log files
+      include_tasks: playbooks/download-files.yaml

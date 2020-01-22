@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 15:20:10
+# @Last Modified time: 2020-01-22 17:09:50
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -60,7 +60,7 @@ class StcRest:
                 return False
 
         self.session = sessionID
-        if reset_existing and newSession and not self.perform("ResetConfig"):
+        if reset_existing and not newSession and not self.perform("ResetConfig"):
             log.error("SESSION: failed to reset the session")
             return False
 
