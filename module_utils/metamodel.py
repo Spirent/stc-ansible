@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 18:56:53
+# @Last Modified time: 2020-01-22 19:34:10
 
 try:
     from ansible.module_utils.templater import Templater
@@ -53,8 +53,8 @@ class MetaModel:
             else:
                 chassis = []
 
-            print(">>> new session <<< user:%s name:%s chassis:%s" %
-                  (Color.blue(params["user"]), Color.blue(params["name"]), Color.green(str(chassis))))
+            # print(">>> new session <<< user:%s name:%s chassis:%s" %
+            #       (Color.blue(params["user"]), Color.blue(params["name"]), Color.green(str(chassis))))
 
             reset_existing = (not ("reset_existing" in params)) or (params["reset_existing"] == True)
             kill_existing = "kill_existing" in params and params["kill_existing"]
@@ -332,7 +332,7 @@ class MetaModel:
             raise Exception("Object %s does not have any property %s" % (obj, key))
 
         name = (" (" + obj["name"] + ")") if "name" in obj else ""
-        print("[evaluate] handle %s%s key %s val %s expected %s" % (handle, name, key, obj[key], val))
+        log.info("[evaluate] handle %s%s key %s val %s expected %s" % (handle, name, key, obj[key], val))
         return obj[key] == val
 
     # --------------------------------------------------------------------
@@ -363,7 +363,7 @@ class MetaModel:
             return Result.value("No handles returned!")
 
         handles = result["ReturnList"].split(" ")
-        print("There are %d handles to configure" % len(handles))
+        log.info("There are %d handles to configure" % len(handles))
 
         for i in range(len(handles)):
             handle = handles[i]
@@ -448,8 +448,8 @@ class MetaModel:
                 obj["under"] = under
 
                 if obj["type"].lower() == "port" and "name" in params and "location" in params:
-                    print("Port %s created with location %s -> handle %s" %
-                          (Color.green(params["name"]), Color.green(params["location"]), Color.blue(handle)))
+                    log.info("Port %s created with location %s -> handle %s" %
+                             (Color.green(params["name"]), Color.green(params["location"]), Color.blue(handle)))
 
             else:
 
