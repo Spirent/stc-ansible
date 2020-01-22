@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-19 23:34:38
+# @Last Modified time: 2020-01-22 10:43:32
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -33,21 +33,25 @@ class StcRest:
         url = "http://" + self.server + "/stcapi/sessions"
         params = {'userid': user_name, 'sessionname': session_name}
         rsp = requests.post(url, headers={'Accept': 'application/json'}, data=params, timeout=60 * 2)
+        log.info("SESSION %s %s -> %s" % (url, json.dumps(params, indent=4), rsp.content))
+
         if rsp.status_code == 409 or rsp.status_code == 200 or rsp.status_code == 201:
             self.session = session_name + " - " + user_name
-            self.perform("ResetConfig")
-            return None
+            if not self.perform("ResetConfig"):
+                log.error("SESSION: failed to reset the session")
+                return False
+
+            return True
+
         print(">>>", rsp.content, "|", rsp)
-        raise Exception("Failed to create session: " + str(rsp.content))
+        return False
+        # raise Exception("Failed to create session: " + str(rsp.content))
 
     def connect(self, chassis_list):
         params = {chassis: True for chassis in chassis_list}
         params['action'] = 'connect'
         result = self._post("connections", params)
-        if result == None:
-            raise Exception("Failed to connect to the chassis: " + self.errorInfo)
-        # print("Connection", result, "<", params)
-        return True
+        return result != None
 
     def get(self, handle, properties=[]):
         container = "objects/" + handle

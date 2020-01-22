@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-20 13:06:33
+# @Last Modified time: 2020-01-21 23:19:12
 
 try:
     from ansible.module_utils.templater import Templater
@@ -55,7 +55,6 @@ class MetaModel:
                   (Color.blue(params["user"]), Color.blue(params["name"]), Color.green(str(chassis))))
 
             result = self.new_session(params["user"], params["name"], chassis.split(" "))
-            result = Result.value(result)
 
         elif action == "create":
 
@@ -121,8 +120,13 @@ class MetaModel:
 
     def new_session(self, user_name, session_name, chassis=[]):
         self.datamodel.new(session_name + " - " + user_name, chassis),
-        self.rest.new_session(user_name, session_name)
-        self.rest.connect(chassis)
+        if not self.rest.new_session(user_name, session_name):
+            return Result.error("Failed to create a session: " + self.rest.errorInfo)
+
+        if not self.rest.connect(chassis):
+            return Result.error("Failed to connect to the chassis: " + self.rest.errorInfo)
+
+        return Result.value(1)
 
     def load_datamodel(self, filename):
 
