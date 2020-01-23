@@ -65,7 +65,7 @@
   stc: 
     count: 18
     action: config
-    object: ref:/EmulatedDevice[Name=IGMP Device $item]
+    object: ref:/EmulatedDevice[@Name='IGMP Device $item']
     properties:
       IgmpHostConfig:
         Active: true
@@ -85,7 +85,7 @@
     - StreamBlock: 
         name: multicast-stream 
         EnableStreamOnlyGeneration: true
-        SrcBinding-targets: ref:/EmulatedDevice[Name=IGMP Device 1]/Ipv4If
+        SrcBinding-targets: ref:/EmulatedDevice[@Name='IGMP Device 1']/Ipv4If
         DstBinding-targets: ref:/Ipv4Group/Ipv4NetworkBlock
         AffiliationStreamBlockLoadProfile: 
           Load: 100

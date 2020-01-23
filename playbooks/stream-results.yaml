@@ -32,7 +32,7 @@
       ParentList:  ref:/project
       CreateCount: 1
       DeviceCount: 1
-      Port: ref:/port[Name=port-0]
+      Port: ref:/port[@Name='port-0']
       IfStack: Ipv4If EthIIIf
       IfCount: 1 1
       name: "device-0"
@@ -46,7 +46,7 @@
       ParentList:  ref:/project
       CreateCount: 1
       DeviceCount: 1
-      Port: ref:/port[Name=port-1]
+      Port: ref:/port[@Name='port-1']
       IfStack: Ipv4If EthIIIf
       IfCount: 1 1
       name: "device-1"

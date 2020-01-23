@@ -133,13 +133,13 @@ Once the ports are created, the next step is to create the emulated device. The 
       ParentList:  ref:/project
       CreateCount: 20
       DeviceCount: 50
-      Port: ref:/port[Name=Port 1]
+      Port: ref:/port[@Name='Port 1']
       IfStack: Ipv4If PppIf PppoeIf EthIIIf
       IfCount: '1 1 1 1'
       name: "Device ${item}"
 ```
 
-Note the `ref:/port[Name=Port 1]`. This is a special construct (called a _reference_), which allows the task to reference another object in the data model. If the object does not exist, an exception is raised and the playbook stops. 
+Note the `ref:/port[@Name='Port 1']`. This is a special construct (called a _reference_, which is a subset of the xpath standard), which allows the task to reference another object in the data model. If the object does not exist, an exception is raised and the playbook stops. 
 
 ### Create a Few Emulated Devices - Extensive Way
 
@@ -153,7 +153,7 @@ Creating the emulated device can also be done using the `create` method, but req
     count: 20
     objects: 
     - emulateddevice: 
-        AffiliatedPort: ref:/port[name=Port ${item}]
+        AffiliatedPort: ref:/port[@name='Port ${item}']
         DeviceCount: 50
         name: "Device ${item}"
         PrimaryIf: ref:./Ipv4If
@@ -170,14 +170,14 @@ Creating the emulated device can also be done using the `create` method, but req
 
 ### Reconfiguring a Data Model
 
-Once an object is created, it is possible to update its configuration. The reference `object` of the updated object must be provided. Since there can be several objects, you usually use a named reference - `ref:/EmulatedDevice[Name= Device ${item}]` in this case:
+Once an object is created, it is possible to update its configuration. The reference `object` of the updated object must be provided. Since there can be several objects, you usually use a named reference - `ref:/EmulatedDevice[@Name= 'Device ${item}']` in this case:
 
 ```yaml
 - name: configure the server device block
   stc: 
     action: config
     count: 20
-    object: ref:/EmulatedDevice[Name= Device ${item}]
+    object: ref:/EmulatedDevice[@Name= 'Device ${item}']
     properties:
       PppoeClientBlockConfig:
         ConnectRate: 1000
@@ -227,7 +227,7 @@ Then, when creating the session, specify the chassis property:
     chassis: ""{{ hostvars[inventory_hostname].chassis }}""
 ```
 
-The `{{ hostvars[groups['labservers'][0]].chassis }}` is used to reference to the chassis defined in the inventory. Alternatively, you can directly specify the chassis IP in the task, such `chassis: "10.61.67.128 10.61.67.131"`
+The `{{ hostvars[inventory_hostname].chassis }}` is used to reference to the chassis defined in the inventory. Alternatively, you can directly specify the chassis IP in the task, such `chassis: "10.61.67.128 10.61.67.131"`
 
 Once the chassis are defined, the `session` task will automatically connect to them when the session is created. Then, in order to reference the chassis IP address from the task, one can use the keywork `${chassis[0]}` ... `${chassis[1]}` or even `${chassis[item]}`.
 
@@ -285,7 +285,7 @@ When using learned addresses, such as for PPPoE, it can be usefull to wait for a
 - name: Wait for the clients to be bound
   stc: 
     action: wait
-    object: ref:/EmulatedDevice[Name=PPPoE Client]/PppoeClientBlockConfig
+    object: ref:/EmulatedDevice[@Name='PPPoE Client']/PppoeClientBlockConfig
     until: BlockState=CONNECTED
 ```
 
@@ -299,7 +299,7 @@ Last, once the test is finished, it is possible to get some results from the pro
   register: results
   stc:
     action: get
-    object: ref:/EmulatedDevice[Name=PPPoE Server]/PppoeServerBlockConfig/PppoeServerBlockResults
+    object: ref:/EmulatedDevice[@Name='PPPoE Server']/PppoeServerBlockConfig/PppoeServerBlockResults
 
 - debug:
     var: result

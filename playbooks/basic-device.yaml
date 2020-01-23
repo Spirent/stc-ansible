@@ -12,7 +12,7 @@
     action: session
     user: ansible
     name: basic_device
-    chassis: "{{ hostvars[groups['labservers'][0]].chassis }}"
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
 
 
 - 
@@ -38,7 +38,7 @@
       ParentList:  ref:/project
       CreateCount: 20
       DeviceCount: 50
-      Port: ref:/port[Name=Port1]
+      Port: ref:/port[@Name='Port1']
       IfStack: Ipv4If PppIf PppoeIf EthIIIf
       IfCount: '1 1 1 1'
       name: "dev-$item"
@@ -49,7 +49,7 @@
   stc: 
     action: config
     count: 20
-    object: ref:/EmulatedDevice[Name=dev-$item]
+    object: /EmulatedDevice[@Name='dev-$item']
     properties:
         Ipv4If: 
           AddrStep: 0.0.0.1
@@ -73,4 +73,4 @@
     action: perform
     command: DetachPortsCommand
     properties:
-      PortList: ref:/port[*]
+      PortList: ref:/port

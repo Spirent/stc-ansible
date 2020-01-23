@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 16:27:43
+# @Last Modified time: 2020-01-22 23:08:06
 
 try:
     from ansible.module_utils.logger import Logger
@@ -130,7 +130,7 @@ class NodeSelector:
         self.nodes = [node]
 
     def log(self, m):
-        print("[selector] " + m)
+        log.debug("[selector] " + m)
 
     def __str__(self):
         s = ""
@@ -153,27 +153,8 @@ class NodeSelector:
 
     def select(self, selector):
 
-        selection = []
-        for node in self.nodes:
-
-            nodeIndex = 0
-            for node in node.children.values():
-
-                # self.log("| Checking object=%s"%node)
-                if not ("object_type" in node.attributes):
-                    self.log("| Checking object=%s -> No object type!!" % (node))
-                    continue
-
-                objType = node.attributes["object_type"].lower()
-                if objType != selector.element:
-                    continue
-
-                if selector.check(node, nodeIndex):
-                    selection.append(node)
-                nodeIndex += 1
-
-        self.nodes = selection
-        return len(selection)
+        self.nodes = selector.filterNodes(self.nodes)
+        return len(self.nodes)
 
 
 class Selector:
@@ -187,13 +168,13 @@ class Selector:
     def __init__(self, element):
 
         #a[contains(@href, '://')]
-        match = re.findall("(\\w+)\\s*(\\[.*\\])?", element)
+        match = re.findall("(\\w+|\\*)\\s*(\\[.*\\])?", element)
         if len(match) != 1:
             raise Exception("[xpath] Syntax error with selector '%s'" % element)
 
         selectors = []
         self.element = match[0][0]
-        for selector in re.findall("\\[\\s*(.*?)\\s*\\]", match[0][1]):
+        for selector in re.findall("\\[\\s*@?(.*?)\\s*\\]", match[0][1]):
 
             if re.search("^[0-9]*$", selector):
                 selectors.append({"type": Selector.indexing, "val": int(selector)})
@@ -217,54 +198,81 @@ class Selector:
                 if re.search(matcher, selector) != None:
 
                     match = re.findall(matcher, selector)
-                    selectors.append({"type": id, "val": match[0][1], "key": match[0][0]})
+                    value = match[0][1]
+                    if value.startswith("'") and value.endswith("'"):
+                        value = value[1:-1]
+                    if value.startswith("\"") and value.endswith("\""):
+                        value = value[1:-1]
+                    selectors.append({"type": id, "val": value, "key": match[0][0]})
                     found = True
                     break
 
             if not found:
                 raise Exception("[xpath] Syntax error with expression '%s' selector: '%s'" % (element, selector))
 
+        log.debug("Selector %s -> %s" % (element, selectors))
         self.selectors = selectors
 
-    def check(self, node, nodeIndex):
+    def filterNodes(self, nodes):
 
-        attr = node.attributes
+        selection = []
+        for node in nodes:
+
+            for node in node.children.values():
+
+                if self.element != "*":
+
+                    if not ("object_type" in node.attributes):
+                        self.log("| Checking object=%s -> No object type!!" % (node))
+                        continue
+
+                    objType = node.attributes["object_type"].lower()
+                    if objType != self.element:
+                        continue
+
+                selection.append(node)
+
         for selector in self.selectors:
 
+            nodes = []
             if selector["type"] == Selector.indexing:
-
-                return nodeIndex == selector["val"]
-
+                idx = selector["val"]
+                if idx < len(selection) and idx >= 0:
+                    selection = [selection[idx]]
+                else:
+                    selection = []
             else:
+                selection = [node for node in selection if self.checkSelector(selector, node)]
 
-                attrKey = selector["key"]
-                if not (attrKey in attr):
-                    #self.log("| Checking object=%s -> No such attribute %s" % (node, attrKey))
-                    return False
+            log.debug("Selector %s -> %s" % (selector, selection))
 
-                isValid = False
-                selectorValue = selector["val"]
-                value = str(attr[attrKey]).lower()
-                if selector["type"] == Selector.equal:
+        return selection
 
-                    isValid = (value == selectorValue)
+    def checkSelector(self, selector, node):
 
-                elif selector["type"] == Selector.different:
+        attr = node.attributes
+        attrKey = selector["key"]
+        if not (attrKey in attr):
+            #self.log("| Checking object=%s -> No such attribute %s" % (node, attrKey))
+            return False
 
-                    isValid = (value != selectorValue)
+        isValid = False
+        selectorValue = selector["val"]
+        value = str(attr[attrKey]).lower()
+        if selector["type"] == Selector.equal:
 
-                elif selector["type"] == Selector.contains:
+            isValid = (value == selectorValue)
 
-                    isValid = (value.find(selectorValue) >= 0)
+        elif selector["type"] == Selector.different:
 
-                elif selector["type"] == Selector.startswith:
+            isValid = (value != selectorValue)
 
-                    isValid = (value.find(selectorValue) == 0)
+        elif selector["type"] == Selector.contains:
 
-                if not isValid:
+            isValid = (value.find(selectorValue) >= 0)
 
-                    # self.log("| Checking object=%s -> Wrong attribute %s: %s!=%s" %
-                    #          (node, attrKey, value, selectorValue))
-                    return False
+        elif selector["type"] == Selector.startswith:
 
-        return True
+            isValid = (value.find(selectorValue) == 0)
+
+        return isValid

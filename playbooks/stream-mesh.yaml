@@ -31,7 +31,7 @@
     count: 5
     objects: 
     - emulateddevice: 
-        AffiliatedPort: ref:/port[name=Port $item]
+        AffiliatedPort: ref:/port[@name='Port $item']
         DeviceCount: 10
         name: "Device $item"
         PrimaryIf: ref:./Ipv4If
@@ -54,10 +54,9 @@
     under: ref:/project
     objects: 
     - StreamBlock: 
-        TrafficPattern: Mesh
         EnableStreamOnlyGeneration: true
-        SrcBinding-targets: ref:/EmulatedDevice[name=Device $item]/Ipv4If
-        DstBinding-targets: ref:/EmulatedDevice[name!=Device $item]/Ipv4If
+        SrcBinding-targets: ref:/EmulatedDevice[@name='Device $item']/Ipv4If
+        DstBinding-targets: ref:/EmulatedDevice[@name!='Device $item']/Ipv4If
         AffiliationStreamBlockLoadProfile: 
           Load: 100
 

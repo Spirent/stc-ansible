@@ -39,7 +39,7 @@
       ParentList:  ref:/project
       CreateCount: 1
       DeviceCount: 1
-      Port: ref:/port[Name=Port1]
+      Port: ref:/port[@Name='Port1']
       IfStack: Ipv4If EthIIIf
       IfCount: '1 1'
       name: "BGPDevice1"
@@ -51,7 +51,7 @@
   stc: 
     action: config
     count: 1
-    object: ref:/EmulatedDevice[Name=BGPDevice1]
+    object: ref:/EmulatedDevice[@Name='BGPDevice1']
     properties:
         Ipv4If: 
           Gateway: 10.0.0.3
@@ -62,7 +62,7 @@
   register: result
   stc: 
     action: create
-    under: ref:/EmulatedDevice[Name=BGPDevice1]
+    under: /EmulatedDevice[@Name='BGPDevice1']
     count: 1
     objects: 
     - BgpRouterConfig: 
@@ -75,7 +75,7 @@
   register: result
   stc: 
     action: create
-    under: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]
+    under: /EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']
     count: 1
     objects: 
     - BgpIpv4RouteConfig: 
@@ -88,7 +88,7 @@
   stc: 
     action: config
     count: 1
-    object: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]
+    object: /EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']
     properties:
         BgpIpv4RouteConfig:
            Ipv4NetworkBlock: 
@@ -104,7 +104,7 @@
       ParentList:  ref:/project
       CreateCount: 1
       DeviceCount: 1
-      Port: ref:/port[Name=Port2]
+      Port: ref:/port[@Name='Port2']
       IfStack: Ipv4If EthIIIf
       IfCount: '1 1'
       name: "BGPDevice2"
@@ -116,7 +116,7 @@
   stc: 
     action: config
     count: 1
-    object: ref:/EmulatedDevice[Name=BGPDevice2]
+    object: /EmulatedDevice[@Name='BGPDevice2']
     properties:
         Ipv4If: 
           Gateway: 10.0.0.2
@@ -127,7 +127,7 @@
   register: result
   stc: 
     action: create
-    under: ref:/EmulatedDevice[Name=BGPDevice2]
+    under: /EmulatedDevice[@Name='BGPDevice2']
     count: 1
     objects: 
     - BgpRouterConfig: 
@@ -140,7 +140,7 @@
   register: result
   stc: 
     action: create
-    under: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]
+    under: /EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']
     count: 1
     objects: 
     - BgpIpv4RouteConfig: 
@@ -153,7 +153,7 @@
   stc: 
     action: config
     count: 1
-    object: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]
+    object: /EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']
     properties:
         BgpIpv4RouteConfig:
            Ipv4NetworkBlock: 
@@ -164,12 +164,12 @@
   stc: 
     count: 1
     action: create
-    under: ref:/project
+    under: /project
     objects: 
     - StreamBlock: 
         EnableStreamOnlyGeneration: true
-        SrcBinding-targets: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]/BgpIpv4RouteConfig/Ipv4NetworkBlock
-        DstBinding-targets: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]/BgpIpv4RouteConfig/Ipv4NetworkBlock
+        SrcBinding-targets: ref:/EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']/BgpIpv4RouteConfig/Ipv4NetworkBlock
+        DstBinding-targets: ref:/EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']/BgpIpv4RouteConfig/Ipv4NetworkBlock
         AffiliationStreamBlockLoadProfile: 
           Load: 10
 
@@ -178,12 +178,12 @@
   stc: 
     count: 1
     action: create
-    under: ref:/project
+    under: /project
     objects: 
     - StreamBlock: 
         EnableStreamOnlyGeneration: true
-        SrcBinding-targets: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]/BgpIpv4RouteConfig/Ipv4NetworkBlock
-        DstBinding-targets: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]/BgpIpv4RouteConfig/Ipv4NetworkBlock
+        SrcBinding-targets: ref:/EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']/BgpIpv4RouteConfig/Ipv4NetworkBlock
+        DstBinding-targets: ref:/EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']/BgpIpv4RouteConfig/Ipv4NetworkBlock
         AffiliationStreamBlockLoadProfile: 
           Load: 10
 
@@ -206,14 +206,14 @@
   name: Wait for the BGP to be established
   stc: 
     action: wait
-    object: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]
+    object: ref:/EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']
     until: RouterState=ESTABLISHED
 
 -
   name: Wait for the BGP to be established
   stc: 
     action: wait
-    object: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]
+    object: ref:/EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']
     until: RouterState=ESTABLISHED
 
 

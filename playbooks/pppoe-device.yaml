@@ -49,7 +49,7 @@
       ParentList:  ref:/project
       CreateCount: 1
       DeviceCount: 300
-      Port: ref:/port[Name=Port1]
+      Port: ref:/port[@Name='Port1']
       IfStack: Ipv4If PppIf PppoeIf EthIIIf
       IfCount: '1 1 1 1'
       name: "PPPoE Client"
@@ -58,7 +58,7 @@
   name: Configure the client device block
   stc: 
     action: config
-    object: ref:/EmulatedDevice[Name=PPPoE Client]
+    object: ref:/EmulatedDevice[@Name='PPPoE Client']
     properties:
       PppoeClientBlockConfig:
         ConnectRate: 100
@@ -77,7 +77,7 @@
       ParentList:  ref:/project
       CreateCount: 1
       DeviceCount: 1000
-      Port: ref:/port[Name=Port2]
+      Port: ref:/port[@Name='Port2']
       IfStack: Ipv4If PppIf PppoeIf EthIIIf
       IfCount: '1 1 1 1'
       name: "PPPoE Server"
@@ -86,7 +86,7 @@
   name: configure the server device block
   stc: 
     action: config
-    object: ref:/EmulatedDevice[Name=PPPoE Server]
+    object: ref:/EmulatedDevice[@Name='PPPoE Server']
     properties:
       PppoeServerBlockConfig:
         AcName: mintaka
@@ -117,7 +117,7 @@
     command: AttachPorts
     properties:
       RevokeOwner: true
-      PortList: ref:/port[*]
+      PortList: ref:/port
 
 # ----------------- then bind the devices ------------------
 
@@ -127,14 +127,14 @@
     action: perform
     command: PppoxConnect
     properties: 
-      BlockList: ref:/EmulatedDevice[Name=PPPoE Server]/PppoeServerBlockConfig
+      BlockList: ref:/EmulatedDevice[@Name='PPPoE Server]'/PppoeServerBlockConfig
 
 
 -
   name: Wait for the server to be ready
   stc: 
     action: wait
-    object: ref:/EmulatedDevice[Name=PPPoE Server]/PppoeServerBlockConfig
+    object: ref:/EmulatedDevice[@Name='PPPoE Server']/PppoeServerBlockConfig
     until: BlockState=CONNECTING
     
 
@@ -144,14 +144,14 @@
     action: perform
     command: PppoxConnect
     properties: 
-      BlockList: ref:/EmulatedDevice[Name=PPPoE Client]/PppoeClientBlockConfig
+      BlockList: ref:/EmulatedDevice[@Name='PPPoE Client']/PppoeClientBlockConfig
 
 
 -
   name: Wait for the clients to be bound
   stc: 
     action: wait
-    object: ref:/EmulatedDevice[Name=PPPoE Client]/PppoeClientBlockConfig
+    object: /EmulatedDevice[@Name='PPPoE Client']/PppoeClientBlockConfig
     until: BlockState=CONNECTED
 
 
@@ -161,26 +161,25 @@
   register: results
   stc:
     action: get
-    object: ref:/EmulatedDevice[Name=PPPoE Server]/PppoeServerBlockConfig/PppoeServerBlockResults
+    object: /EmulatedDevice[@Name='PPPoE Server']/PppoeServerBlockConfig/PppoeServerBlockResults
 
 - 
   debug:
-    var: result
-
+    var: results
 
 - 
   name: Get the client binding results
   register: results
   stc:
     action: get
-    object: ref:/EmulatedDevice[Name=PPPoE Client][0]/PppoeClientBlockConfig/PppoeClientBlockResults
+    object: /EmulatedDevice[@name~='Client']/PppoeClientBlockConfig/pppoeclientblockresults
 
 - 
   debug:
-    var: result
+    var: results
 
 
 - name: Check if all client results are ok
   fail:
     msg: "Failed to pass the test"
-    when: results.RetryCount > 0 
+  when: results.FailedConnectCount > 0 
