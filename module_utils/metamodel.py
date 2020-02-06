@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-23 10:31:40
+# @Last Modified time: 2020-02-06 10:34:47
 
 try:
     from ansible.module_utils.templater import Templater
@@ -43,6 +43,11 @@ class MetaModel:
         action = params["action"]
         count = params["count"] if "count" in params else 1
 
+        objects = params["objects"] if "objects" in params else None
+        if objects == None and "object" in params:
+            objects = params["object"]
+
+
         log.info("Action: %s" % json.dumps(params, indent=4))
 
         if action == "session":
@@ -63,12 +68,11 @@ class MetaModel:
         elif action == "create":
 
             under = params["under"] if "under" in params else None
-            result = self.create(params["objects"], under, count=count)
+            result = self.create(objects, under, count=count)
 
         elif action == "config":
 
-            parent = params["object"] if "object" in params else None
-            result = self.config(params["properties"], parent, count=count)
+            result = self.config(params["properties"], objects, count=count)
 
         elif action == "perform":
 
@@ -77,9 +81,6 @@ class MetaModel:
 
         elif action == "wait":
 
-            objects = params["objects"] if "objects" in params else None
-            if objects == None and "object" in params:
-                objects = params["object"]
             if objects == None:
                 log.error("No object specified tor get actions: %s" % params)
                 return Result.error("No object specified for the wait actions: %s" % params)
@@ -89,9 +90,6 @@ class MetaModel:
 
         elif action == "get":
 
-            objects = params["objects"] if "objects" in params else None
-            if objects == None and "object" in params:
-                objects = params["object"]
             if objects == None:
                 log.error("No object specified tor get actions: %s" % params)
                 return Result.error("No object specified for the get actions: %s" % params)
@@ -100,9 +98,6 @@ class MetaModel:
 
         elif action == "delete":
 
-            objects = params["objects"] if "objects" in params else None
-            if objects == None and "object" in params:
-                objects = params["object"]
             if objects == None:
                 log.error("No object specified tor get actions: %s" % params)
                 return Result.error("No object specified for the get actions: %s" % params)
