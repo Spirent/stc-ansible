@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 07:19:02
+# @Last Modified time: 2020-02-06 12:16:18
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -56,7 +56,7 @@ class StcRest:
             log.info("SESSION %s %s -> [%d] %s" % (url, json.dumps(params, indent=4), rsp.status_code, rsp.content))
 
             if rsp.status_code != 409 and rsp.status_code != 200 and rsp.status_code != 201:
-                log.error("Failed to create a session: %s %s" % (rsp))
+                log.error("Failed to create a session: %d %s" % (rsp.status_code, rsp))
                 return False
 
         self.session = sessionID
