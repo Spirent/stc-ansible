@@ -2,7 +2,7 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:09:07
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-06 12:14:25
+# @Last Modified time: 2020-02-06 12:35:40
 
 import yaml
 import json
@@ -17,15 +17,17 @@ from tests.mintaka import MintakaConfig
 
 class PlaybookEmulator:
 
-    def __init__(self, labServer, chassis=[]):
+    def __init__(self, labServer, chassis=[], ports=[]):
 
         if labServer[0] == '@':
             config = MintakaConfig(labServer[1:], "5")
             labServer = config.getLabServer()
             chassis = config.getPorts(2)
+            ports = ["//" + ip + "/1/1" for ip in chassis]
 
         self.labServer = labServer
         self.chassis = chassis
+        self.ports = ports
 
     def play(self, playbook):
 
@@ -66,9 +68,13 @@ class PlaybookEmulator:
                 start = time.time()
                 model = MetaModel(self.labServer)
 
-                if task["stc"]["action"] == "session" and len(self.chassis) > 0:
-                    print("[emulator] Overwritting Chassis with %s" % self.chassis)
-                    task["stc"]["chassis"] = " ".join(self.chassis)
+                if task["stc"]["action"] == "session":
+                    if len(self.chassis) > 0:
+                        print("[emulator] Overwritting Chassis with %s" % self.chassis)
+                        task["stc"]["chassis"] = " ".join(self.chassis)
+                    if len(self.ports) > 0:
+                        print("[emulator] Overwritting Ports with %s" % self.ports)
+                        task["stc"]["ports"] = " ".join(self.ports)
 
                 if "dest" in task["stc"]:
                     task["stc"]["dest"] = task["stc"]["dest"].replace("{{ tempfolder.path }}", "/tmp")

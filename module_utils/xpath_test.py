@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 23:53:45
+# @Last Modified time: 2020-02-06 12:44:30
 
 from module_utils.datamodel import DataModel
 from module_utils.xpath import NodeSelector, Linker, Selector
@@ -13,7 +13,7 @@ class TestSelector:
 
     def createModel(self):
         self.dm = DataModel()
-        self.dm.new("dummy-session", [])
+        self.dm.new("dummy-session", [], [])
 
         self.root = project1 = self.dm.insert("project1", {"object_type": "project"})
 
@@ -87,7 +87,7 @@ class TestLinker:
 
     def createModel(self):
         self.dm = DataModel()
-        self.dm.new("dummy-session", [])
+        self.dm.new("dummy-session", [], [])
 
         self.root = project1 = self.dm.insert("project1", {"object_type": "project"})
 
