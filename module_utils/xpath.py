@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 23:54:16
+# @Last Modified time: 2020-02-06 11:31:06
 
 try:
     from ansible.module_utils.logger import Logger
@@ -120,6 +120,8 @@ class Linker:
                 if handle in node.children:
                     continue
                 attr = self.rest.get(handle)
+                # Convert attr keys to lower case
+                attr = dict((k.lower(), v) for k, v in attr.items())
                 attr["object_type"] = re.sub(r'^(.*?)([0-9]*)$', r'\1', handle)
                 self.datamodel.insert(handle, attr, node)
 
@@ -230,12 +232,17 @@ class Selector:
                         continue
 
                     objType = node.attributes["object_type"].lower()
+
+                    # Special case for inheritance handling
+                    if objType == "router" and self.element == "emulateddevice":
+                        objType = "emulateddevice"
+
                     if objType != self.element:
                         continue
 
                 selection.append(node)
 
-        # log.debug("Selector: candidates are %s" % [str(n) for n in selection])
+        log.debug("Selector: candidates are %s" % [str(n) for n in selection])
 
         for selector in self.selectors:
 

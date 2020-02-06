@@ -47,7 +47,6 @@ class MetaModel:
         if objects == None and "object" in params:
             objects = params["object"]
 
-
         log.info("Action: %s" % json.dumps(params, indent=4))
 
         if action == "session":

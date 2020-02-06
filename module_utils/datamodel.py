@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 16:47:05
+# @Last Modified time: 2020-02-06 11:23:17
 
 try:
     from ansible.module_utils.logger import Logger
@@ -31,7 +31,7 @@ class DataModel:
     def new(self, session, chassis):
         self._session = session
         self.chassis = chassis
-        self.root = {}
+        self.reset()
 
     def getChassis(self, i):
         if i < len(self.chassis):
