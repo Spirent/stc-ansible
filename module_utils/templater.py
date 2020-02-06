@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-20 12:38:25
+# @Last Modified time: 2020-02-06 12:21:19
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -61,7 +61,13 @@ class Templater:
         matches = re.findall(r"(\${(.*?((\bchassis\b)|(\bitem\b)).*?)})", value)
         for match in matches:
             key = match[0]
-            val = eval(match[1], {"item": index, "math": math, "chassis": BoundedArray(self.datamodel.chassis)})
+            val = eval(match[1], {"item": index, "math": math, "chassis": BoundedChassisArray(self.datamodel.chassis)})
+            value = value.replace(match[0], str(val))
+
+        matches = re.findall(r"(\${(.*?((\bports\b)|(\bitem\b)).*?)})", value)
+        for match in matches:
+            key = match[0]
+            val = eval(match[1], {"item": index, "math": math, "ports": BoundedPortArray(self.datamodel.ports)})
             value = value.replace(match[0], str(val))
 
         if value.find("${chassis-item}") >= 0:
@@ -74,7 +80,7 @@ class Templater:
         return value
 
 
-class BoundedArray:
+class BoundedChassisArray:
 
     def __init__(self, l):
         self.l = l
@@ -83,3 +89,14 @@ class BoundedArray:
         if index < len(self.l):
             return self.l[index]
         return "(no chassis [" + str(index) + "])"
+
+
+class BoundedPortArray:
+
+    def __init__(self, l):
+        self.l = l
+
+    def __getitem__(self, index):
+        if index < len(self.l):
+            return self.l[index]
+        return "//(no port [" + str(index) + "])/1/1"

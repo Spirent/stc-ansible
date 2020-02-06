@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-06 11:23:17
+# @Last Modified time: 2020-02-06 12:18:25
 
 try:
     from ansible.module_utils.logger import Logger
@@ -23,19 +23,25 @@ class DataModel:
     def __init__(self):
         self._session = None
         self.chassis = []
+        self.ports = []
         self.unserialize()
 
     def session(self):
         return self._session
 
-    def new(self, session, chassis):
+    def new(self, session, chassis, ports):
         self._session = session
         self.chassis = chassis
+        self.ports = ports
         self.reset()
 
     def getChassis(self, i):
         if i < len(self.chassis):
             return self.chassis[i]
+
+    def getPorts(self, i):
+        if i < len(self.ports):
+            return self.ports[i]
 
     def reset(self):
         self.root = {}
@@ -51,6 +57,7 @@ class DataModel:
 
                 self._session = model["session"]
                 self.chassis = model["chassis"]
+                self.ports = model["ports"]
                 project1 = model["model"]["project1"]
                 project = ObjectModel("project1", project1["attributes"], None)
                 project.unserialize(model["model"])
@@ -67,7 +74,7 @@ class DataModel:
 
         filename = "model-temp/stc-ansible-datamodel.json"
         with open(filename, 'w') as outfile:
-            data = {"model": {}, "session": self._session, "chassis": self.chassis}
+            data = {"model": {}, "session": self._session, "chassis": self.chassis, "ports": self.ports}
             if "project1" in self.root:
                 data["model"] = self.root["project1"].serialize()
             json.dump(data, outfile, indent=4)

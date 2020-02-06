@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-18 10:08:41
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 17:52:51
+# @Last Modified time: 2020-02-06 12:17:07
 
 from ansible.module_utils.basic import *
 from ansible.module_utils.logger import Logger
@@ -55,6 +55,10 @@ def main():
             "type": "str"
         },
         "chassis": {
+            "required": False,
+            "type": "str"
+        },
+        "ports": {
             "required": False,
             "type": "str"
         },
