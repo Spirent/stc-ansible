@@ -1,0 +1,327 @@
+# -*- coding: utf-8 -*-
+# @Author: West for bgp and traffic
+# @Date:   2020-01-29 12:30:28
+# @Last Modified by:   west
+# @Last Modified time: 2020-01-29 12:30:28
+
+- 
+  hosts: west
+  vars:
+    ansible_python_interpreter: /usr/bin/python2
+  tasks: 
+
+    - 
+      name: Create session
+      stc: 
+        action: session
+        user: ansible
+        name: loadnmodif
+        # kill_existing: true
+        # ports: //10.194.88.242/6/37 //10.194.88.242/6/41
+
+    - 
+      name: Create the base ports
+      stc: 
+        action: create
+        objects: 
+          - project: 
+              - port: 
+                  location: ${ports[0]}
+                  name: Port1
+
+              - port: 
+                  location: ${ports[1]}
+                  name: Port2
+
+    -
+      name: config burst 1000 on port1
+      register: results
+      stc: 
+        action: config
+        count: 1
+        object: ref:/port[Name=Port1]
+        properties:
+            Generator: 
+              GeneratorConfig: 
+                DurationMode: BURSTS
+                Duration: 11111
+
+    -
+      name: config burst 1000 on port2
+      register: results
+      stc: 
+        action: config
+        count: 1
+        object: ref:/port[Name=Port2]
+        properties:
+            Generator: 
+              GeneratorConfig: 
+                DurationMode: BURSTS
+                Duration: 22222
+
+    -
+      name: create 1 bgp device under port1
+      register: results
+      stc: 
+        action: perform
+        command: DeviceCreate
+        properties: 
+          ParentList:  ref:/project
+          CreateCount: 1
+          DeviceCount: 1
+          Port: ref:/port[Name=Port1]
+          IfStack: Ipv4If EthIIIf
+          IfCount: '1 1'
+          name: "BGPDevice1"
+
+
+    -
+      name: Configure the IP address of device
+      register: results
+      stc: 
+        action: config
+        count: 1
+        object: ref:/EmulatedDevice[Name=BGPDevice1]
+        properties:
+            Ipv4If: 
+              Gateway: 10.0.0.3
+              Address: 10.0.0.2
+
+    -
+      name: create bgp on this device
+      register: results
+      stc: 
+        action: create
+        under: ref:/EmulatedDevice[Name=BGPDevice1]
+        count: 1
+        objects: 
+        - BgpRouterConfig: 
+            AsNum: 1111
+            DutAsNum: 2222
+            name: "BGPRouter1"
+
+    -
+      name: create ipv4 route
+      register: results
+      stc: 
+        action: create
+        under: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]
+        count: 1
+        objects: 
+        - BgpIpv4RouteConfig: 
+            name: "BGPV4Route1"
+            AsPath: 1111
+
+    -
+      name: config ipv4 route
+      register: results
+      stc: 
+        action: config
+        count: 1
+        object: ref:/EmulatedDevice[Name=BGPDevice1]
+        properties: 
+          BgpRouterConfig:
+            BgpIpv4RouteConfig:
+              Ipv4NetworkBlock:
+                NetworkCount: 100
+                StartIpList: 1.1.1.1
+
+
+    -
+      name: create 1 bgp device under port2
+      register: results
+      stc: 
+        action: perform
+        command: DeviceCreate
+        properties: 
+          ParentList:  ref:/project
+          CreateCount: 1
+          DeviceCount: 1
+          Port: ref:/port[Name=Port2]
+          IfStack: Ipv4If EthIIIf
+          IfCount: '1 1'
+          name: "BGPDevice2"
+
+
+    -
+      name: Configure the IP address of device
+      register: results
+      stc: 
+        action: config
+        count: 1
+        object: ref:/EmulatedDevice[Name=BGPDevice2]
+        properties:
+            Ipv4If: 
+              Gateway: 10.0.0.2
+              Address: 10.0.0.3
+
+    -
+      name: create bgp on this device
+      register: results
+      stc: 
+        action: create
+        under: ref:/EmulatedDevice[Name=BGPDevice2]
+        count: 1
+        objects: 
+        - BgpRouterConfig: 
+            AsNum: 2222
+            DutAsNum: 1111
+            name: "BGPRouter2"
+
+    -
+      name: create ipv4 route
+      register: results
+      stc: 
+        action: create
+        under: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]
+        count: 1
+        objects: 
+        - BgpIpv4RouteConfig: 
+            name: "BGPV4Route2"
+            AsPath: 2222
+
+    -
+      name: config ipv4 route
+      register: results
+      stc: 
+        action: config
+        count: 1
+        object: ref:/EmulatedDevice[Name=BGPDevice2]
+        properties: 
+          BgpRouterConfig:
+            BgpIpv4RouteConfig:
+              Ipv4NetworkBlock:
+                NetworkCount: 100
+                StartIpList: 2.2.2.2
+
+
+    -
+      name: create another device under port1 and try to delete it
+      register: results
+      stc: 
+        action: perform
+        command: DeviceCreate
+        properties: 
+          ParentList:  ref:/project
+          CreateCount: 1
+          DeviceCount: 1
+          Port: ref:/port[Name=Port1]
+          IfStack: Ipv4If EthIIIf
+          IfCount: '1 1'
+          name: "deleted"
+
+
+    - 
+      name: Delete device deleted
+      stc: 
+        action: delete
+        object: ref:/EmulatedDevice[Name=deleted] 
+
+    -
+      name: Configure the traffic generator
+      stc: 
+        count: 1
+        action: create
+        under: ref:/port[Name=Port1]
+        objects: 
+        - StreamBlock: 
+            TrafficPattern: PAIR
+            Name: BGPTaffic1
+            EnableStreamOnlyGeneration: true
+            SrcBinding-targets: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]/BgpIpv4RouteConfig/Ipv4NetworkBlock
+            DstBinding-targets: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]/BgpIpv4RouteConfig/Ipv4NetworkBlock
+            AffiliationStreamBlockLoadProfile: 
+              Load: 10
+
+    -
+      name: Configure the traffic generator
+      stc: 
+        count: 1
+        action: create
+        under: ref:/port[Name=Port2]
+        objects: 
+        - StreamBlock: 
+            TrafficPattern: PAIR
+            Name: BGPTaffic2
+            EnableStreamOnlyGeneration: true
+            SrcBinding-targets: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]/BgpIpv4RouteConfig/Ipv4NetworkBlock
+            DstBinding-targets: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]/BgpIpv4RouteConfig/Ipv4NetworkBlock
+            AffiliationStreamBlockLoadProfile: 
+              Load: 10
+
+
+
+    -
+      name: subscribe to streamblock results
+      stc: 
+        action: perform
+        command: SubscribeResultsView
+        properties: 
+          ExecuteSynchronous: true
+          TemplateUri: "Result Views/Stream Results/Stream Block Results.xml"
+
+    # -----------------------------------------------
+
+    - 
+      name: Rejoin the session
+      stc: 
+        action: session
+        user: ansible
+        name: loadnmodif
+        reset_existing: false
+
+
+    -
+      name: disable BGP under BGPDevice1
+      register: results
+      stc: 
+        action: config
+        count: 1
+        object: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig
+        properties:
+          active: false
+
+
+    -
+      name: modify BGP ipv4 route start IP from 2.2.2.2 into 3.3.3.3  under device BGPDevice2
+      register: results
+      stc: 
+        action: config
+        count: 1
+        object: ref:/EmulatedDevice[Name=BGPDevice2]
+        properties:
+          BgpRouterConfig:
+            BgpIpv4RouteConfig:
+              Ipv4NetworkBlock:
+                StartIpList: 3.3.3.3
+
+
+    -
+      name: FixedFrameLength BGPTaffic1 under port1
+      register: results
+      stc: 
+        action: config
+        count: 1
+        object: ref:/port[@Name=Port1]/streamblock[@Name=BGPTaffic1]
+        properties:
+          FixedFrameLength: 1234
+
+    -
+      name: modify TRS into periodic
+      register: results
+      stc: 
+        action: config
+        count: 1
+        object: ref:/project/ResultOptions
+        properties:
+            TimedRefreshResultViewMode: CONTINUOUS
+
+    -
+      name: modify TRS into periodic
+      register: results
+      stc: 
+        action: config
+        count: 1
+        object: ref:/ResultOptions
+        properties:
+            TimedRefreshResultViewMode: CONTINUOUS
