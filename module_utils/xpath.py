@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-06 11:44:58
+# @Last Modified time: 2020-02-06 13:45:00
 
 try:
     from ansible.module_utils.logger import Logger
@@ -68,6 +68,11 @@ class Linker:
             print("Resolve(%s): Using parent %s for object %s" % (ref, current.parent, current))
             current = current.parent
             ref = ref[3:]
+
+        if ref[:8] == "/project":
+            if "project1" in root:
+                current = root["project1"]
+                ref = ref[8:]
 
         if ref[:1] == "/":
             if "project1" in root:
@@ -198,6 +203,10 @@ class Selector:
             for operator, id in operators.items():
                 matcher = "^(\\w+)\\s*" + operator + "\\s*(.*)$"
                 if re.search(matcher, selector) != None:
+
+                    # Fix for STC modifying the port name
+                    if id == Selector.equal and self.element == "port":
+                        id = Selector.startswith
 
                     match = re.findall(matcher, selector)
                     value = match[0][1]
