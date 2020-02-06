@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-20 12:06:12
+# @Last Modified time: 2020-02-06 12:36:54
 
 from datetime import datetime
 import logging
@@ -34,6 +34,9 @@ class Logger:
         self.show(logging.DEBUG, msg)
 
     def setVerbose():
+        Logger.logLevel = logging.INFO
+
+    def setExtraVerbose():
         Logger.logLevel = logging.DEBUG
 
     def show(self, severity, xmsg):

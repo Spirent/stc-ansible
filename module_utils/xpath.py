@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-06 11:31:06
+# @Last Modified time: 2020-02-06 11:44:58
 
 try:
     from ansible.module_utils.logger import Logger
@@ -219,7 +219,7 @@ class Selector:
 
         selection = []
 
-        # log.debug("Selector: filtering %s" % [str(n) for n in nodes])
+        log.debug("Selector: filtering %s" % [str(n) for n in nodes])
 
         for node in nodes:
 
@@ -265,7 +265,7 @@ class Selector:
         attr = node.attributes
         attrKey = selector["key"]
         if not (attrKey in attr):
-            #self.log("| Checking object=%s -> No such attribute %s" % (node, attrKey))
+            log.debug("| Checking object=%s -> No such attribute %s %s" % (node, attrKey, attr.keys()))
             return False
 
         isValid = False
@@ -287,5 +287,5 @@ class Selector:
 
             isValid = (value.find(selectorValue) == 0)
 
-        # log.debug("Node %s: %s (%s/%s)"%(node,isValid, value, selectorValue))
+        log.debug("Node %s: %s (%s/%s)" % (node, isValid, value, selectorValue))
         return isValid
