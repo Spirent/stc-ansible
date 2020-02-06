@@ -37,7 +37,7 @@
   register: results
   stc:
     action: get
-    object: ref:/port
+    objects: /port
 
 - 
   debug:

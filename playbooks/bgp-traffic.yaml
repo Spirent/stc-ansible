@@ -51,7 +51,7 @@
   stc: 
     action: config
     count: 1
-    object: ref:/EmulatedDevice[@Name='BGPDevice1']
+    objects: ref:/EmulatedDevice[@Name='BGPDevice1']
     properties:
         Ipv4If: 
           Gateway: 10.0.0.3
@@ -88,7 +88,7 @@
   stc: 
     action: config
     count: 1
-    object: /EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']
+    objects: /EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']
     properties:
         BgpIpv4RouteConfig:
            Ipv4NetworkBlock: 
@@ -116,7 +116,7 @@
   stc: 
     action: config
     count: 1
-    object: /EmulatedDevice[@Name='BGPDevice2']
+    objects: /EmulatedDevice[@Name='BGPDevice2']
     properties:
         Ipv4If: 
           Gateway: 10.0.0.2
@@ -153,7 +153,7 @@
   stc: 
     action: config
     count: 1
-    object: /EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']
+    objects: /EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']
     properties:
         BgpIpv4RouteConfig:
            Ipv4NetworkBlock: 
@@ -206,14 +206,14 @@
   name: Wait for the BGP to be established
   stc: 
     action: wait
-    object: ref:/EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']
+    objects: ref:/EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']
     until: RouterState=ESTABLISHED
 
 -
   name: Wait for the BGP to be established
   stc: 
     action: wait
-    object: ref:/EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']
+    objects: ref:/EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']
     until: RouterState=ESTABLISHED
 
 
@@ -260,14 +260,14 @@
   name: get StreamBlock Rx Results
   stc: 
     action: get
-    objects: ref:/port/StreamBlock/RxStreamBlockResults 
+    objects: /port/StreamBlock/RxStreamBlockResults 
 
 
 -
   name: get StreamBlock Results
   stc: 
     action: get
-    objects: ref:/port/StreamBlock/TxStreamBlockResults 
+    objects: /port/StreamBlock/TxStreamBlockResults 
 
 -
   name: Take the ports offline

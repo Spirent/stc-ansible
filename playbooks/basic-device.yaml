@@ -49,7 +49,7 @@
   stc: 
     action: config
     count: 20
-    object: /EmulatedDevice[@Name='dev-$item']
+    objects: /EmulatedDevice[@Name='dev-$item']
     properties:
         Ipv4If: 
           AddrStep: 0.0.0.1

@@ -177,7 +177,7 @@ Once an object is created, it is possible to update its configuration. The refer
   stc: 
     action: config
     count: 20
-    object: ref:/EmulatedDevice[@Name= 'Device ${item}']
+    objects: ref:/EmulatedDevice[@Name= 'Device ${item}']
     properties:
       PppoeClientBlockConfig:
         ConnectRate: 1000
@@ -285,7 +285,7 @@ When using learned addresses, such as for PPPoE, it can be usefull to wait for a
 - name: Wait for the clients to be bound
   stc: 
     action: wait
-    object: ref:/EmulatedDevice[@Name='PPPoE Client']/PppoeClientBlockConfig
+    objects: ref:/EmulatedDevice[@Name='PPPoE Client']/PppoeClientBlockConfig
     until: BlockState=CONNECTED
 ```
 
@@ -299,7 +299,7 @@ Last, once the test is finished, it is possible to get some results from the pro
   register: results
   stc:
     action: get
-    object: ref:/EmulatedDevice[@Name='PPPoE Server']/PppoeServerBlockConfig/PppoeServerBlockResults
+    objects: ref:/EmulatedDevice[@Name='PPPoE Server']/PppoeServerBlockConfig/PppoeServerBlockResults
 
 - debug:
     var: result

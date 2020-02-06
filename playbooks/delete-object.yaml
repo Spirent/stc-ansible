@@ -26,10 +26,10 @@
   name: Delete port1
   stc: 
     action: delete
-    object: /port[@name='Port1']
+    objects: /port[@name='Port1']
 
 - 
   name: Get ports
   stc: 
     action: get
-    object: "ref:/port" 
+    objects: /port

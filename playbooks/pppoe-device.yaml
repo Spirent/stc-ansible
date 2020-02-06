@@ -58,7 +58,7 @@
   name: Configure the client device block
   stc: 
     action: config
-    object: ref:/EmulatedDevice[@Name='PPPoE Client']
+    objects: ref:/EmulatedDevice[@Name='PPPoE Client']
     properties:
       PppoeClientBlockConfig:
         ConnectRate: 100
@@ -86,7 +86,7 @@
   name: configure the server device block
   stc: 
     action: config
-    object: ref:/EmulatedDevice[@Name='PPPoE Server']
+    objects: ref:/EmulatedDevice[@Name='PPPoE Server']
     properties:
       PppoeServerBlockConfig:
         AcName: mintaka
@@ -134,7 +134,7 @@
   name: Wait for the server to be ready
   stc: 
     action: wait
-    object: ref:/EmulatedDevice[@Name='PPPoE Server']/PppoeServerBlockConfig
+    objects: ref:/EmulatedDevice[@Name='PPPoE Server']/PppoeServerBlockConfig
     until: BlockState=CONNECTING
     
 
@@ -151,7 +151,7 @@
   name: Wait for the clients to be bound
   stc: 
     action: wait
-    object: /EmulatedDevice[@Name='PPPoE Client']/PppoeClientBlockConfig
+    objects: /EmulatedDevice[@Name='PPPoE Client']/PppoeClientBlockConfig
     until: BlockState=CONNECTED
 
 
@@ -161,7 +161,7 @@
   register: results
   stc:
     action: get
-    object: /EmulatedDevice[@Name='PPPoE Server']/PppoeServerBlockConfig/PppoeServerBlockResults
+    objects: /EmulatedDevice[@Name='PPPoE Server']/PppoeServerBlockConfig/PppoeServerBlockResults
 
 - 
   debug:
@@ -172,7 +172,7 @@
   register: results
   stc:
     action: get
-    object: /EmulatedDevice[@name~='Client']/PppoeClientBlockConfig/pppoeclientblockresults
+    objects: /EmulatedDevice[@name~='Client'][0]/PppoeClientBlockConfig/pppoeclientblockresults[0]
 
 - 
   debug:
@@ -182,4 +182,4 @@
 - name: Check if all client results are ok
   fail:
     msg: "Failed to pass the test"
-  when: results.FailedConnectCount > 0 
+  when: results["FailedConnectCount"] > 0 
