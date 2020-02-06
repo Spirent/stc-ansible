@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-06 12:16:18
+# @Last Modified time: 2020-02-06 13:14:46
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -64,8 +64,12 @@ class StcRest:
             log.error("SESSION: failed to reset the session")
             return False
 
-        version = self.get("system1", ["Version"])
-        log.info("SERVER VERSION: %s" % version)
+        try:
+            version = self.get("system1", ["Version"])
+            log.info("SERVER VERSION: %s" % version)
+        except:
+            return False
+
         return True
 
     def files(self):
