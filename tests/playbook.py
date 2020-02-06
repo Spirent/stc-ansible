@@ -2,7 +2,7 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:09:07
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-22 17:21:04
+# @Last Modified time: 2020-02-06 12:14:25
 
 import yaml
 import json
@@ -36,6 +36,9 @@ class PlaybookEmulator:
         except yaml.YAMLError as exc:
             print("Invalid YAML:", exc)
             return
+
+        if len(playbook) > 0 and "tasks" in playbook[0]:
+            playbook = playbook[0]["tasks"]
 
         pbstart = time.time()
         for task in playbook:
