@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-06 12:19:24
+# @Last Modified time: 2020-02-07 11:15:47
 
 try:
     from ansible.module_utils.templater import Templater
@@ -77,6 +77,11 @@ class MetaModel:
 
         elif action == "config":
 
+            if type(objects) is list:
+                if len(objects) != 1:
+                    return Result.error("There should be only one object to configure, but there are %d: %s" %
+                                        (len(objects), objects))
+                objects = objects[0]
             result = self.config(params["properties"], objects, count=count)
 
         elif action == "perform":

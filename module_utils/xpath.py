@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-06 13:45:00
+# @Last Modified time: 2020-02-07 11:03:57
 
 try:
     from ansible.module_utils.logger import Logger
@@ -47,18 +47,13 @@ class Linker:
         root = self.datamodel.root
 
         ref = ref.lower()
-        if ref == "/project":
-            if "project1" in root:
-                return NodeSelector(root["project1"])
-            return None
-
         if ref[:2] == "./":
             if current == None:
                 return None
             current = current
             ref = ref[2:]
 
-        if ref[:3] == "../":
+        elif ref[:3] == "../":
             if current == None:
                 print("Trying to resolve %s ... but current is None!" % ref)
                 return None
@@ -69,19 +64,32 @@ class Linker:
             current = current.parent
             ref = ref[3:]
 
-        if ref[:8] == "/project":
-            if "project1" in root:
-                current = root["project1"]
-                ref = ref[8:]
+        elif ref[:8] == "/project":
+            current = self.datamodel.getRoot("project")
+            ref = ref[8:]
 
-        if ref[:1] == "/":
-            if "project1" in root:
-                current = root["project1"]
-                ref = ref[1:]
+        elif ref[:7] == "/system":
+            current = self.datamodel.getRoot("system")
+            ref = ref[7:]
+
+        elif ref[:1] == "/":
+            current = self.datamodel.getRoot("project")
+            ref = ref[1:]
+
+        else:
+            log.warning("Invalid reference [%s]" % (ref))
+            return None
 
         if current == None:
             log.warning("Can not find object %s --- curent in None!!!! [%s]" % (ref, ref[:1]))
+            self.datamodel.dump()
             return None
+
+        if len(ref) > 0 and ref[0] == "/":
+            ref = ref[1:]
+
+        if len(ref) == 0:
+            return NodeSelector(current)
 
         log.info("Looking for %s from %s" % (ref, current))
 

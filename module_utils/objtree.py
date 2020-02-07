@@ -2,11 +2,18 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:02:28
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-01-14 14:39:59
+# @Last Modified time: 2020-02-07 10:53:02
 
 import sys
+try:
+    from ansible.module_utils.logger import Logger
+except ImportError:
+    from module_utils.logger import Logger
+
 if sys.version_info[0] >= 3:
     unicode = str
+
+log = Logger("obj-tree")
 
 
 class ObjectTree:
@@ -70,4 +77,7 @@ class ObjectTree:
 
         else:
 
-            raise Exception("Invalid attribute %s type %s" % (attributes, type(attributes)))
+            log.error("Expecting list or dict for attributes, but got %r" % type(attributes))
+            log.error("attributes=%s" % attributes)
+
+            raise Exception("Invalid attribute %r type %r" % (attributes, type(attributes)))

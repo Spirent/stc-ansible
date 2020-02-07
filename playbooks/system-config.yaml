@@ -1,0 +1,40 @@
+# -*- coding: utf-8 -*-
+# @Author: rjezequel
+# @Date:   2019-12-20 09:18:14
+# @Last Modified by:   ronanjs
+# @Last Modified time: 2020-01-13 15:45:28
+
+
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: system_props
+    kill_existing: false
+    reset_existing: true
+
+
+-
+  name: Configure the lab server license manager
+  stc: 
+    action: create
+    under: /system/LicenseServerManager
+    objects:
+    - 
+      LicenseServer:
+        Server: 127.0.0.1
+        Name: LicenceServer
+
+-
+  name: Get the new created licence server properties
+  register: result
+  stc: 
+    action: get
+    objects: /system/LicenseServerManager/LicenseServer
+
+
+# - 
+#   debug:
+#     var: result

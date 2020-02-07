@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-06 12:18:25
+# @Last Modified time: 2020-02-07 11:05:55
 
 try:
     from ansible.module_utils.logger import Logger
@@ -43,10 +43,14 @@ class DataModel:
         if i < len(self.ports):
             return self.ports[i]
 
+    def getRoot(self, objtype):
+        node = objtype + "1"
+        if not (node in self.root):
+            self.root[node] = ObjectModel(node, {"object_type": objtype}, None)
+        return self.root[node]
+
     def reset(self):
         self.root = {}
-        project = ObjectModel("project1", {}, None)
-        self.root["project1"] = project
 
     def unserialize(self):
         self.root = {}
