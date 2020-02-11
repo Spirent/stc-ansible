@@ -59,10 +59,6 @@ ENV ARTIFACTORY_URL=https://artifactory.srv.orionprod.net/artifactory \
     JFROG_CLI_LOG_LEVEL=INFO \
     JFROG_CLI_OFFER_CONFIG=false
 
-RUN mkdir /opt/orion && \
-    $GOPATH/bin/jfrog rt dl --url ${ARTIFACTORY_URL} --user ${ARTIFACTORY_USER} --apikey ${ARTIFACTORY_APIKEY} --explode --flat temeva/aat/orion-cli.linux-amd64.tgz /opt/orion/ && \
-    chown -R ${user}:${group} /opt/orion && \
-    echo 20180814
 
 # Run the Jenkins slave as the Jenkins user
 USER ${user}
