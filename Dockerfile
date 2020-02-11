@@ -20,12 +20,19 @@ RUN apt-get update && \
     wget -q -O /usr/local/bin/jenkins-slave https://artifactory.srv.orionprod.net/artifactory/jenkins/jenkins-slave && \
     chmod 755 /usr/local/bin/jenkins-slave
 
+# Install golang, its dependencies, and other tooling
+ENV GOLANG_VERSION=1.11.5 \
+    GOROOT=/usr/src/go \
+    GOPATH=/go
+
 RUN apt-get install -y --no-install-recommends apt-transport-https gnupg && \
     echo 'deb http://apt.postgresql.org/pub/repos/apt/ stretch-pgdg main' > /etc/apt/sources.list.d/stretch-pgdg.list && \
     wget -q -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
     apt-get update && \
-    apt-get install -y --no-install-recommends build-essential curl dh-make fakeroot genisoimage git jq libpam0g-dev lintian maven m4 net-tools openjdk-8-jdk openssh-client postgresql-9.5 postgresql-contrib-9.5 python-jinja2 python-pip python-setuptools python-yaml qemu-kvm qemu-utils shellcheck sudo unzip vim zip && \
+    apt-get install -y --no-install-recommends build-essential curl dh-make fakeroot genisoimage git jq libpam0g-dev lintian maven m4 net-tools openjdk-8-jdk openssh-client postgresql-9.5 postgresql-contrib-9.5 python-jinja2 python-pip python-setuptools python-yaml python-requests qemu-kvm qemu-utils shellcheck sudo unzip vim zip && \
     pip install awscli && \
+    mkdir ${GOROOT} && \
+    wget -q -O - https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz | tar -C ${GOROOT} --strip-components=1 -xvz && \
     (wget -q -O - https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | PROFILE=/etc/profile.d/nvm.sh NVM_DIR=/usr/local/nvm bash) && \
     echo 'export NVM_DIR=/usr/local/nvm && . "$NVM_DIR/nvm.sh"' > /etc/profile.d/nvm.sh && \
     chmod +x /etc/profile.d/nvm.sh && . /etc/profile.d/nvm.sh && \
@@ -47,10 +54,26 @@ RUN apt-get install -y --no-install-recommends apt-transport-https gnupg && \
 
 # Install python3 and related tools.  Python2 above should be removed when no
 # build depends on it.
-RUN apt-get install -y --no-install-recommends python3 python3-jinja2 python3-pip python3-setuptools python3-yaml python3-wheel python3-six python3-bitarray python3-certifi python3-chardet python3-idna python3-regex python3-requests python3-lxml python3-urllib3 python3-setuptools
+# RUN apt-get install -y --no-install-recommends python3 python3-jinja2 python3-pip python3-setuptools python3-yaml python3-wheel python3-six python3-bitarray python3-certifi python3-chardet python3-idna python3-regex python3-requests python3-lxml python3-urllib3 python3-setuptools
 
 # Install pyang by python2, also needs libpython2.7.so.1.0
-RUN apt-get install -y --no-install-recommends libpython2.7 && pip install pyang && pip install wheel
+RUN apt-get install -y --no-install-recommends libpython2.7 && pip install pyang && pip install wheel && pip install requests
+
+# Install various Go-based tools
+RUN $GOROOT/bin/go get golang.org/x/tools/cmd/goimports && \
+    $GOROOT/bin/go get github.com/kardianos/govendor && \
+    $GOROOT/bin/go get github.com/golang/mock/gomock && \
+    $GOROOT/bin/go get github.com/jteeuwen/go-bindata/... && \
+    $GOROOT/bin/go get github.com/golang/mock/mockgen && \
+    $GOROOT/bin/go get github.com/ugorji/go/codec/codecgen && \
+    $GOROOT/bin/go get github.com/onsi/ginkgo/ginkgo && \
+    $GOROOT/bin/go get github.com/onsi/gomega && \
+    $GOROOT/bin/go get github.com/SpirentOrion/gocovmerge && \
+    $GOROOT/bin/go get github.com/axw/gocov/... && \
+    $GOROOT/bin/go get github.com/AlekSi/gocov-xml && \
+    wget -q -O ${GOPATH}/bin/jfrog http://artifactory.srv.orionprod.net/artifactory/jenkins/jfrog && \
+    chmod +x ${GOPATH}/bin/jfrog && \
+    chown -R ${user}:${group} ${GOPATH}
 
 # Install Orion CLI tools
 ENV ARTIFACTORY_URL=https://artifactory.srv.orionprod.net/artifactory \
@@ -59,6 +82,10 @@ ENV ARTIFACTORY_URL=https://artifactory.srv.orionprod.net/artifactory \
     JFROG_CLI_LOG_LEVEL=INFO \
     JFROG_CLI_OFFER_CONFIG=false
 
+RUN mkdir /opt/orion && \
+    $GOPATH/bin/jfrog rt dl --url ${ARTIFACTORY_URL} --user ${ARTIFACTORY_USER} --apikey ${ARTIFACTORY_APIKEY} --explode --flat temeva/aat/orion-cli.linux-amd64.tgz /opt/orion/ && \
+    chown -R ${user}:${group} /opt/orion && \
+    echo 20180814
 
 # Run the Jenkins slave as the Jenkins user
 USER ${user}
