@@ -79,6 +79,9 @@ class PlaybookEmulator:
                 if "dest" in task["stc"]:
                     task["stc"]["dest"] = task["stc"]["dest"].replace("{{ tempfolder.path }}", "/tmp")
 
+                if "datamodel" in task["stc"] and "action" in task["stc"] :
+                    task["stc"]["datamodel"] = task["stc"]["datamodel"].replace("{{ tempfolder.path }}", "asset")
+                    
                 result = model.action(task["stc"])
 
                 if result.isError():
@@ -103,7 +106,10 @@ class PlaybookEmulator:
                         print("Result: \033[96m" + json.dumps(result, indent=4) + "\033[0m")
 
             elif "copy" in task:
-                shutil.copyfile(task["copy"]["src"], task["copy"]["dest"])
+                src = task["copy"]["src"].replace("{{ tempfolder.path }}", "asset")
+                dst = task["copy"]["dest"].replace("{{ tempfolder.path }}", "asset")
+                if src != dst:
+                    shutil.copyfile(src, dst)
 
             elif not "debug" in task:
                 print("\033[93m------------ UNKNOWN TASK ------------\033[0m")
