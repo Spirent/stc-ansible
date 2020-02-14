@@ -16,5 +16,7 @@ yapf:
 	@yapf --style '{based_on_style: google, indent_width: 4, column_limit: 120}' -i library/*.py
 	@yapf --style '{based_on_style: google, indent_width: 4, column_limit: 120}' -i tests/*.py
 
+jenkins-regression:
+	make test
 
 -include makefile.local
