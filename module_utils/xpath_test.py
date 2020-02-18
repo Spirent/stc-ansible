@@ -17,6 +17,10 @@ class TestSelector:
 
         self.root = project1 = self.dm.insert("project1", {"object_type": "project"})
 
+        self.port1 = self.dm.insert("port1", {"object_type": "port", "name": "port1 //abc"}, project1)
+        self.port2 = self.dm.insert("port2", {"object_type": "port", "name": "port11"}, project1)
+        self.port3 = self.dm.insert("port3", {"object_type": "port", "name": "port3"}, project1)
+                
         dev1 = self.dm.insert("emulateddevice1", {"object_type": "emulateddevice", "name": "Device 1"}, project1)
         self.dm.insert("ipv4if1", {"object_type": "ipv4if", "name": "ipv4if 1"}, dev1)
 
@@ -82,6 +86,17 @@ class TestSelector:
         n = selector.select(Selector("ipv4if [ @name = ipv4if 1 ]"))
         assert n == 0
 
+    def test10(self):
+        self.createModel()
+        selector = NodeSelector(self.root)
+        n = selector.select(Selector("port [ name = port1]"))
+        assert n == 1
+
+    def test11(self):
+        self.createModel()
+        selector = NodeSelector(self.root)
+        n = selector.select(Selector("port [ name = port3 //2/1]"))
+        assert n == 1
 
 class TestLinker:
 

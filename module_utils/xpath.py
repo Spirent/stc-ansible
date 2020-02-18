@@ -212,10 +212,6 @@ class Selector:
                 matcher = "^(\\w+)\\s*" + operator + "\\s*(.*)$"
                 if re.search(matcher, selector) != None:
 
-                    # Fix for STC modifying the port name
-                    if id == Selector.equal and self.element == "port":
-                        id = Selector.startswith
-
                     match = re.findall(matcher, selector)
                     value = match[0][1]
                     if value.startswith("'") and value.endswith("'"):
@@ -289,8 +285,10 @@ class Selector:
         selectorValue = selector["val"]
         value = str(attr[attrKey]).lower()
         if selector["type"] == Selector.equal:
-
-            isValid = (value == selectorValue)
+            if attr["object_type"] == "port":
+                isValid = ((value == selectorValue) or (re.sub("\s//.*", "", value)== re.sub("\s//.*", "", selectorValue)))
+            else:
+                isValid = (value == selectorValue) 
 
         elif selector["type"] == Selector.different:
 

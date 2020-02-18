@@ -55,6 +55,7 @@
     objects: 
     - StreamBlock: 
         EnableStreamOnlyGeneration: true
+        TrafficPattern: MESH
         SrcBinding-targets: ref:/EmulatedDevice[@name='Device $item']/Ipv4If
         DstBinding-targets: ref:/EmulatedDevice[@name!='Device $item']/Ipv4If
         AffiliationStreamBlockLoadProfile: 
