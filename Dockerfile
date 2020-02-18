@@ -29,7 +29,7 @@ RUN apt-get install -y --no-install-recommends apt-transport-https gnupg && \
     echo 'deb http://apt.postgresql.org/pub/repos/apt/ stretch-pgdg main' > /etc/apt/sources.list.d/stretch-pgdg.list && \
     wget -q -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
     apt-get update && \
-    apt-get install -y --no-install-recommends build-essential curl dh-make fakeroot genisoimage git jq libpam0g-dev lintian maven m4 net-tools openjdk-8-jdk openssh-client postgresql-9.5 postgresql-contrib-9.5 qemu-kvm qemu-utils shellcheck sudo unzip vim zip && \
+    apt-get install -y --no-install-recommends build-essential curl dh-make fakeroot genisoimage git jq libpam0g-dev lintian maven m4 net-tools openjdk-8-jdk openssh-client postgresql-9.5 postgresql-contrib-9.5 python-jinja2 python-pip python-setuptools python-yaml qemu-kvm qemu-utils shellcheck sudo unzip vim zip && \
     pip install awscli && \
     mkdir ${GOROOT} && \
     wget -q -O - https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz | tar -C ${GOROOT} --strip-components=1 -xvz && \
@@ -54,11 +54,10 @@ RUN apt-get install -y --no-install-recommends apt-transport-https gnupg && \
 
 # Install python3 and related tools.  Python2 above should be removed when no
 # build depends on it.
-pip uninstall -y python 
 RUN apt-get install -y --no-install-recommends python3 python3-jinja2 python3-pip python3-setuptools python3-yaml python3-wheel python3-six python3-bitarray python3-certifi python3-chardet python3-idna python3-regex python3-lxml python3-setuptools
 
-# Install pyang by python2, also needs libpython2.7.so.1.0
-RUN apt-get install -y --no-install-recommends libpython2.7 && pip install pyang && pip install wheel && pip install certifi && pip install chardet && pip install idna && pip install lxml && pip uninstall -y urllib3 && pip install urllib3==1.23 && pip install requests==2.22.0 
+# remove python2, 
+RUN ln -s /usr/bin/python3 /usr/bin/python && which pip && pip install certifi && pip install chardet && pip install idna && pip install lxml && pip uninstall -y urllib3 && pip install urllib3==1.23 && pip install requests==2.22.0 
 
 # Install various Go-based tools
 RUN $GOROOT/bin/go get golang.org/x/tools/cmd/goimports && \
