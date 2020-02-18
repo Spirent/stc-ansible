@@ -16,12 +16,11 @@ yapf:
 	@yapf --style '{based_on_style: google, indent_width: 4, column_limit: 120}' -i library/*.py
 	@yapf --style '{based_on_style: google, indent_width: 4, column_limit: 120}' -i tests/*.py
 
-emulator:
-	for d in ./playbooks/*; do
-		python emulator.py playbooks/$d -l @rtp
-	done
+TEST_SUBDIR :=./playbooks/
+TEST_SERVER :=-l @rtp
 
+FILES := $(shell ls $(TEST_SUBDIR)*.yaml)
 jenkins-regression:
-	make emulator
-
+	$(foreach N, $(FILES), python emulator.py $(TEST_SERVER) $(N);)
+	
 -include makefile.local
