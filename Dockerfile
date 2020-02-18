@@ -52,7 +52,7 @@ RUN apt-get install -y --no-install-recommends apt-transport-https gnupg && \
     rm -f packer_1.3.3_linux_amd64.zip && \
     usermod -a -G kvm ${user}
 
-which pip 
+Run which pip
 
 # Install python3 and related tools.  Python2 above should be removed when no
 # build depends on it.
