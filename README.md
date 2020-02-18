@@ -5,10 +5,9 @@ This is an *experimental* [Ansible](https://www.ansible.com/) plugin to configur
 [![CircleCI](https://circleci.com/gh/Spirent/stc-ansible.svg?style=svg)](https://circleci.com/gh/Spirent/stc-ansible)
 
 ### Links
-```
+
  * Jenkins: https://jenkins.oriondev.net/job/stc-ansible-regression-test/
-```
- 
+
 ### Requirements
 
 This STC Ansible module requires a recent version (>=2.5) of the Ansible client. 
