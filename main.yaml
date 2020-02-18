@@ -1,5 +1,5 @@
 - 
-  hosts: bdc-ls
+  hosts: rtp-ls
 
   tasks: 
 
