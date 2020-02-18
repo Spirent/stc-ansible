@@ -52,14 +52,14 @@ RUN apt-get install -y --no-install-recommends apt-transport-https gnupg && \
     rm -f packer_1.3.3_linux_amd64.zip && \
     usermod -a -G kvm ${user}
 
-Run which pip
+Run apt-get purge --auto-remove python2.7 && which pip
 
 # Install python3 and related tools.  Python2 above should be removed when no
 # build depends on it.
 RUN apt-get install -y --no-install-recommends python3 python3-jinja2 python3-pip python3-setuptools python3-yaml python3-wheel python3-six python3-bitarray python3-certifi python3-chardet python3-idna python3-regex python3-lxml python3-setuptools
 
 # remove python2, 
-RUN rm /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python && which pip && pip install certifi && pip install chardet && pip install idna && pip install lxml && pip install urllib3==1.23 && pip install requests==2.22.0 
+RUN rm /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python && which pip && pip install urllib3==1.23 && pip install requests==2.22.0 
 
 # Install various Go-based tools
 RUN $GOROOT/bin/go get golang.org/x/tools/cmd/goimports && \
