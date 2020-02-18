@@ -316,10 +316,17 @@ Debugging can be difficult when using Ansible. To make it easier to troubleshoot
 
 
 
+### Links
+
+ * Jenkins: https://jenkins.oriondev.net/job/stc-ansible-regression-test/
+ 
+ 
 
 ### More Examples
 
 Check the [playbook](playbooks) folder for more examples.
+
+
 
 # Implementation and Design 
 
