@@ -57,7 +57,7 @@ RUN apt-get install -y --no-install-recommends apt-transport-https gnupg && \
 RUN apt-get install -y --no-install-recommends python3 python3-jinja2 python3-pip python3-setuptools python3-yaml python3-wheel python3-six python3-bitarray python3-certifi python3-chardet python3-idna python3-regex python3-lxml python3-setuptools
 
 # Install pyang by python2, also needs libpython2.7.so.1.0
-RUN apt-get install -y --no-install-recommends libpython2.7 && pip install pyang && pip install wheel && pip install certifi && pip install chardet && pip install idna && pip install lxml && pip uninstall -y urllib3 && pip install urllib3==1.23 && pip install requests==2.22.0 
+RUN apt-get install -y --no-install-recommends libpython2.7 && pip install pyang && pip install wheel && pip install certifi && pip install chardet && pip install idna && pip install lxml && pip uninstall -y urllib3 && pip install urllib3==1.23 && pip install requests==2.22.0 && pip install ansible && pip install paramiko
 
 # Install various Go-based tools
 RUN $GOROOT/bin/go get golang.org/x/tools/cmd/goimports && \
