@@ -24,6 +24,6 @@ jenkins-regression:
 	$(foreach N, $(FILES), python emulator.py -l $(TEST_LABSERVER) $(N);)
 
 jenkins-ansible-playbook:
-    ansible-playbook main.yaml
+	ansible-playbook main.yaml
 
 -include makefile.local
