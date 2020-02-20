@@ -184,3 +184,11 @@
     msg: "Failed to pass the test"
   when: results.result.FailedConnectCount > 0
   ignore_errors: yes 
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port

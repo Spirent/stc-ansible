@@ -104,5 +104,11 @@
     objects: ref:/port/StreamBlock/TxStreamBlockResults
 
 
-
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port
 
