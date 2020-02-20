@@ -139,7 +139,7 @@
         AsPath: 2222
 
 -
-  name: config ipv4 route on device2
+  name: config ipv4route on device2
   stc: 
     action: config
     count: 1
