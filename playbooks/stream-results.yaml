@@ -10,6 +10,7 @@
     action: session
     user: ansible
     name: stream_results
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
 
 - 
   name: Create 2 base ports
@@ -19,7 +20,7 @@
     objects: 
       - project: 
           - port: 
-              location: "//${chassis[item]}/1/1"
+              location: "//${chassis[$item]}/1/1"
               name: "port-$item"
 
 

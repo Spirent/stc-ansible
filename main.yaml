@@ -6,6 +6,9 @@
     - name: Create a basic device
       include_tasks: playbooks/basic-device.yaml
 
+    - name: Create a device and Reconnect session
+      include_tasks: playbooks/create-device.yaml 
+      
     - name: Create an IGMP network
       include_tasks: playbooks/igmp-network.yaml
 
@@ -33,8 +36,8 @@
     - name: Get port configuration
       include_tasks: playbooks/ports-online.yaml
       
-    #- name: Get stream results
-    #  include_tasks: playbooks/stream-results.yaml
+    - name: Get stream results
+      include_tasks: playbooks/stream-results.yaml
      
     - name: Configure the lab server license and check license
       include_tasks: playbooks/system-config.yaml
