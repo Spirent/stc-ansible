@@ -2,6 +2,9 @@
   hosts: rtp-ls
 
   tasks: 
+      
+    - name: Create bgp and traffic
+      include_tasks: playbooks/bgp-traffic.yaml
 
     - name: Create a basic device
       include_tasks: playbooks/basic-device.yaml
@@ -26,9 +29,6 @@
 
     - name: Create a few PPPoE device
       include_tasks: playbooks/pppoe-device.yaml
-      
-    - name: Create bgp and traffic
-      include_tasks: playbooks/bgp-traffic.yaml
       
     - name: Create bgp and traffic, then modify
       include_tasks: playbooks/bgp-traffic-modify.yaml

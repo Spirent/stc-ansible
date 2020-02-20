@@ -31,7 +31,6 @@
 
 -
   name: create 1 bgp device under port1
-  register: result
   stc: 
     action: perform
     command: DeviceCreate
@@ -47,7 +46,6 @@
 
 -
   name: Configure the IP address of device 1
-  register: result
   stc: 
     action: config
     count: 1
@@ -59,7 +57,6 @@
 
 -
   name: create bgp on this device 1
-  register: result
   stc: 
     action: create
     under: /EmulatedDevice[@Name='BGPDevice1']
@@ -71,8 +68,7 @@
         name: "BGPRouter1"
 
 -
-  name: create ipv4 route 1 on device1
-  register: result
+  name: create ipv4 route on device1
   stc: 
     action: create
     under: /EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']
@@ -83,8 +79,7 @@
         AsPath: 1111
 
 -
-  name: config ipv4 route 2 on device1
-  register: result
+  name: config ipv4 route on device1
   stc: 
     action: config
     count: 1
@@ -96,7 +91,6 @@
              StartIpList: 1.1.1.1
 
   name: create 1 bgp device under port2
-  register: result
   stc: 
     action: perform
     command: DeviceCreate
@@ -112,7 +106,6 @@
 
 -
   name: Configure the IP address of device 2
-  register: result
   stc: 
     action: config
     count: 1
@@ -124,7 +117,6 @@
 
 -
   name: create bgp on the device2
-  register: result
   stc: 
     action: create
     under: /EmulatedDevice[@Name='BGPDevice2']
@@ -136,8 +128,7 @@
         name: "BGPRouter2"
 
 -
-  name: create ipv4 route1 on device2
-  register: result
+  name: create ipv4 route on device2
   stc: 
     action: create
     under: /EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']
@@ -148,8 +139,7 @@
         AsPath: 2222
 
 -
-  name: config ipv4 route2 on device2
-  register: result
+  name: config ipv4 route on device2
   stc: 
     action: config
     count: 1
@@ -160,7 +150,7 @@
              NetworkCount: 100
              StartIpList: 2.2.2.2
              
-  name: Configure the traffic generator
+  name: Configure the traffic generator1
   stc: 
     count: 1
     action: create
@@ -174,7 +164,7 @@
           Load: 10
 
 
-  name: Configure the traffic generator
+  name: Configure the traffic generator2
   stc: 
     count: 1
     action: create
@@ -203,14 +193,14 @@
     command: DeviceStart
 
 -
-  name: Wait for the BGP to be established
+  name: Wait for the BGP1 to be established
   stc: 
     action: wait
     objects: ref:/EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']
     until: RouterState=ESTABLISHED
 
 -
-  name: Wait for the BGP to be established
+  name: Wait for the BGP2 to be established
   stc: 
     action: wait
     objects: ref:/EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']
@@ -258,6 +248,7 @@
 
 -
   name: get StreamBlock Rx Results
+  register: resultRx
   stc: 
     action: get
     objects: /port/StreamBlock/RxStreamBlockResults 
@@ -265,6 +256,7 @@
 
 -
   name: get StreamBlock Results
+  register: result
   stc: 
     action: get
     objects: /port/StreamBlock/TxStreamBlockResults 
