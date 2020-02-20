@@ -256,12 +256,12 @@
   # -----------------------------------------------
 
   - 
-    name: Rejoin the session
-    stc: 
-      action: session
-      user: ansible
-      name: loadnmodif
-      reset_existing: false
+    # name: Rejoin the session
+    # stc: 
+      # action: session
+      # user: ansible
+      # name: loadnmodif
+      # reset_existing: false
 
 
   -
