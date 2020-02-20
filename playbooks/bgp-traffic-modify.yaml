@@ -9,9 +9,8 @@
     stc: 
       action: session
       user: ansible
-      name: loadnmodif
-      # kill_existing: true
-      # ports: //10.194.88.242/6/37 //10.194.88.242/6/41
+      name: bgp_traffic_modify
+      chassis: "{{ hostvars[inventory_hostname].chassis }}"
 
   - 
     name: Create the base ports

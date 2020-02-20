@@ -12,7 +12,7 @@
     action: session
     user: ansible
     name: bgp_traffic
-    chassis: "192.168.100.105"
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
 
 
 - 
@@ -46,7 +46,7 @@
 
 
 -
-  name: Configure the IP address of device
+  name: Configure the IP address of device 1
   register: result
   stc: 
     action: config
@@ -58,7 +58,7 @@
           Address: 10.0.0.2
 
 -
-  name: create bgp on this device
+  name: create bgp on this device 1
   register: result
   stc: 
     action: create
@@ -71,7 +71,7 @@
         name: "BGPRouter1"
 
 -
-  name: create ipv4 route
+  name: create ipv4 route 1 on device1
   register: result
   stc: 
     action: create
@@ -83,7 +83,7 @@
         AsPath: 1111
 
 -
-  name: config ipv4 route
+  name: config ipv4 route 2 on device1
   register: result
   stc: 
     action: config
@@ -111,7 +111,7 @@
 
 
 -
-  name: Configure the IP address of device
+  name: Configure the IP address of device 2
   register: result
   stc: 
     action: config
@@ -123,7 +123,7 @@
           Address: 10.0.0.3
 
 -
-  name: create bgp on this device
+  name: create bgp on the device2
   register: result
   stc: 
     action: create
@@ -136,7 +136,7 @@
         name: "BGPRouter2"
 
 -
-  name: create ipv4 route
+  name: create ipv4 route1 on device2
   register: result
   stc: 
     action: create
@@ -148,7 +148,7 @@
         AsPath: 2222
 
 -
-  name: config ipv4 route
+  name: config ipv4 route2 on device2
   register: result
   stc: 
     action: config

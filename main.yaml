@@ -15,11 +15,26 @@
     - name: Load a predefined XML datamodel
       include_tasks: playbooks/datamodel-loader.yaml
 
-    - name: Create a few PPPoE device
-      include_tasks: playbooks/pppoe-device.yaml
-
     - name: Deletes an object
       include_tasks: playbooks/delete-object.yaml
 
     - name: Download log files
       include_tasks: playbooks/download-files.yaml
+
+    - name: Create a few PPPoE device
+      include_tasks: playbooks/pppoe-device.yaml
+      
+    - name: Create bgp and traffic
+      include_tasks: playbooks/bgp-traffic.yaml
+      
+    - name: Create bgp and traffic, then modify
+      include_tasks: playbooks/bgp-traffic-modify.yaml
+      
+    - name: Get port configuration
+      include_tasks: playbooks/ports-online.yaml
+      
+    #- name: Get stream results
+    #  include_tasks: playbooks/stream-results.yaml
+     
+    - name: Configure the lab server license and check license
+      include_tasks: playbooks/system-config.yaml

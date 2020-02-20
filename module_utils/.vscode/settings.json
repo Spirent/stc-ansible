@@ -1,0 +1,9 @@
+{
+    "python.pythonPath": "C:\\Program Files\\Spirent Communications\\Spirent TestCenter 9.90\\Spirent TestCenter Application\\Python\\bin\\python.exe",
+    "python.testing.pytestArgs": [
+        "module_utils"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestEnabled": true
+}
