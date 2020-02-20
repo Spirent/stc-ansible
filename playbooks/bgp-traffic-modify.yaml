@@ -81,7 +81,7 @@
             Address: 10.0.0.2
 
   -
-    name: create bgp on this device
+    name: create bgp on first device
     register: results
     stc: 
       action: create
@@ -149,7 +149,7 @@
             Address: 10.0.0.3
 
   -
-    name: create bgp on this device
+    name: create bgp on second device
     register: results
     stc: 
       action: create
