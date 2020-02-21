@@ -219,12 +219,10 @@
       objects: 
       - StreamBlock: 
           TrafficPattern: PAIR
-          Name: BGPTaffic1
+          name: BGPTaffic1
           EnableStreamOnlyGeneration: true
-          SrcBinding-targets: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]/BgpIpv4RouteConfig/Ipv4NetworkBlock
-          DstBinding-targets: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]/BgpIpv4RouteConfig/Ipv4NetworkBlock
-          AffiliationStreamBlockLoadProfile: 
-            Load: 10
+          SrcBinding-targets: ref:/EmulatedDevice[Name=BGPDevice1]/Ipv4If
+          DstBinding-targets: ref:/EmulatedDevice[Name=BGPDevice2]/Ipv4If
 
   -
     name: Configure the traffic generator
@@ -235,12 +233,10 @@
       objects: 
       - StreamBlock: 
           TrafficPattern: PAIR
-          Name: BGPTaffic2
+          name: BGPTaffic2
           EnableStreamOnlyGeneration: true
-          SrcBinding-targets: ref:/EmulatedDevice[Name=BGPDevice2]/BgpRouterConfig[Name=BGPRouter2]/BgpIpv4RouteConfig/Ipv4NetworkBlock
-          DstBinding-targets: ref:/EmulatedDevice[Name=BGPDevice1]/BgpRouterConfig[Name=BGPRouter1]/BgpIpv4RouteConfig/Ipv4NetworkBlock
-          AffiliationStreamBlockLoadProfile: 
-            Load: 10
+          SrcBinding-targets: ref:/EmulatedDevice[Name=BGPDevice2]/Ipv4If
+          DstBinding-targets: ref:/EmulatedDevice[Name=BGPDevice1]/Ipv4If
 
 
 
@@ -256,12 +252,12 @@
   # -----------------------------------------------
 
   - 
-    # name: Rejoin the session
-    # stc: 
-      # action: session
-      # user: ansible
-      # name: loadnmodif
-      # reset_existing: false
+    name: Rejoin the session
+    stc: 
+      action: session
+      user: ansible
+      name: bgp_traffic_modify
+      reset_existing: false
 
 
   -
@@ -300,7 +296,7 @@
         FixedFrameLength: 1234
 
   -
-    name: modify TRS into periodic
+    name: modify TRS into periodic under project
     register: results
     stc: 
       action: config
