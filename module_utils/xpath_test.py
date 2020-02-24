@@ -116,6 +116,7 @@ class TestSelector:
         n = selector.select(Selector("port [ name = port3 4]"))
         assert n == 0
 
+
 class TestLinker:
 
     def createModel(self):
