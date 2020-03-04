@@ -92,11 +92,30 @@ class TestSelector:
         n = selector.select(Selector("port [ name = port1]"))
         assert n == 1
 
+    def test10a(self):
+        self.createModel()
+        selector = NodeSelector(self.root)
+        n = selector.select(Selector("port [ name = port1 //10/1]"))
+        assert n == 1
+
     def test11(self):
         self.createModel()
         selector = NodeSelector(self.root)
         n = selector.select(Selector("port [ name = port3 //2/1]"))
         assert n == 1
+
+    def test11a(self):
+        self.createModel()
+        selector = NodeSelector(self.root)
+        n = selector.select(Selector("port [ name = port33]"))
+        assert n == 0
+
+    def test11b(self):
+        self.createModel()
+        selector = NodeSelector(self.root)
+        n = selector.select(Selector("port [ name = port3 4]"))
+        assert n == 0
+
 
 class TestLinker:
 
@@ -144,7 +163,7 @@ class TestLinker:
         nodes = linker._resolve('/port[name="port 1"]')
         assert nodes.count() == 1 and nodes.get(0) == self.port1
 
-    def test1d(self):
+    def test1e(self):
         linker = Linker(self.createModel())
         nodes = linker._resolve('/port[name= "port 1" ]')
         assert nodes.count() == 1 and nodes.get(0) == self.port1

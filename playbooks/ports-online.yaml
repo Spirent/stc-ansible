@@ -4,6 +4,7 @@
     action: session
     user: ansible
     name: ports_online
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
 
 -
   name: Create the base ports
@@ -12,10 +13,10 @@
     objects:
       - project:
           - port:
-              location: "//192.168.100.105/1/1"
+              location: "//${chassis[0]}/1/1"
               name: Port1
           - port:
-              location: "//192.168.100.105/1/2"
+              location: "//${chassis[1]}/1/1"
               name: Port2
 
 

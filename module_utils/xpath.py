@@ -286,7 +286,7 @@ class Selector:
         value = str(attr[attrKey]).lower()
         if selector["type"] == Selector.equal:
             if attr["object_type"] == "port":
-                isValid = ((value == selectorValue) or (re.sub("\s//.*", "", value)== re.sub("\s//.*", "", selectorValue)))
+                isValid = ((value == selectorValue) or (re.sub(r"\s//.*", "", value)== re.sub(r"\s//.*", "", selectorValue)))
             else:
                 isValid = (value == selectorValue) 
 

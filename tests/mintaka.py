@@ -6,7 +6,6 @@
 
 import requests, json
 
-
 class MintakaConfig:
 
     def __init__(self, host, version):
@@ -59,3 +58,5 @@ class MintakaConfig:
                 return l
 
         raise Exception('There are no host with at least %d VMs' % count)
+
+

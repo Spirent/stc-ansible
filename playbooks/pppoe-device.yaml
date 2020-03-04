@@ -61,7 +61,7 @@
     objects: ref:/EmulatedDevice[@Name='PPPoE Client']
     properties:
       PppoeClientBlockConfig:
-        ConnectRate: 100
+        ConnectRate: 1000
         DisconnectRate: 1000
         Authentication: CHAP_MD5
 
@@ -176,10 +176,19 @@
 
 - 
   debug:
-    var: results
+    var: results.result.FailedConnectCount
 
 
 - name: Check if all client results are ok
   fail:
     msg: "Failed to pass the test"
-  when: results["FailedConnectCount"] > 0 
+  when: results.result.FailedConnectCount > 0
+  ignore_errors: yes 
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port
