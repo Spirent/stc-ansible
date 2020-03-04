@@ -5,15 +5,12 @@
 # @Last Modified time: 2020-01-14 14:31:28
 
 import re
+import sys
+sys.path.append('./tests/')
+from mintaka import MintakaConfig
 from ansible.plugins.vars import BaseVarsPlugin
 from ansible.module_utils._text import to_native
 from ansible.inventory.host import Host
-try:
-	from ansible.module_utils.mintaka import MintakaConfig
-except Exception as e:
-	import sys
-	sys.path.append('./tests/')
-	from mintaka import MintakaConfig
 
 
 class VarsModule(BaseVarsPlugin):
