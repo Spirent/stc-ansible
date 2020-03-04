@@ -59,8 +59,4 @@ class MintakaConfig:
 
         raise Exception('There are no host with at least %d VMs' % count)
 
-    def getPortsStr(self, count=2):
-        mylist = self.getPorts(count)
-        str = " ".join(mylist)
-        return str
 

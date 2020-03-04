@@ -29,9 +29,9 @@ class VarsModule(BaseVarsPlugin):
 				try:
 					config = MintakaConfig(re.sub(r'-.*', '', entity.name), "5")
 					labServer = config.getLabServer()
-					chassis = config.getPortsStr(2)
+					chassis_list = config.getPorts(2)
 					data['ansible_host'] = labServer
-					data['chassis'] = chassis
+					data['chassis']  = " ".join(chassis_list)
 				except Exception as e:
 					self._display.warning(to_native(e))
 
