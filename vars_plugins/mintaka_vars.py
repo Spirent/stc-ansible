@@ -15,12 +15,10 @@ from ansible.inventory.host import Host
 try:
 	from ansible.module_utils.mintaka import MintakaConfig
 except Exception as e:
-	import os
 	import sys
-	display.warning(to_native(e))
-	display.warning(os.getcwd())
 	sys.path.append('./tests/')
 	from mintaka import MintakaConfig
+
 
 class VarsModule(BaseVarsPlugin):
 
@@ -43,5 +41,5 @@ class VarsModule(BaseVarsPlugin):
 					data['chassis'] = chassis
 				except Exception as e:
 					self._display.warning(to_native(e))
-		self._display.warning(data)
+
 		return data
