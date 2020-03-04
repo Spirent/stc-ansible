@@ -4,10 +4,6 @@
 # @Last Modified by:   ronanjs
 # @Last Modified time: 2020-01-14 14:31:28
 
-from ansible.utils.display import Display
-
-display = Display()
-
 import re
 from ansible.plugins.vars import BaseVarsPlugin
 from ansible.module_utils._text import to_native
