@@ -14,7 +14,7 @@ class MintakaConfig:
         try:
             req = requests.get(url)
         except Exception as e:
-            raise Exception('Sorry, failed to get configuration from Mintaka: %s' % to_native(e))
+            raise Exception('Sorry, failed to get configuration from Mintaka')
 
         servers = req.json()["result"]
         servers.sort(key=lambda x: x["ip"])

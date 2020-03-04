@@ -20,7 +20,7 @@
     objects: 
       - project: 
           - port: 
-              location: "//${chassis[$item]}/1/1"
+              location: "//${chassis[item]}/1/1"
               name: "port-$item"
 
 

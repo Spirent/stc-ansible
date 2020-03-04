@@ -40,3 +40,14 @@ class TestTemplater:
         t = self.createTemplater()
         v = t.get("${item+1}", 1)
         assert v == '2'
+
+    def test4a(self):
+        t = self.createTemplater(['10.61.55.23'])
+        v = t.get("${chassis[item]}", 0)
+        assert v == '10.61.55.23'
+
+    def test4b(self):
+        t = self.createTemplater(['10.61.55.23', '10.61.65.12'])
+        v = t.get("${chassis[$item]}", 1)
+        assert v == '10.61.65.12'
+        
