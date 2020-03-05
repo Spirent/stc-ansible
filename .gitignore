@@ -4,5 +4,8 @@ model-temp
 log
 makefile.local
 docs/*
-tests/*
 logs/*
+*.pyc
+.vscode/
+launch.json
+settings.json
