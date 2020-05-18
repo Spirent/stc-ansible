@@ -254,7 +254,6 @@
   stc: 
     action: get
     objects: /port/StreamBlock/RxStreamBlockResults
-    debug: var=resultRx
 
 
 -
@@ -263,7 +262,6 @@
   stc: 
     action: get
     objects: /port/StreamBlock/TxStreamBlockResults 
-    debug: var=result
 
 -
   name: Take the ports offline
