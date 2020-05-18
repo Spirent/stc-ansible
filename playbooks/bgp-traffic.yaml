@@ -90,6 +90,7 @@
              NetworkCount: 100
              StartIpList: 1.1.1.1
 
+-
   name: create 1 bgp device under port2
   stc: 
     action: perform
@@ -149,7 +150,8 @@
            Ipv4NetworkBlock: 
              NetworkCount: 100
              StartIpList: 2.2.2.2
-             
+
+-            
   name: Configure the traffic generator1
   stc: 
     count: 1
@@ -163,7 +165,7 @@
         AffiliationStreamBlockLoadProfile: 
           Load: 10
 
-
+-
   name: Configure the traffic generator2
   stc: 
     count: 1
@@ -251,7 +253,8 @@
   register: resultRx
   stc: 
     action: get
-    objects: /port/StreamBlock/RxStreamBlockResults 
+    objects: /port/StreamBlock/RxStreamBlockResults
+    debug: var=resultRx
 
 
 -
@@ -260,6 +263,7 @@
   stc: 
     action: get
     objects: /port/StreamBlock/TxStreamBlockResults 
+    debug: var=result
 
 -
   name: Take the ports offline
