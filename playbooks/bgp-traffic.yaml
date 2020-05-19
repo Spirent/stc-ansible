@@ -79,7 +79,7 @@
         AsPath: 1111
 
 -
-  name: config ipv4 route on device1
+  name: config another ipv4 route on device1
   stc: 
     action: config
     count: 1
@@ -90,6 +90,7 @@
              NetworkCount: 100
              StartIpList: 1.1.1.1
 
+-
   name: create 1 bgp device under port2
   stc: 
     action: perform
@@ -139,7 +140,7 @@
         AsPath: 2222
 
 -
-  name: config ipv4route on device2
+  name: config another ipv4route on device2
   stc: 
     action: config
     count: 1
@@ -149,7 +150,8 @@
            Ipv4NetworkBlock: 
              NetworkCount: 100
              StartIpList: 2.2.2.2
-             
+
+-            
   name: Configure the traffic generator1
   stc: 
     count: 1
@@ -163,7 +165,7 @@
         AffiliationStreamBlockLoadProfile: 
           Load: 10
 
-
+-
   name: Configure the traffic generator2
   stc: 
     count: 1
@@ -251,7 +253,7 @@
   register: resultRx
   stc: 
     action: get
-    objects: /port/StreamBlock/RxStreamBlockResults 
+    objects: /port/StreamBlock/RxStreamBlockResults
 
 
 -
