@@ -29,7 +29,7 @@ class Worker:
 
     def pre_action(self, *args, **kwargs):
         params = args[1]
-        action = params["action"]
+        action = params["action"]       
         if action == "create":
             objects = params["objects"] if "objects" in params else None
             if objects == None and "object" in params:
@@ -52,10 +52,12 @@ class Worker:
             under = kwargs['under']
         if 'count' in kwargs:
             count = kwargs['count']
+        templater = args[0].templater  #for templater.get(objref, i)
+        xpath = args[0].xpath
         log.debug("worker: pre_create")
 
     def post_create(self, ret, *args, **kwargs):
-        #ret="myret"  //dummy code
+        #ret="myret"  //dummy code to change ret value
         log.debug("worker: post_create")
 
     def pre_config(self, *args, **kwargs):
@@ -64,18 +66,23 @@ class Worker:
             objref = kwargs['objref']
         if 'count' in kwargs:
             count = kwargs['count']
-        log.debug("worker: pre_create")
+        templater = args[0].templater  #for templater.get(objref, i)
+        xpath = args[0].xpath
+        log.debug("worker: pre_config")
 
     def post_config(self, ret, *args, **kwargs):
-        log.debug("worker: post_create")
+        #ret="myret"  //dummy code to change ret value
+        log.debug("worker: post_config")
 
     def pre_performConfig(self, *args, **kwargs):
         command = args[1]
         props = args[2]
+        templater = args[0].templater  #for templater.get(objref, i)
+        xpath = args[0].xpath  # for xpath.resolveSingleObject(ref)
         log.debug("worker: pre_performConfig")
      
     def post_performConfig(self, ret, *args, **kwargs):
-        #ret="myret"  //dummy code
+        #ret="myret"  //dummy code to change ret value
         log.debug("worker: post_performConfig")
 
 
@@ -86,8 +93,8 @@ def process_action():
             log.debug("enter process_action: %s" % func.__name__)
             worker = Worker(func.__name__)
             worker.pre_process(*args, **kwargs)
-            r = func(*args, **kwargs)
-            ret = worker.post_process(r, *args, **kwargs)
+            ret = func(*args, **kwargs)
+            worker.post_process(ret, *args, **kwargs)
             log.debug("exit process_action: %s" % func.__name__)
             return ret
         return wrapper

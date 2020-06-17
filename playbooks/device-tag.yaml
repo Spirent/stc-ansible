@@ -24,7 +24,11 @@
               name: Port2
 
 
-# -
+# - case1： if tag is not exiting in stc, create the tag first,
+  #        then set the created tag handle to usertag-targets of emulateddevice for create
+  #        if tag can be found in stc by ref:/tags/tag[name=custom-tag-name],
+  #        get the handles of the tag, set the tag handles to usertag-targets of emulateddevice for create 
+  
   # name: create an emulate device with a custom tag
   # stc:
     # action: create
@@ -55,6 +59,12 @@
 
 
 
+# - case2： if tag is not exiting in stc, create the tag first,
+  #        then after perform "DeviceCreate" command, 
+  #        set the created tag handle to usertag-targets of emulateddevice created by perform
+  #        if tag can be found in stc by ref:/tags/tag[name=mytag-$item],
+  #        get the handles of the tag,  after perform "DeviceCreate" command, 
+  #        set the tag handles to usertag-targets of emulateddevice created by perform
 -
   name: create 20 block of 50 devices
   stc: 
@@ -72,7 +82,11 @@
 
 
 
-# -
+# - case3： if tag is not exiting in stc, create the tag first,
+  #        then set the created tag handle to usertag-targets of emulateddevice for config
+  #        if tag can be found in stc by ref:/tags/tag[name=bgptag],
+  #        get the handles of the tag, set the tag handles to usertag-targets of emulateddevice for config
+-
   # name: Configure each device IP address
   # stc: 
     # action: config
@@ -94,7 +108,12 @@
           tag: "custom-tag-$item"
 
 
-# -
+
+# - case4： if tag is not exiting in stc, cannot found the device with this tag, 
+  #        if tag can be found in stc by ref:/tags/tag[name=custom-tag-$item],
+  #        get the handles of the tag, set the tag handles to usertag-targets of emulateddevice 
+  #        for xpath parsing to find the emulateddevices
+-
   # name: Configure each device IP address
   # stc: 
     # action: config
@@ -117,7 +136,12 @@
           Address: 10.0.$item.1
 
 
-# -
+
+# - case5： if tag is not exiting in stc, cannot found the device with this tag, 
+  #        if tag can be found in stc by ref:/tags/tag[name=custom-tag-name],
+  #        get the handles of the tag, set the tag handles to usertag-targets of emulateddevice
+  #        for xpath parsing to find the emulateddevices
+  
   # name: create bgp on this device with the tag 'custom-tag-name'
   # stc:
     # action: create
