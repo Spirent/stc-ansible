@@ -38,9 +38,8 @@
             # name: "custom-tag-name" 
     # - EmulatedDevice:
         # name: "BGPRouter"
-        # tag: "bgptag custom-tag-name"
+        # usertag-targets: "ref:/tags/tag[name=bgptag] ref:/tags/tag[name=custom-tag-name]"
         # AffiliatedPort: ref:/port[@name='Port1']
-#
 
 -
   name: create an emulate device with a custom tag
@@ -53,6 +52,8 @@
         name: "BGPRouter"
         tag: "bgptag custom-tag-name"
         AffiliatedPort: ref:/port[@name='Port1']
+
+
 
 -
   name: create 20 block of 50 devices
@@ -70,6 +71,17 @@
       tag: "mytag-$item"
 
 
+
+# -
+  # name: Configure each device IP address
+  # stc: 
+    # action: config
+    # count: 20
+    # objects: /EmulatedDevice[@Name='dev-$item']
+    # properties:
+        # Ipv4If: 
+          # AddrStep: 0.0.0.1
+          # usertag-targets: ref:/tags/tag[name=custom-tag-$item]
 -
   name: Configure each device IP address
   stc: 
@@ -80,6 +92,18 @@
         Ipv4If: 
           AddrStep: 0.0.0.1
           tag: "custom-tag-$item"
+
+
+# -
+  # name: Configure each device IP address
+  # stc: 
+    # action: config
+    # count: 20
+    # objects: /EmulatedDevice[@usertag-targets=ref:/tags/tag[name=custom-tag-$item]]
+    # properties:
+        # Ipv4If: 
+          # AddrStep: 0.0.0.2
+          # Address: 10.0.$item.1
 
 -
   name: Configure each device IP address
@@ -92,6 +116,18 @@
           AddrStep: 0.0.0.2
           Address: 10.0.$item.1
 
+
+# -
+  # name: create bgp on this device with the tag 'custom-tag-name'
+  # stc:
+    # action: create
+    # under: /EmulatedDevice[@usertag-targets=ref:/tags/tag[name=custom-tag-name]]
+    # count: 1
+    # objects:
+    # - BgpRouterConfig:
+        # AsNum: 1111
+        # DutAsNum: 2222
+        # name: "BGPRouter1"
 -
   name: create bgp on this device with the tag 'custom-tag-name'
   stc:
