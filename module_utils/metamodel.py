@@ -12,6 +12,7 @@ try:
     from ansible.module_utils.xpath import Linker
     from ansible.module_utils.logger import Logger
     from ansible.module_utils.utils import *
+    from module_utils.processaction import process_action
 except ImportError:
     from module_utils.templater import Templater
     from module_utils.datamodel import DataModel
@@ -20,6 +21,7 @@ except ImportError:
     from module_utils.xpath import Linker
     from module_utils.logger import Logger
     from module_utils.utils import *
+    from module_utils.processaction import process_action
 
 import requests
 import pickle
@@ -38,6 +40,7 @@ class MetaModel:
         self.xpath = Linker(self.datamodel, self.rest)
         self.templater = Templater(self.datamodel)
 
+    @process_action()
     def action(self, params):
 
         action = params["action"]
@@ -184,6 +187,7 @@ class MetaModel:
             return Result.value(res)
         return "Ooops"
 
+    @process_action()
     def config(self, properties, objref=None, count=1):
 
         handles = {}
@@ -204,6 +208,7 @@ class MetaModel:
             handles = handles[0]
         return Result.value(handles)
 
+    @process_action()
     def create(self, objects, under=None, count=1):
 
         handles = {}
@@ -343,7 +348,7 @@ class MetaModel:
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
-
+    @process_action()
     def performConfig(self, command, props):
 
         params = {}

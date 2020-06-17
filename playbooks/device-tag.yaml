@@ -1,0 +1,124 @@
+
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: device_tag
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+
+- 
+  name: Create the base ports
+  stc: 
+    action: create
+    objects: 
+      - project: 
+          - port: 
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+
+          - port: 
+              location: "//${chassis[1]}/1/1"
+              name: Port2
+
+
+# -
+  # name: create an emulate device with a custom tag
+  # stc:
+    # action: create
+    # under: /Project
+    # count: 1
+    # objects:
+    # - tags:
+        # - tag:
+            # name: "bgptag"
+        # - tag:
+            # name: "custom-tag-name" 
+    # - EmulatedDevice:
+        # name: "BGPRouter"
+        # tag: "bgptag custom-tag-name"
+        # AffiliatedPort: ref:/port[@name='Port1']
+#
+
+-
+  name: create an emulate device with a custom tag
+  stc:
+    action: create
+    under: /Project
+    count: 1
+    objects:
+    - EmulatedDevice:
+        name: "BGPRouter"
+        tag: "bgptag custom-tag-name"
+        AffiliatedPort: ref:/port[@name='Port1']
+
+-
+  name: create 20 block of 50 devices
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 20
+      DeviceCount: 50
+      Port: ref:/port[@Name='Port1']
+      IfStack: Ipv4If PppIf PppoeIf EthIIIf
+      IfCount: '1 1 1 1'
+      name: "dev-$item"
+      tag: "mytag-$item"
+
+
+-
+  name: Configure each device IP address
+  stc: 
+    action: config
+    count: 20
+    objects: /EmulatedDevice[@Name='dev-$item']
+    properties:
+        Ipv4If: 
+          AddrStep: 0.0.0.1
+          tag: "custom-tag-$item"
+
+-
+  name: Configure each device IP address
+  stc: 
+    action: config
+    count: 20
+    objects: /EmulatedDevice[@tag='custom-tag-$item']
+    properties:
+        Ipv4If: 
+          AddrStep: 0.0.0.2
+          Address: 10.0.$item.1
+
+-
+  name: create bgp on this device with the tag 'custom-tag-name'
+  stc:
+    action: create
+    under: /EmulatedDevice[@tag*='custom-tag-name']
+    count: 1
+    objects:
+    - BgpRouterConfig:
+        AsNum: 1111
+        DutAsNum: 2222
+        name: "BGPRouter1"
+
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port
+
+
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port
