@@ -1,13 +1,4 @@
 
-
-# - 
-  # name: Create session
-  # stc: 
-    # action: session
-    # user: ansible
-    # name: session_create
-    # chassis: "{{ hostvars[inventory_hostname].chassis }}"
-
 - 
   name: Create session
   stc: 

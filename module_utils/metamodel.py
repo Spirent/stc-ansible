@@ -12,7 +12,7 @@ try:
     from ansible.module_utils.xpath import Linker
     from ansible.module_utils.logger import Logger
     from ansible.module_utils.utils import *
-    from module_utils.processaction import process_action
+    from ansible.module_utils.processaction import process_action
 except ImportError:
     from module_utils.templater import Templater
     from module_utils.datamodel import DataModel
@@ -208,7 +208,6 @@ class MetaModel:
             handles = handles[0]
         return Result.value(handles)
 
-    @process_action()
     def create(self, objects, under=None, count=1):
 
         handles = {}
@@ -393,11 +392,13 @@ class MetaModel:
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
 
+    @process_action()
     def configObject(self, root, properties):
 
         objects = [{root.objectType(): properties}]
         return self.createOrConfigObject(objects, root, True)
 
+    @process_action()
     def createObject(self, objects, parent):
 
         return self.createOrConfigObject(objects, parent, False)

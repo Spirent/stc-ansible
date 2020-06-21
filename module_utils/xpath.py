@@ -6,8 +6,10 @@
 
 try:
     from ansible.module_utils.logger import Logger
+    from ansible.module_utils.processaction import process_action
 except ImportError:
     from module_utils.logger import Logger
+    from module_utils.processaction import process_action
 
 import requests
 import json
@@ -23,6 +25,7 @@ class Linker:
         self.datamodel = datamodel
         self.rest = rest
 
+    @process_action()
     def resolveSingleObject(self, ref):
 
         selection = self._resolve(ref)
@@ -34,6 +37,7 @@ class Linker:
 
         return selection.firstNode()
 
+    @process_action()
     def resolveObjects(self, ref, current=None):
         selection = self._resolve(ref, current)
         if selection == None or selection.count() == 0:
@@ -210,9 +214,14 @@ class Selector:
             found = False
             for operator, id in operators.items():
                 matcher = "^(\\w+)\\s*" + operator + "\\s*(.*)$"
-                if re.search(matcher, selector) != None:
+                #fix the bug: cannot work for usertag-targets if "-" in the selector
+                matcher2 = "^(\\w+\\-\\w+)\\s*" + operator + "\\s*(.*)$"  
+                if re.search(matcher, selector) != None or \
+                    re.search(matcher2, selector) != None:  
 
                     match = re.findall(matcher, selector)
+                    if len(match) == 0:
+                        match = re.findall(matcher2, selector)
                     value = match[0][1]
                     if value.startswith("'") and value.endswith("'"):
                         value = value[1:-1]
