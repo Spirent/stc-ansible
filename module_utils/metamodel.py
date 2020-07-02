@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-07 11:15:47
+# @Last Modified time: 2020-07-02 11:32:53
 
 try:
     from ansible.module_utils.templater import Templater
@@ -11,6 +11,7 @@ try:
     from ansible.module_utils.stcrest import StcRest
     from ansible.module_utils.xpath import Linker
     from ansible.module_utils.logger import Logger
+    from ansible.module_utils.drv import DRV
     from ansible.module_utils.utils import *
 except ImportError:
     from module_utils.templater import Templater
@@ -19,6 +20,7 @@ except ImportError:
     from module_utils.stcrest import StcRest
     from module_utils.xpath import Linker
     from module_utils.logger import Logger
+    from module_utils.drv import DRV
     from module_utils.utils import *
 
 import requests
@@ -133,6 +135,20 @@ class MetaModel:
                 return Result.error(self.rest.errorInfo)
 
             return Result.value(files)
+
+        elif action == "drv.fetch":
+
+            objects = self.xpath.resolveObjects(objects[0])
+            drv = DRV(objects, self.rest)
+            result = drv.fetch()
+            return Result.value(result)
+
+        elif action == "drv.subscribe":
+
+            objects = self.xpath.resolveObjects(objects[0])
+            drv = DRV(objects, self.rest)
+            result = drv.subscribe()
+            return Result.value(result)
 
         else:
 

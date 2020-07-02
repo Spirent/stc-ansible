@@ -1,0 +1,147 @@
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: stream-drv
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+
+- 
+  name: Create 2 base ports
+  stc: 
+    action: create
+    count: 2
+    objects: 
+      - project: 
+          - port: 
+              location: "//${chassis[item]}/1/1"
+              name: "port-$item"
+
+
+-
+  name: create 2x8 emulated devices under port 0 and 1
+  stc: 
+    action: perform
+    command: DeviceCreate
+    count: 2
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 8
+      Port: ref:/port[@Name='port-$item']
+      IfStack: Ipv4If EthIIIf
+      IfCount: 1 1
+      name: "device-$item"
+
+
+- 
+  name: Create 1 stream block 
+  stc: 
+    action: create
+    under: ref:/project/port[0]
+    objects: 
+    - streamblock: 
+        EnableStreamOnlyGeneration: true
+        SrcBinding-targets: ref:/EmulatedDevice[0]/Ipv4If
+        DstBinding-targets: ref:/EmulatedDevice[1]/Ipv4If
+        AffiliationStreamBlockLoadProfile:
+          Load: 10
+
+
+# Note that if the DRV query parameters are not valid, the create action
+# will not fail, but the subsequent drv.subscribe will 
+- 
+  name: Create a DRV for dropped frames
+  stc: 
+    action: create
+    under: ref:/project
+    objects:
+    - DynamicResultView:
+        name: "Dropped Frames DRV" 
+        PresentationResultQuery:
+            DisableAutoGrouping: True
+            SelectProperties: "StreamBlock.StreamId StreamBlock.Name Port.Name StreamBlock.ActualRxPortName StreamBlock.FrameConfig.ipv4:IPv4.1.sourceAddr StreamBlock.FrameConfig.ipv4:IPv4.1.destAddr StreamBlock.FrameConfig.ethernet:EthernetII.1.srcMac StreamBlock.FrameConfig.ethernet:EthernetII.vlans.Vlan.1.id StreamBlock.TxFrameCount StreamBlock.RxSigFrameCount StreamBlock.TxFrameRate StreamBlock.RxSigFrameRate StreamBlock.DuplicateFrameCount StreamBlock.DroppedFrameCount StreamBlock.DroppedFrameDuration StreamBlock.MinLatency StreamBlock.MaxLatency StreamBlock.AvgLatency StreamBlock.IsExpected"
+            # WhereConditions: "{StreamBlock.DroppedFrameCount > 0 AND StreamBlock.IsExpected = 1}"
+            SortBy: "{StreamBlock.DroppedFrameCount DESC}"
+            FromObjects: ref:/project/port
+            LimitSize: 20000
+
+
+-
+  name: Subscribe DRV results for dropped frames
+  stc: 
+    action: drv.subscribe
+    objects: ref:/project/DynamicResultView[name="Dropped Frames DRV"] 
+
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port
+
+-
+  name: Start the traffic
+  stc: 
+    action: perform
+    command: GeneratorStart
+    properties: 
+      GeneratorList: ref:/project 
+
+
+- name: wait 2 sec
+  pause: 
+    seconds: 2
+
+-
+  name: Fetch DRV results for dropped frames
+  register: rxResults
+  stc: 
+    action: drv.fetch
+    objects: ref:/project/DynamicResultView[name="Dropped Frames DRV"] 
+
+- 
+  debug:
+    var: rxResults
+
+
+-
+  name: Stop the traffic
+  stc: 
+    action: perform
+    command: GeneratorStop
+    properties: 
+      GeneratorList: ref:/project 
+
+
+-
+  name: Fetch DRV results for dropped frames
+  register: rxResults
+  stc: 
+    action: drv.fetch
+    objects: ref:/project/DynamicResultView[name="Dropped Frames DRV"] 
+
+
+- 
+  debug:
+    var: rxResults
+
+-   
+  name: Save DRV results
+  local_action: copy content={{ rxResults.result }} dest="logs/rxResults_1.json"
+  vars:
+    ansible_connection: local
+
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPorts
+    properties:
+      PortList: ref:/port
+

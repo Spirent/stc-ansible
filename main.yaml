@@ -41,3 +41,6 @@
      
     - name: Configure the lab server license and check license
       include_tasks: playbooks/system-config.yaml
+      
+    - name: Create a dynamic result view
+      include_tasks: playbooks/stream-drv.yaml
