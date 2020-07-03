@@ -3,6 +3,7 @@ __pycache__
 model-temp
 log
 makefile.local
+docs/*
 logs/*
 *.pyc
 .vscode/
