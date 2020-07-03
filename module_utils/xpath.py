@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-07 11:03:57
+# @Last Modified time: 2020-07-03 16:24:32
 
 try:
     from ansible.module_utils.logger import Logger
@@ -77,7 +77,7 @@ class Linker:
             ref = ref[1:]
 
         else:
-            log.warning("Invalid reference [%s]" % (ref))
+            log.warning("Invalid reference syntax: '%s'" % (ref))
             return None
 
         if current == None:

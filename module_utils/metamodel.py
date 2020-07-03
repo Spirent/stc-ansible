@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-07-02 11:32:53
+# @Last Modified time: 2020-07-03 16:34:17
 
 try:
     from ansible.module_utils.templater import Templater
@@ -136,19 +136,32 @@ class MetaModel:
 
             return Result.value(files)
 
-        elif action == "drv.fetch":
+        elif action[0:4] == "drv.":
 
-            objects = self.xpath.resolveObjects(objects[0])
+            if objects!=None:
+                if type(objects) is list:
+                    if len(objects) != 1:
+                        return Result.error("There should be only one object, but there are %d: %s" %
+                                            (len(objects), objects))
+                    objects = objects[0]
+
+                objects = self.xpath.resolveObjects(objects)
+
+            if objects==None:
+                return Result.error("Can not fetch DRV: no valid objects selected")
+
             drv = DRV(objects, self.rest)
-            result = drv.fetch()
-            return Result.value(result)
+            if action[4:]=="fetch":
+                result = Result.value(drv.fetch())
 
-        elif action == "drv.subscribe":
+            elif action[4:]=="subscribe":
+                result = Result.value(drv.subscribe())
 
-            objects = self.xpath.resolveObjects(objects[0])
-            drv = DRV(objects, self.rest)
-            result = drv.subscribe()
-            return Result.value(result)
+            else:
+                result = Result.error("Unknown DRV action %s" % action[4:])
+
+            return result
+
 
         else:
 
