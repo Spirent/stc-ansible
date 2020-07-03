@@ -33,9 +33,11 @@ class Logger:
     def debug(self, msg):
         self.show(logging.DEBUG, msg)
 
+    @staticmethod
     def setVerbose():
         Logger.logLevel = logging.INFO
 
+    @staticmethod
     def setExtraVerbose():
         Logger.logLevel = logging.DEBUG
 
