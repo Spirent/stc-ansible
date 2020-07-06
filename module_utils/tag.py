@@ -18,42 +18,39 @@ log = Logger("tag")
 CREATE = 1
 REMOVE = 2
 
-class Tag:
+class TagManager:
     _meta_tags = None
-    def __init__(self, ref_exp, tagname=""):
+    def __init__(self, ref_exp="", tagname=""):
         self._exp = ref_exp
-        if tagname != "":
-            self._tagname = tagname
-        else:
+        self._tagname = tagname
+        if ref_exp != "":
             find =re.search("\\[\\s*@?tag(.*?)\\s*\\]", ref_exp, re.IGNORECASE)
             if find != None:
                 sel = find.group(1).strip("\'\"")
                 self._tagname = re.sub(r'\^=|\*=|\~=|\!=|=|\'', '', sel)
         self._state = CREATE
         self._metamodel = MetaModel._instance
-        Tag._meta_tags = MetaModel._instance.datamodel.root['project1'].children['tags1']
+        TagManager._meta_tags = MetaModel._instance.datamodel.root['project1'].children['tags1']
     
-    @staticmethod
-    def init_tag_by_attributes(attributes, tag_bk):
+    def init_tag_by_attributes(self, attributes, tag_bk):
         if type(attributes) is list:
             for child in attributes:
-                Tag.init_tag_by_attributes(child, tag_bk)
+                self.init_tag_by_attributes(child, tag_bk)
         elif type(attributes) is dict:
             for key in attributes.keys():
                 val = attributes[key]
                 if type(val) is list:
-                    Tag.init_tag_by_attributes(val, tag_bk)
+                    self.init_tag_by_attributes(val, tag_bk)
                 elif type(val) is dict:
-                    Tag.init_tag_by_attributes(val, tag_bk)
+                    self.init_tag_by_attributes(val, tag_bk)
                 elif type(val) is str:
                     if re.match(r'tag', key, re.IGNORECASE):
                         for tagname in val.split(" "): 
                             tagref = "/tags/tag[name=" + tagname +"]"
-                            tag_intance = Tag.new_tag_by_ref(tagref, tagname)
+                            tag_intance = self.new_tag_by_ref(tagref, tagname)
                             tag_bk[tag_intance] = attributes
 
-    @staticmethod
-    def new_tag_by_ref(ref_exp, tagname=""):
+    def new_tag_by_ref(self, ref_exp, tagname=""):
         find =re.search("\\[\\s*@?tag(.*?)\\s*\\]", ref_exp, re.IGNORECASE)
         if find == None:
             find = re.search("\\/tags\\/tag\\[\\s*@?name(.*?)\\s*\\]", ref_exp, re.IGNORECASE)
@@ -87,7 +84,7 @@ class Tag:
                 if  bRemove == None:
                     tparams = {'name': ftag, 'under': 'tags1'}
                     handle = self._metamodel.rest.create("tag", tparams)
-                    self._metamodel.datamodel.insert(handle, tparams, Tag._meta_tags)
+                    self._metamodel.datamodel.insert(handle, tparams, TagManager._meta_tags)
                     return handle
             else:
                 return ret.firstNode().handle
@@ -99,9 +96,9 @@ class Tag:
         pass
     
 
-class TagOnEqual(Tag):
+class TagOnEqual(TagManager):
     def __init__(self, ref_exp, tagname):
-        Tag.__init__(self, ref_exp, tagname)
+        TagManager.__init__(self, ref_exp, tagname)
         self._selector = "="
 
     def resolve_by_tag(self):
@@ -140,9 +137,9 @@ class TagOnEqual(Tag):
                     newtagstr += tag_hnds
                     self._metamodel.rest.config(object, 'usertag-targets '+ newtagstr.strip(' '))
 
-class TagOnContains(Tag):
+class TagOnContains(TagManager):
     def __init__(self, ref_exp, tagname):
-        Tag.__init__(self, ref_exp, tagname)
+        TagManager.__init__(self, ref_exp, tagname)
         self._selector = "*="
 
     def resolve_by_tag(self):
@@ -150,9 +147,9 @@ class TagOnContains(Tag):
     def configure_with_tag(self, objects):
         pass
 
-class TagOnDifferent(Tag):
+class TagOnDifferent(TagManager):
     def __init__(self, ref_exp, tagname):
-        Tag.__init__(self, ref_exp, tagname)
+        TagManager.__init__(self, ref_exp, tagname)
         self._selector = "!="
 
     def resolve_by_tag(self):
@@ -161,9 +158,9 @@ class TagOnDifferent(Tag):
     def configure_with_tag(self, objects):
         pass
 
-class TagOnStartswith(Tag):
+class TagOnStartswith(TagManager):
     def __init__(self, ref_exp, tagname):
-        Tag.__init__(self, ref_exp, tagname)
+        TagManager.__init__(self, ref_exp, tagname)
         self._selector = "^="
 
     def resolve_by_tag(self):
@@ -185,13 +182,14 @@ if __name__ == '__main__':
     #params of task: creat device with tag
     params = {'action': 'create', 'under': '/Project', 'objects': {}}
     params['objects'] = [{'EmulatedDevice': {'AffiliatedPort': "ref:/port[@name='Port1']", 'name': 'BGPRouter', 'tag': 'atag'}}]
+    tagm = TagManager()
     tag_backup = {}
-    Tag.init_tag_by_attributes(params['objects'], tag_backup)
+    tagm.init_tag_by_attributes(params['objects'], tag_backup)
     for tag_intance, attr in tag_backup.items():
         tag_stchnd = tag_intance.find_or_create_stctag()
 
     #params of task: find device with tag and configure its tag
     params = {'action': 'config', 'objects': "/EmulatedDevice[@tag='atag']", "properties": {"tag": "~bgptag &mytag"}}
-    tag_instance = Tag.new_tag_by_ref(params['objects'])
+    tag_instance = tagm.new_tag_by_ref(params['objects'])
     devhnd = tag_instance.resolve_by_tag()
     tag_instance.configure_with_tag(devhnd)
