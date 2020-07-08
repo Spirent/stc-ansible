@@ -127,6 +127,8 @@ class DataModel:
 class ObjectModel:
 
     def __init__(self, handle, attributes, parent):
+        # Make sure to always store the attributed keys to lowercase
+        attributes = {key.lower(): value for (key, value) in attributes.items()}
         self.handle = handle
         self.children = {}
         self.attributes = attributes
