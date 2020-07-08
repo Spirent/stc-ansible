@@ -27,13 +27,21 @@ class TagManager:
     def update_tag_properties(self, taghnds, objects, metamodel):
         tags_created = {}
         self.init_tags_by_attributes(objects, tags_created)
-        taghnds  = ""
-        for tag_intance, attr_dict in tags_created.items():
-            tag_intance.find_or_create_stctag(metamodel)
-            taghnds = tag_intance.configure_with_tag(taghnds)
-            attr_dict['usertag-targets'] = taghnds
-            if 'tag' in attr_dict:
-                del attr_dict['tag']
+        for tag_intance, bk_dict in tags_created.items():
+            mytag = tag_intance.find_or_create_stctag(metamodel)
+            if mytag != None:
+                taghnds = tag_intance.configure_with_tag(taghnds)
+            else:
+                tagobjs = tag_intance.resolve_by_tag(metamodel.xpath)
+                taghnds = " ".join(tagobjs.handles())
+            for key, attr_dict in bk_dict.items():
+                if re.search("tag", key, re.IGNORECASE):
+                    attr_dict['usertag-targets'] = taghnds
+                    if key in attr_dict:
+                        del attr_dict[key]
+                elif key in attr_dict:
+                    attr_dict[key] = taghnds
+
 
     def create_tag_by_ref(self, ref_exp, tagname=""):
         find =re.search("\\[\\s*@?tag(.*?)\\s*\\]", ref_exp, re.IGNORECASE)
@@ -74,7 +82,12 @@ class TagManager:
                         for tagname in val.split(" "): 
                             tagref = "/tags/tag[name=" + tagname +"]"
                             tag_intance = self.create_tag_by_ref("", tagname)
-                            tags_created[tag_intance] = attributes
+                            tags_created[tag_intance] = {key: attributes}
+                    else:
+                        find =re.search("\\[\\s*@?tag(.*?)\\s*\\]", val, re.IGNORECASE)
+                        if find != None:
+                            tag_intance = self.create_tag_by_ref(val, "")
+                            tags_created[tag_intance] = {key: attributes}
 
 class Tag:
     _meta_tags = None
@@ -126,7 +139,8 @@ class TagOnEqual(TagSelector):
                         if ret == None:
                             ret = myret
                         elif ret != None and ret.isDifferent(myret):
-                            return None
+                            if ret.isIntersect(myret) is False:
+                                return None
         return ret
 
 class TagOnContains(TagSelector):

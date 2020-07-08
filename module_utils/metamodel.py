@@ -5,6 +5,7 @@
 # @Last Modified time: 2020-07-03 16:34:17
 
 try:
+    from ansible.module_utils.processaction import process_action
     from ansible.module_utils.templater import Templater
     from ansible.module_utils.datamodel import DataModel
     from ansible.module_utils.objtree import ObjectTree
@@ -14,6 +15,7 @@ try:
     from ansible.module_utils.drv import DRV
     from ansible.module_utils.utils import *
 except ImportError:
+    from module_utils.processaction import process_action
     from module_utils.templater import Templater
     from module_utils.datamodel import DataModel
     from module_utils.objtree import ObjectTree
@@ -22,6 +24,7 @@ except ImportError:
     from module_utils.logger import Logger
     from module_utils.drv import DRV
     from module_utils.utils import *
+
 
 import requests
 import pickle
@@ -33,13 +36,15 @@ log = Logger("metamodel")
 
 
 class MetaModel:
-
+    _instance = None
     def __init__(self, server="127.0.0.1"):
         self.datamodel = DataModel()
         self.rest = StcRest(server, self.datamodel.session())
         self.xpath = Linker(self.datamodel, self.rest)
         self.templater = Templater(self.datamodel)
+        MetaModel._instance = self
 
+    @process_action()
     def action(self, params):
 
         action = params["action"]
@@ -216,21 +221,36 @@ class MetaModel:
     def config(self, properties, objref=None, count=1):
 
         handles = {}
-        for i in range(0, count):
+        objs = self.xpath.resolveObjects(objref)
 
-            ref = self.templater.get(objref, i)
-            obj = self.xpath.resolveSingleObject(ref)
-            if obj == None:
-                return Result.error("config: Can not find parent object %s" % ref)
+        if count > 1 and objs != None and objs.count() > 1:
+            return Result.error("config: cannot config mutilple objects returned by xpath and based on count at same time")
+        
+        if objs != None and objs.count() > 1:
+            i = 0
+            for obj in objs.nodes:
+                r = self.configObject(obj, self.templater.get(properties, i))
+                if r.isError():
+                    return r
 
-            r = self.configObject(obj, self.templater.get(properties, i))
-            if r.isError():
-                return r
+                handles[i] = r.val
+                i += 1
+        else:   
+            for i in range(0, count):
 
-            handles[i] = r.val
+                ref = self.templater.get(objref, i)
+                obj = self.xpath.resolveSingleObject(ref)
+                if obj == None:
+                    return Result.error("config: Can not find parent object %s" % ref)
 
-        if count == 1:
-            handles = handles[0]
+                r = self.configObject(obj, self.templater.get(properties, i))
+                if r.isError():
+                    return r
+
+                handles[i] = r.val
+
+            if count == 1:
+                handles = handles[0]
         return Result.value(handles)
 
     def create(self, objects, under=None, count=1):
@@ -255,6 +275,7 @@ class MetaModel:
             handles = handles[0]
         return Result.value(handles)
 
+    @process_action()
     def perform(self, command, properties, count=1):
 
         handles = {}
@@ -372,7 +393,6 @@ class MetaModel:
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
-
     def performConfig(self, command, props):
 
         params = {}
@@ -417,11 +437,13 @@ class MetaModel:
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
 
+    @process_action()
     def configObject(self, root, properties):
 
         objects = [{root.objectType(): properties}]
         return self.createOrConfigObject(objects, root, True)
 
+    @process_action()
     def createObject(self, objects, parent):
 
         return self.createOrConfigObject(objects, parent, False)
@@ -492,6 +514,7 @@ class MetaModel:
                 if not self.rest.config(parent.handle, fparams):
                     return Result.error(self.rest.errorInfo)
                 obj["object"] = parent
+                self.datamodel.update(obj, fparams, parent)
 
         # print("children:", json.dumps(obj["children"], indent=4))
 
@@ -549,6 +572,7 @@ class MetaModel:
             if config != {}:
                 if not self.rest.config(obj["object"].handle, config):
                     return Result.error(self.rest.errorInfo)
+                self.datamodel.update(obj, config)
 
         handles = []
         for obj in tree.objects:
