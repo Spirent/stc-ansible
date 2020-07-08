@@ -13,20 +13,29 @@ import re
 
 log = Logger("tag")
 
-class Tag:
-    _meta_tags = None
-    def __init__(self, ref_exp="", tagname=""):
-        self._exp = ref_exp
-        if ref_exp != "":
-            find =re.search("\\[\\s*@?tag(.*?)\\s*\\]", ref_exp, re.IGNORECASE)
-            if find != None and tagname == "":
-                sel = find.group(1).strip("\'\"")
-                self._tagname = re.sub(r'\^=|\*=|\~=|\!=|=|\'', '', sel)
-        else:
-            self._tagname = re.sub(r'\&|\~|\'', '', tagname)
+class TagManager:
+    def update_tag_references(self, ref, single,  xpath_worker):
+        tag_instance = self.create_tag_by_ref(ref)
+        if tag_instance != None:
+            fret = tag_instance.resolve_by_tag(xpath_worker)
+            if fret != None:
+                if single:
+                    return fret.firstNode()
+                else:
+                    return fret
 
-    @staticmethod
-    def create_tag_by_ref(ref_exp, tagname=""):
+    def update_tag_properties(self, taghnds, objects, metamodel):
+        tags_created = {}
+        self.init_tags_by_attributes(objects, tags_created)
+        taghnds  = ""
+        for tag_intance, attr_dict in tags_created.items():
+            tag_intance.find_or_create_stctag(metamodel)
+            taghnds = tag_intance.configure_with_tag(taghnds)
+            attr_dict['usertag-targets'] = taghnds
+            if 'tag' in attr_dict:
+                del attr_dict['tag']
+
+    def create_tag_by_ref(self, ref_exp, tagname=""):
         find =re.search("\\[\\s*@?tag(.*?)\\s*\\]", ref_exp, re.IGNORECASE)
         if find == None:
             find = re.search("\\/tags\\/tag\\[\\s*@?name(.*?)\\s*\\]", ref_exp, re.IGNORECASE)
@@ -49,25 +58,36 @@ class Tag:
                 return TagOnAdded(ref_exp, tagname)
         return None
    
-    @staticmethod
-    def init_tags_by_attributes(attributes, tags_created={}):
+    def init_tags_by_attributes(self, attributes, tags_created={}):
         if type(attributes) is list:
             for child in attributes:
-                Tag.init_tags_by_attributes(child, tags_created)
+                self.init_tags_by_attributes(child, tags_created)
         elif type(attributes) is dict:
             for key in attributes.keys():
                 val = attributes[key]
                 if type(val) is list:
-                    Tag.init_tags_by_attributes(val, tags_created)
+                    self.init_tags_by_attributes(val, tags_created)
                 elif type(val) is dict:
-                    Tag.init_tags_by_attributes(val, tags_created)
+                    self.init_tags_by_attributes(val, tags_created)
                 elif type(val) is str:
                     if re.match(r'tag', key, re.IGNORECASE):
                         for tagname in val.split(" "): 
                             tagref = "/tags/tag[name=" + tagname +"]"
-                            tag_intance = Tag.create_tag_by_ref("", tagname)
+                            tag_intance = self.create_tag_by_ref("", tagname)
                             tags_created[tag_intance] = attributes
 
+class Tag:
+    _meta_tags = None
+    def __init__(self, ref_exp="", tagname=""):
+        self._exp = ref_exp
+        if ref_exp != "":
+            find =re.search("\\[\\s*@?tag(.*?)\\s*\\]", ref_exp, re.IGNORECASE)
+            if find != None and tagname == "":
+                sel = find.group(1).strip("\'\"")
+                self._tagname = re.sub(r'\^=|\*=|\~=|\!=|=|\'', '', sel)
+        else:
+            self._tagname = re.sub(r'\&|\~|\'', '', tagname)
+    
     def find_or_create_stctag(self, metamodel_inst):
         Tag._meta_tags = metamodel_inst.datamodel.root['project1'].children['tags1']
         return None
@@ -255,12 +275,10 @@ if __name__ == '__main__':
     params = {'action': 'create', 'under': '/Project', 'objects': {}}
     params['objects'] = [{'EmulatedDevice': {'AffiliatedPort': "ref:/port[@name='Port1']", 'name': 'BGPRouter', 'tag': 'atag'}}]
     tags_created = {}
-    Tag.init_tags_by_attributes(params['objects'], tags_created)
-    for tag_intance, attr in tags_created.items():
-        tag_stchnd = tag_intance.find_or_create_stctag(mm)
+    tagm = TagManager()
+    tagm.update_tag_properties("", params['objects'], mm)
 
     #params of task: find device with tag and configure its tag
     params = {'action': 'config', 'objects': "/EmulatedDevice[@tag='atag']", "properties": {"tag": "~bgptag &mytag"}}
-    tag_instance = Tag.create_tag_by_ref(params['objects'])
-    devhnd = tag_instance.resolve_by_tag(mm.xpath)
-    tag_instance.configure_with_tag(devhnd)
+    tagm.update_tag_references(params['objects'], True, mm.xpath)
+    tagm.update_tag_properties("", params['properties'], mm)
