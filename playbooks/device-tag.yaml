@@ -1,0 +1,191 @@
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: device_tag
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+
+- 
+  name: Create the base ports
+  stc: 
+    action: create
+    objects: 
+      - project: 
+          - port: 
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+
+          - port: 
+              location: "//${chassis[1]}/1/1"
+              name: Port2
+
+-
+  name: create an emulate device with a custom tag
+  stc:
+    action: create
+    under: /Project
+    count: 1
+    objects:
+    - EmulatedDevice:
+        name: "BGPRouter"
+        tag: "atag"
+        AffiliatedPort: ref:/port[@name='Port1']
+        
+ # - case2.1： if tag is not exiting in stc, create the tag first,
+          # then set the created tag handle to usertag-targets of emulateddevice for create
+          # if tag can be found in stc by ref:/tags/tag[name=custom-tag-name],
+          # get the handles of the tag, set the tag handles to usertag-targets of emulateddevice for create 
+  
+   # name: create an emulate device with custom tags
+   # stc:
+     # action: create
+     # under: /Project
+     # count: 1
+     # objects:
+     # - tags:
+         # - tag:
+             # name: "bgptag"
+         # - tag:
+             # name: "custom-tag-name" 
+     # - EmulatedDevice:
+         # name: "BGPRouter"
+         # usertag-targets: "ref:/tags/tag[name=bgptag] ref:/tags/tag[name=custom-tag-name]"
+         # AffiliatedPort: ref:/port[@name='Port1']
+
+-
+  name: create an emulate device with custom tags
+  stc:
+    action: create
+    under: /Project
+    count: 1
+    objects:
+    - EmulatedDevice:
+        name: "BGPRouter$item"
+        tag: "bgptag mytag"
+        AffiliatedPort: ref:/port[@name='Port1']
+
+
+-
+  name: Configure each device IP by removing its tag 
+  stc: 
+    action: config
+    objects: /EmulatedDevice[@tag='mytag bgptag']
+    properties:
+        tag: "~bgptag &atag"
+          
+-
+  name: Configure each device by its tag
+  stc: 
+    action: config
+    objects: /EmulatedDevice[@tag*='atag mytag']
+    properties:
+        tag: "~mytag"
+
+-
+  name: Configure each device by removing its tag
+  stc: 
+    action: config
+    objects: /EmulatedDevice[@tag='atag']
+    properties:
+        tag: "~atag"
+          
+
+- name: create multiple emulate devices with one custom tag
+  stc:
+    action: create
+    under: /Project
+    count: 10
+    objects:
+    - EmulatedDevice:
+        name: "BGPRouter-$item"
+        tag: "routertag"
+
+-
+  name: Configure multiple device IP by editing its tags
+  stc: 
+    action: config
+    objects: /EmulatedDevice[@tag='routertag']
+    properties:
+        tag: "~routertag &bgptag"
+          
+          
+
+- name: perform command on multiple devices by tag
+  stc: 
+    action: perform
+    command: BgpAdvertiseRouteCommand
+    properties: 
+        routelist: /EmulatedDevice[@usertag-targets="bgptag"]
+        PrefixFilter: 4
+
+ # - case2.2： if tag is not exiting in stc, create the tag first,
+          # then after perform "devicecreate" command, 
+          # set the created tag handle to usertag-targets of emulateddevice created by perform
+          # if tag can be found in stc by ref:/tags/tag[name=mytag-$item],
+          # get the handles of the tag,  after perform "devicecreate" command, 
+          # set the tag handles to usertag-targets of emulateddevice created by perform
+# -
+  # name: create 20 block of 50 devices
+  # stc: 
+    # action: perform
+    # command: devicecreate
+    # properties: 
+      # parentlist:  ref:/project
+      # createcount: 20
+      # devicecount: 50
+      # port: ref:/port[@name='port1']
+      # ifstack: ipv4if pppif pppoeif ethiiif
+      # ifcount: '1 1 1 1'
+      # name: "dev-$item"
+      # tag: "mytag-$item"
+
+
+
+ # - case2.3： if tag is not exiting in stc, create the tag first,
+          # then set the created tag handle to usertag-targets of emulateddevice for config
+          # if tag can be found in stc by ref:/tags/tag[name=bgptag],
+          # get the handles of the tag, set the tag handles to usertag-targets of emulateddevice for config
+# -
+   # name: configure each device ip address
+   # stc: 
+     # action: config
+     # count: 20
+     # objects: /emulateddevice[@name='dev-$item']
+     # properties:
+         # ipv4if: 
+           # addrstep: 0.0.0.1
+           # usertag-targets: ref:/tags/tag[name=custom-tag-$item]
+-
+  name: Configure each device IP address
+  stc: 
+    action: config
+    count: 20
+    objects: /EmulatedDevice[@Name='dev-$item']
+    properties:
+        Ipv4If: 
+          AddrStep: 0.0.0.1
+          tag: "custom-tag-$item"
+
+
+
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port
+
+
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port

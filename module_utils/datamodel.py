@@ -97,6 +97,20 @@ class DataModel:
             print("%s%s" % (prefix, node[key].dump("\n" + prefix + "-")))
             self.dump(node[key].children, level + 1)
 
+    def update(self, obj, attributes, parent):
+        if obj != None:
+            hnd = obj['object'].handle
+            nodes = self.root
+            if parent != None:
+                nodes = parent.children
+            if hnd in nodes:
+                nodes[hnd].config(attributes)
+                return nodes[hnd]
+            elif hnd == parent.handle:
+                parent.config(attributes)
+                return parent
+        return None
+
     def insert(self, handle, attributes, parent=None):
 
         if not ("object_type" in attributes):
@@ -145,6 +159,11 @@ class ObjectModel:
                 continue
             s += prefix + "%s=%s" % (key, self.attributes[key])
         return s
+
+    def isDifferent(self, other):
+        if self.handle == other.handle:
+            return False
+        return True
 
     def objectType(self):
         return self.attributes["object_type"]

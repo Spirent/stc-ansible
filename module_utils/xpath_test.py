@@ -137,6 +137,10 @@ class TestLinker:
             "count": 3
         }, port1)
         self.ip2 = self.dm.insert("ipv4if2", {"object_type": "ipv4if", "name": "ipv4if 2"}, self.dev2)
+        self.bgprouter = self.dm.insert("bgprouterconfig1", {"object_type": "bgprouterconfig", "name": "bgprouterconfig 1"}, self.dev2)
+        self.bgprouteipv4 = self.dm.insert("bgprouteipv4config1", {"object_type": "bgprouteipv4config", "name": "bgprouteipv4config 1"}, self.bgprouter)
+        self.bgprouteipv4 = self.dm.insert("bgprouteipv4config2", {"object_type": "bgprouteipv4config", "name": "bgprouteipv4config 2"}, self.bgprouter)
+
 
         self.dev3 = self.dm.insert("emulateddevice2", {"object_type": "emulateddevice", "name": "dev 3"}, port2)
         self.ip3 = self.dm.insert("ipv4if2", {"object_type": "ipv4if", "name": "ipv4if 3"}, self.dev3)
@@ -145,12 +149,12 @@ class TestLinker:
 
     def test1a(self):
         linker = Linker(self.createModel())
-        nodes = linker._resolve("/port[@name=port 1]")
+        nodes = linker._resolve("/Port[@Name=port 1]")
         assert nodes.count() == 1 and nodes.get(0) == self.port1
 
     def test1b(self):
         linker = Linker(self.createModel())
-        nodes = linker._resolve("/port[name=port 1]")
+        nodes = linker._resolve("/port")
         assert nodes.count() == 1 and nodes.get(0) == self.port1
 
     def test1c(self):
@@ -248,3 +252,8 @@ class TestLinker:
         linker = Linker(self.createModel())
         with pytest.raises(Exception):
             assert linker._resolve("/port/emulateddevice[@name *= 'dev']'/ipv4if")
+    
+    def test11a(self):
+        linker = Linker(self.createModel())
+        nodes = linker._resolve("/emulateddevice[name=dev 2]/bgprouterconfig/bgpipv4routeconfig[*]")
+        assert nodes.count() == 2
