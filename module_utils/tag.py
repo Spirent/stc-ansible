@@ -108,7 +108,6 @@ class Tag:
     def find_or_create_stctag(self, metamodel_inst):
         if 'project1' in metamodel_inst.datamodel.root:
             Tag._meta_tags = metamodel_inst.datamodel.root['project1'].children['tags1']
-        return None
 
     def resolve_by_tag(self, xpath_inst):
         pass
@@ -137,7 +136,7 @@ class TagOnEqual(Tag):
                         myret = xpath_inst._resolve(newref)
                         if ret == None:
                             ret = myret
-                        elif ret != None and ret.isDifferent(myret):
+                        elif ret.isDifferent(myret):
                             newret = ret.intersect(myret)
                             if newret != None:
                                 ret = newret
@@ -278,11 +277,14 @@ if __name__ == '__main__':
 
     #params of task: creat device with tag
     params = {'action': 'create', 'under': '/Project', 'objects': {}}
-    params['objects'] = [{'EmulatedDevice': {'AffiliatedPort': "ref:/port[@name='Port1']", 'name': 'BGPRouter', 'tag': 'atag'}}]
+    params['objects'] = {'EmulatedDevice': {'AffiliatedPort': "ref:/port[@name='Port1']", 'name': 'BGPRouter', 'tag': 'atag'}}
     tagm = TagManager()
     tagm.update_tag_properties("", params['objects'], mm)
+    assert 'usertag-targets' in params['objects']['EmulatedDevice']
 
     #params of task: find device with tag and configure its tag
     params = {'action': 'config', 'objects': "/EmulatedDevice[@tag='atag']", "properties": {"tag": "~bgptag &mytag"}}
-    tagm.update_tag_references(params['objects'], True, mm.xpath)
+    ret = tagm.update_tag_references(params['objects'], True, mm.xpath)
     tagm.update_tag_properties("", params['properties'], mm)
+    assert 'usertag-targets' in params['properties']
+
