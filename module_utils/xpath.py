@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-07-13 15:07:55
+# @Last Modified time: 2020-07-13 15:17:13
 
 try:
     from ansible.module_utils.logger import Logger
@@ -180,6 +180,9 @@ class NodeSelector:
         if other != None:
             if self.nodes == other.nodes:
                 return False
+            if len(other.nodes)==0:
+                return len(self.nodes)>0
+                
             for n in other.nodes:
                 if n not in self.nodes:
                     return True

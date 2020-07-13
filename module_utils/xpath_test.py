@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-07-13 15:09:51
+# @Last Modified time: 2020-07-13 15:18:35
 
 from module_utils.datamodel import DataModel
 from module_utils.xpath import NodeSelector, Linker, Selector
@@ -169,6 +169,12 @@ class TestSet:
         assert set1.isDifferent(set2) == False
         assert set1.isDifferent(set3) == True
         assert set1.isDifferent(None) == True
+
+        assert NodeSelector().isDifferent(set1)
+        assert NodeSelector().isDifferent(NodeSelector()) == False
+        assert NodeSelector().isDifferent(None)
+        assert set1.isDifferent(NodeSelector())
+
 
     def test_intersect(self):
         self.createModel()
