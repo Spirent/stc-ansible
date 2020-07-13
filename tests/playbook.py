@@ -10,6 +10,7 @@ import time
 import glob
 import shutil
 import sys, os
+import re
 from module_utils.utils import *
 from module_utils.metamodel import MetaModel
 from tests.mintaka import MintakaConfig
@@ -17,7 +18,7 @@ from tests.mintaka import MintakaConfig
 
 class PlaybookEmulator:
 
-    def __init__(self, labServer, chassis=[], ports=[]):
+    def __init__(self, labServer, chassis=[], ports=[], names=[]):
 
         if labServer[0] == '@':
             config = MintakaConfig(labServer[1:], "5")
@@ -28,6 +29,7 @@ class PlaybookEmulator:
         self.labServer = labServer
         self.chassis = chassis
         self.ports = ports
+        self.names = names
 
     def play(self, playbook):
 
@@ -72,9 +74,18 @@ class PlaybookEmulator:
                     if len(self.chassis) > 0:
                         print("[emulator] Overwritting Chassis with %s" % self.chassis)
                         task["stc"]["chassis"] = " ".join(self.chassis)
-                    if len(self.ports) > 0:
+
+                    print("**** ports:", task["stc"]["ports"])
+                    mgPort = re.search(r'\{\{(\s*)hostvars\[inventory_hostname\]\.ports(\s*)\}\}', task["stc"]["ports"])
+                    print("**** names:", task["stc"]["names"])
+                    if len(self.ports) > 0 and mgPort:
                         print("[emulator] Overwritting Ports with %s" % self.ports)
                         task["stc"]["ports"] = " ".join(self.ports)
+
+                    mgName = re.search(r'\{\{(\s*)hostvars\[inventory_hostname\]\.names(\s*)\}\}', task["stc"]["names"])
+                    if len(self.names) > 0 and mgName:
+                        print("[emulator] Overwritting Names with %s" % self.names)
+                        task["stc"]["names"] = " ".join(self.names)
 
                 if "dest" in task["stc"]:
                     task["stc"]["dest"] = task["stc"]["dest"].replace("{{ tempfolder.path }}", "/tmp")

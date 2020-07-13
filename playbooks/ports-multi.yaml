@@ -1,0 +1,35 @@
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: ports_online
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+    ports: "//${chassis[0]}/1/1-3,6,8 //${chassis[1]}/2/1-3,6-8"
+    names: "port[1:4] ethernet2/5 [4:9]_Ethernet1_9"
+    #ports: "{{ hostvars[inventory_hostname].ports }}"
+    #names: "{{ hostvars[inventory_hostname].names }}"
+
+-
+  name: Create the base ports
+  stc:
+    action: create
+    count: 11
+    objects:
+      - project:
+          - port:
+              location: ${ports[item]}
+              name: ${names[item]}
+
+
+-
+  name: Get the actual port configuration
+  register: result
+  stc:
+    action: get
+    objects: ref:/port
+
+- 
+  debug:
+    var: result
+

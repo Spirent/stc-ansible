@@ -16,6 +16,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument('playbook', type=str, help='Ansible playbook to emulate')
 parser.add_argument('-labserver', '-s', required=True, metavar='lab-server', help="lab server IP address or DNS")
 parser.add_argument('-chassis',  '-c',  help="list of chassis IP address, comma separated", default="")
+parser.add_argument('-ports',  '-p',  help="list of ports, comma separated", default="")
+parser.add_argument('-names',  '-n',  help="list of the names of ports, comma separated", default="")
 parser.add_argument('-v',  '--verbose', action='store_true', help="verbose output")
 parser.add_argument('-vvv',  '--extraverbose', action='store_true', help="extra verbose output")
 
@@ -27,10 +29,15 @@ if args.extraverbose:
 
 ports = []
 chassis = []
+names = []
 if len(args.chassis)>0:
 	chassis = args.chassis.split(",")
-	ports = ["//"+ip+"/1/1" for ip in chassis]
+	
+if len(args.ports)>0:
+        ports = args.ports.split(";")
 
+if len(args.names)>0:
+        names = args.names.split(";")
 
-emulator = PlaybookEmulator(args.labserver, chassis, ports)
+emulator = PlaybookEmulator(args.labserver, chassis, ports, names)
 emulator.play(args.playbook)

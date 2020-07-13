@@ -58,17 +58,24 @@ class Templater:
 
         value = value.replace("$item", str(index))
 
+        matches = re.findall(r"(\${(.*?(\bnames\b).*?)})", value)
+        for match in matches:
+            key = match[0]
+            val = eval(match[1], {"item": index, "math": math, "names": BoundedNamesArray(self.datamodel.names)})
+            value = value.replace(key, str(val))
+
+        #matches = re.findall(r"(\${(.*?((\bports\b)|(\bitem\b)).*?)})", value)
+        matches = re.findall(r"(\${(.*?(\bports\b).*?)})", value)
+        for match in matches:
+            key = match[0]
+            val = eval(match[1], {"item": index, "math": math, "ports": BoundedPortArray(self.datamodel.ports)})
+            value = value.replace(key, str(val))
+
         matches = re.findall(r"(\${(.*?((\bchassis\b)|(\bitem\b)).*?)})", value)
         for match in matches:
             key = match[0]
             val = eval(match[1], {"item": index, "math": math, "chassis": BoundedChassisArray(self.datamodel.chassis)})
-            value = value.replace(match[0], str(val))
-
-        matches = re.findall(r"(\${(.*?((\bports\b)|(\bitem\b)).*?)})", value)
-        for match in matches:
-            key = match[0]
-            val = eval(match[1], {"item": index, "math": math, "ports": BoundedPortArray(self.datamodel.ports)})
-            value = value.replace(match[0], str(val))
+            value = value.replace(key, str(val))
 
         if value.find("${chassis-item}") >= 0:
             chassis = self.datamodel.getChassis(index)
@@ -100,3 +107,15 @@ class BoundedPortArray:
         if index < len(self.l):
             return self.l[index]
         return "//(no port [" + str(index) + "])/1/1"
+
+
+class BoundedNamesArray:
+
+    def __init__(self, l):
+        self.l = l
+
+    def __getitem__(self, index):
+        if index < len(self.l):
+            return self.l[index]
+        return "noPortName"
+

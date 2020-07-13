@@ -61,16 +61,27 @@ class MetaModel:
 
             ports = params["ports"] if "ports" in params else None
             if ports != None and ports != "":
-                ports = ports.split(" ")
+                ports = self.resolvePorts(ports)
+                log.info("Ports: %s" % str(ports))
             else:
                 ports = []
+
+            portNames = params["names"] if "names" in params else None
+            if portNames != None and portNames != "":
+                portNames = self.resolveNames(portNames)
+                log.info("PortNames: %s" % str(portNames))
+            else:
+                portNames = []
+
+            if len(ports) != 0 and len(portNames) != 0 and len(ports) != len(portNames):
+                log.error("The number of ports and names does not match, please check")
 
             # print(">>> new session <<< user:%s name:%s chassis:%s" %
             #       (Color.blue(params["user"]), Color.blue(params["name"]), Color.green(str(chassis))))
 
             reset_existing = (not ("reset_existing" in params)) or (params["reset_existing"] == True)
             kill_existing = "kill_existing" in params and params["kill_existing"]
-            result = self.new_session(params["user"], params["name"], chassis, ports, reset_existing, kill_existing)
+            result = self.new_session(params["user"], params["name"], chassis, ports, portNames, reset_existing, kill_existing)
 
         elif action == "create":
 
@@ -183,9 +194,9 @@ class MetaModel:
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
 
-    def new_session(self, user_name, session_name, chassis=[], ports=[], reset_existing=True, kill_existing=False):
+    def new_session(self, user_name, session_name, chassis=[], ports=[], names=[], reset_existing=True, kill_existing=False):
 
-        self.datamodel.new(session_name + " - " + user_name, chassis, ports),
+        self.datamodel.new(session_name + " - " + user_name, chassis, ports, names),
         if not self.rest.new_session(user_name, session_name, reset_existing, kill_existing):
             return Result.error("Failed to create a session: %s" % self.rest.errorInfo)
 
@@ -555,3 +566,47 @@ class MetaModel:
             handles.append(obj["object"].handle)
 
         return Result.value(handles)
+
+    def resolvePorts(self, ports):
+        outList = []
+        ports = ports.split(" ")
+        for it in ports:
+            tmList = it.rsplit('/', 1)
+            # Handle exception
+            if 2 != len(tmList):
+                log.error("GET Invalid ports: %s" % (it))
+                return outList
+
+            key = tmList[0]
+            port = tmList[1]
+
+            # Handle ',' in ports
+            portList = port.split(',') if ',' in port else [port]
+            newList = []
+            for each in portList:
+                if '-' in each:
+                    start = int(each.split('-')[0])
+                    end = int(each.split('-')[1]) + 1
+                    newList += [key + '/' + str(item) for item in list(range(start, end))]
+                else:
+                    newList.append(key + '/' + each)
+            outList += newList
+
+        return outList
+
+    def resolveNames(self, names):
+        outList = []
+        names = names.split(" ")
+        for it in names:
+            m = re.search(r'\[\d+:\d+\]', it)
+            if m:
+                rg = m.group()
+                rgn = rg[1:len(rg) - 1].split(':')
+                start = int(rgn[0])
+                end = int(rgn[1]) + 1
+                outList += [it.replace(rg, str(item)) for item in list(range(start, end))]
+            else:
+                outList += [it]
+
+        return outList
+

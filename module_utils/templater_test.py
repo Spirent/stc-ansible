@@ -11,9 +11,9 @@ from module_utils.xpath import NodeSelector, Linker, Selector
 
 class TestTemplater:
 
-    def createTemplater(self, chassis=[], ports=[]):
+    def createTemplater(self, chassis=[], ports=[], names=[]):
         dm = DataModel()
-        dm.new("dummy-session", chassis, ports)
+        dm.new("dummy-session", chassis, ports, names)
         return Templater(dm)
 
     def test1a(self):
