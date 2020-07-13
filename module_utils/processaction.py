@@ -27,7 +27,7 @@ class MapWorker:
                 return pre_func(*args, **kwargs)
         except Exception as e:
             log.debug("worker: pre_process %s" % str(e))
-        log.debug("worker: without pre_%s" % self._method)
+        #log.debug("worker: without pre_%s" % self._method)
 
     def post_process(self, ret, *args, **kwargs):
         try:
@@ -36,7 +36,7 @@ class MapWorker:
                 return post_func(ret, *args, **kwargs)
         except Exception as e:
             log.debug("worker: post_process %s" % str(e))
-        log.debug("worker: without post_%s" % self._method)
+        #log.debug("worker: without post_%s" % self._method)
 
     def pre_metamodel_action(self, *args, **kwargs):
         log.debug("worker: pre_metamodel_action")
@@ -101,14 +101,14 @@ def process_action():
     def _process(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            log.debug("enter process_action: %s, %s" % (func.__module__, func.__name__))
+            #log.debug("enter process_action: %s, %s" % (func.__module__, func.__name__))
             worker = MapWorker(func.__module__, func.__name__)
             worker.pre_process(*args, **kwargs)
             ret = func(*args, **kwargs)
             pret = worker.post_process(ret, *args, **kwargs)
             if pret != None:
                 ret = pret
-            log.debug("exit process_action: %s, %s" % (func.__module__, func.__name__))
+            #log.debug("exit process_action: %s, %s" % (func.__module__, func.__name__))
             return ret
         return wrapper
     return _process
