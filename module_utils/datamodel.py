@@ -97,7 +97,7 @@ class DataModel:
             print("%s%s" % (prefix, node[key].dump("\n" + prefix + "-")))
             self.dump(node[key].children, level + 1)
 
-    def update(self, obj, attributes, parent):
+    def update(self, obj, attributes, parent=None):
         if obj != None:
             hnd = obj['object'].handle
             nodes = self.root
@@ -106,9 +106,12 @@ class DataModel:
             if hnd in nodes:
                 nodes[hnd].config(attributes)
                 return nodes[hnd]
-            elif hnd == parent.handle:
+            elif parent != None and hnd == parent.handle:
                 parent.config(attributes)
                 return parent
+            else:
+                obj['object'].config(attributes)
+                return obj['object']
         return None
 
     def insert(self, handle, attributes, parent=None):
