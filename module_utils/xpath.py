@@ -180,9 +180,9 @@ class NodeSelector:
         if other != None:
             if self.nodes == other.nodes:
                 return False
-            if len(other.nodes)==0:
-                return len(self.nodes)>0
-                
+            if len(other.nodes) == 0:
+                return len(self.nodes) > 0
+
             for n in other.nodes:
                 if n not in self.nodes:
                     return True

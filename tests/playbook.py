@@ -2,7 +2,7 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:09:07
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-06 12:35:40
+# @Last Modified time: 2020-07-13 17:10:47
 
 import yaml
 import json
@@ -50,7 +50,7 @@ class PlaybookEmulator:
 
             count = 1
             if "pause" in task:
-                print("\033[93m------------ PAUSING ------------\033[0m")
+                print("\033[95m------------ PAUSING ------------\033[0m")
                 if "pause" in task:
                     if "seconds" in task["pause"]:
                         print("Waiting for %s seconds" % task["pause"]["seconds"])
@@ -64,7 +64,7 @@ class PlaybookEmulator:
                     print("Sorry, I do not understand this task... %s" % task)
 
             elif "stc" in task:
-                print("\033[93m------------ TASK %s ------------\033[0m" % task["name"])
+                print("\033[95m------------ TASK %s ------------\033[0m" % task["name"])
                 start = time.time()
                 model = MetaModel(self.labServer)
 
@@ -79,9 +79,9 @@ class PlaybookEmulator:
                 if "dest" in task["stc"]:
                     task["stc"]["dest"] = task["stc"]["dest"].replace("{{ tempfolder.path }}", "/tmp")
 
-                if "datamodel" in task["stc"] and "action" in task["stc"] :
+                if "datamodel" in task["stc"] and "action" in task["stc"]:
                     task["stc"]["datamodel"] = task["stc"]["datamodel"].replace("{{ tempfolder.path }}", "asset")
-                    
+
                 result = model.action(task["stc"])
 
                 if result.isError():
@@ -112,7 +112,7 @@ class PlaybookEmulator:
                     shutil.copyfile(src, dst)
 
             elif not "debug" in task:
-                print("\033[93m------------ UNKNOWN TASK ------------\033[0m")
+                print("\033[95m------------ UNKNOWN TASK ------------\033[0m")
                 print("Sorry, I do not understand this task... %s" % task)
 
         elapsed = time.time() - pbstart
@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
     emulator = PlaybookEmulator("@bdc")
 
-    # emulator.play("./playbooks/bgp-traffic.yaml")
+    # emulator.play("./playbooks/device-create.yaml")
 
     for file in glob.glob("./playbooks/*.yaml"):
         print("\n\n%s %s %s\n\n" % (Color.blue("=" * 60), Color.bold(file), Color.blue("=" * 60)))

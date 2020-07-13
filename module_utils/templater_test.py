@@ -50,4 +50,3 @@ class TestTemplater:
         t = self.createTemplater(['10.61.55.23', '10.61.65.12'])
         v = t.get("${chassis[$item]}", 1)
         assert v == '10.61.65.12'
-        

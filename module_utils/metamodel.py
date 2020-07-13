@@ -140,7 +140,7 @@ class MetaModel:
 
         elif action[0:4] == "drv.":
 
-            if objects!=None:
+            if objects != None:
                 if type(objects) is list:
                     if len(objects) != 1:
                         return Result.error("There should be only one object, but there are %d: %s" %
@@ -149,21 +149,20 @@ class MetaModel:
 
                 objects = self.xpath.resolveObjects(objects)
 
-            if objects==None:
+            if objects == None:
                 return Result.error("Can not fetch DRV: no valid objects selected")
 
             drv = DRV(objects, self.rest)
-            if action[4:]=="fetch":
+            if action[4:] == "fetch":
                 result = Result.value(drv.fetch())
 
-            elif action[4:]=="subscribe":
+            elif action[4:] == "subscribe":
                 result = Result.value(drv.subscribe())
 
             else:
                 result = Result.error("Unknown DRV action %s" % action[4:])
 
             return result
-
 
         else:
 
