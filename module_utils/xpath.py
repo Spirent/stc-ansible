@@ -2,12 +2,14 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-07 11:03:57
+# @Last Modified time: 2020-07-03 16:24:32
 
 try:
     from ansible.module_utils.logger import Logger
+    from ansible.module_utils.processaction import process_action
 except ImportError:
     from module_utils.logger import Logger
+    from module_utils.processaction import process_action
 
 import requests
 import json
@@ -23,6 +25,7 @@ class Linker:
         self.datamodel = datamodel
         self.rest = rest
 
+    @process_action()
     def resolveSingleObject(self, ref):
 
         selection = self._resolve(ref)
@@ -34,6 +37,7 @@ class Linker:
 
         return selection.firstNode()
 
+    @process_action()
     def resolveObjects(self, ref, current=None):
         selection = self._resolve(ref, current)
         if selection == None or selection.count() == 0:
@@ -41,6 +45,8 @@ class Linker:
         return selection
 
     def _resolve(self, ref, current=None):
+        if ref == None:
+            return None
 
         if ref[0:4] == "ref:":
             ref = ref[4:]
@@ -77,7 +83,7 @@ class Linker:
             ref = ref[1:]
 
         else:
-            log.warning("Invalid reference [%s]" % (ref))
+            log.warning("Invalid reference syntax: '%s'" % (ref))
             return None
 
         if current == None:
@@ -141,8 +147,11 @@ class Linker:
 
 class NodeSelector:
 
-    def __init__(self, node):
-        self.nodes = [node]
+    def __init__(self, node=None):
+        if node == None:
+            self.nodes = []
+        else:
+            self.nodes = [node]
 
     def log(self, m):
         log.debug("[selector] " + m)
@@ -170,6 +179,32 @@ class NodeSelector:
 
         self.nodes = selector.filterNodes(self.nodes)
         return len(self.nodes)
+
+    def isDifferent(self, other):
+        if other != None:
+            if self.nodes == other.nodes:
+                return False
+            for n in other.nodes:
+                if n not in self.nodes:
+                    return True
+            return False
+        return True
+
+    def extend(self, other):
+        if other != None:
+            for n in other.nodes:
+                if n not in self.nodes:
+                    self.nodes.append(n)
+
+    def intersect(self, other):
+        new = NodeSelector()
+        if other != None:
+            for n in other.nodes:
+                if n in self.nodes:
+                    new.nodes.append(n)
+        if new.count() == 0:
+            return None
+        return new
 
 
 class Selector:
@@ -210,9 +245,14 @@ class Selector:
             found = False
             for operator, id in operators.items():
                 matcher = "^(\\w+)\\s*" + operator + "\\s*(.*)$"
-                if re.search(matcher, selector) != None:
+                #fix the bug: cannot work for usertag-targets if "-" in the selector
+                matcher2 = "^(\\w+\\-\\w+)\\s*" + operator + "\\s*(.*)$"  
+                if re.search(matcher, selector) != None or \
+                    re.search(matcher2, selector) != None:  
 
                     match = re.findall(matcher, selector)
+                    if len(match) == 0:
+                        match = re.findall(matcher2, selector)
                     value = match[0][1]
                     if value.startswith("'") and value.endswith("'"):
                         value = value[1:-1]

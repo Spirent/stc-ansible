@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-06 13:14:46
+# @Last Modified time: 2020-07-08 07:16:43
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -27,15 +27,20 @@ class StcRest:
         self.server = server
         self.session = session
         self.errorInfo = None
+        self.conn = requests.Session()
+        self.conn.headers.update({'Accept': 'application/json', "X-STC-API-Session": self.session})
 
     def new_session(self, user_name, session_name, reset_existing=True, kill_existing=False):
 
+        conn = self.conn
+        conn.headers.update({'Accept': 'application/json', "X-STC-API-Session": self.session})
+
         url = "http://" + self.server + "/stcapi/system"
-        systemInfo = json.loads(requests.get(url, headers={'Accept': 'application/json'}).content)
+        systemInfo = json.loads(conn.get(url).content)
         log.info("SYSTEM %s -> %s" % (url, json.dumps(systemInfo, indent=4)))
 
         url = "http://" + self.server + "/stcapi/sessions"
-        existingSessions = json.loads(requests.get(url, headers={'Accept': 'application/json'}).content)
+        existingSessions = json.loads(conn.get(url).content)
         log.info("SESSIONS %s -> %s" % (url, json.dumps(existingSessions, indent=4)))
 
         newSession = True
@@ -43,7 +48,7 @@ class StcRest:
         if sessionID in existingSessions:
             if kill_existing:
                 log.info("Killing the session first")
-                rsp = requests.delete(url + "/" + sessionID, headers={'Accept': 'application/json'}, params="kill")
+                rsp = conn.delete(url + "/" + sessionID, params="kill")
                 log.info("KILL SESSION -> [%d] %s" % (rsp.status_code, rsp.content))
             else:
                 log.info("Session already exists... Skipping creation")
@@ -52,7 +57,7 @@ class StcRest:
         if newSession:
             log.info("Creating the session now...")
             params = {'userid': user_name, 'sessionname': session_name}
-            rsp = requests.post(url, headers={'Accept': 'application/json'}, data=params, timeout=60 * 2)
+            rsp = conn.post(url, data=params, timeout=60 * 2)
             log.info("SESSION %s %s -> [%d] %s" % (url, json.dumps(params, indent=4), rsp.status_code, rsp.content))
 
             if rsp.status_code != 409 and rsp.status_code != 200 and rsp.status_code != 201:
@@ -87,11 +92,7 @@ class StcRest:
                 continue
 
             url = "http://" + self.server + "/stcapi/files/" + file
-            rsp = requests.get(url,
-                               headers={
-                                   'Accept': 'application/octet-stream',
-                                   "X-STC-API-Session": self.session
-                               },
+            rsp = self.conn.get(url,
                                timeout=300)
             log.info("FILE %s -> [%d] %d bytes" % (url, rsp.status_code, len(rsp.content)))
             if rsp.status_code != 200:
@@ -126,7 +127,7 @@ class StcRest:
             raise Exception(self.errorInfo)
         return response
 
-    def children(self, handle, properties=[]):
+    def children(self, handle):
         l = self.get(handle, ["children"])
         if l == None or l == '':
             return []
@@ -142,12 +143,7 @@ class StcRest:
             paramters of the object to be configured
         """
         url = "http://" + self.server + "/stcapi/objects/" + handle
-        rsp = requests.put(url,
-                           headers={
-                               'Accept': 'application/json',
-                               "X-STC-API-Session": self.session
-                           },
-                           data=params,
+        rsp = self.conn.put(url,data=params,
                            timeout=60)
 
         if rsp.status_code == 200 or rsp.status_code == 204:
@@ -203,12 +199,7 @@ class StcRest:
 
         url = "http://" + self.server + "/stcapi/objects/" + object_handle
         log.info("DELETE %s" % (url))
-        rsp = requests.delete(url,
-                              headers={
-                                  'Accept': 'application/json',
-                                  "X-STC-API-Session": self.session
-                              },
-                              timeout=60)
+        rsp = self.conn.delete(url,timeout=60)
 
         if rsp.status_code == 200 or rsp.status_code == 204:
             log.info("DELETE status_code: %d -> %s" % (rsp.status_code, rsp.content))
@@ -224,12 +215,7 @@ class StcRest:
     def _post(self, container, params={}):
         url = "http://" + self.server + "/stcapi/" + container
         log.info("POST %s %s" % (url, json.dumps(params, indent=4)))
-        rsp = requests.post(url,
-                            headers={
-                                'Accept': 'application/json',
-                                "X-STC-API-Session": self.session
-                            },
-                            json=params,
+        rsp = self.conn.post(url,json=params,
                             timeout=60)
 
         if rsp.status_code == 200 or rsp.status_code == 201:
@@ -245,7 +231,7 @@ class StcRest:
     def _get(self, container):
         url = "http://" + self.server + "/stcapi/" + container
         log.info("GET %s" % (url))
-        rsp = requests.get(url, headers={'Accept': 'application/json', "X-STC-API-Session": self.session}, timeout=60)
+        rsp = self.conn.get(url, timeout=60)
 
         if rsp.status_code == 200:
             self.errorInfo = None
