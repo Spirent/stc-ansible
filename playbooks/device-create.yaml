@@ -25,6 +25,9 @@
           - port: 
               location: "//(Offline)/1/1"
               name: Port1
+          - port: 
+              location: "//(Offline)/1/1"
+              name: Port2
 
 
 -
@@ -39,8 +42,24 @@
       Port: ref:/port[@Name='Port1']
       IfStack: Ipv4If PppIf PppoeIf EthIIIf
       IfCount: '1 1 1 1'
-      name: "dev-$item"
+      name: "client-$item"
+      tag: 'client dhcp'
 
+
+-
+  name: create 2 block of 50 devices
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 2
+      DeviceCount: 50
+      Port: ref:/port[@Name='Port2']
+      IfStack: Ipv4If PppIf PppoeIf EthIIIf
+      IfCount: '1 1 1 1'
+      name: "server-$item"
+      tag: 'server dhcp'
 
 
 - 

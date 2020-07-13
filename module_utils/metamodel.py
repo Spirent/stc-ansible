@@ -2,13 +2,14 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-07-03 16:34:17
+# @Last Modified time: 2020-07-13 17:01:45
 
 try:
     from ansible.module_utils.templater import Templater
     from ansible.module_utils.datamodel import DataModel
     from ansible.module_utils.objtree import ObjectTree
     from ansible.module_utils.stcrest import StcRest
+    from ansible.module_utils.tags import TagManager
     from ansible.module_utils.xpath import Linker
     from ansible.module_utils.logger import Logger
     from ansible.module_utils.drv import DRV
@@ -18,6 +19,7 @@ except ImportError:
     from module_utils.datamodel import DataModel
     from module_utils.objtree import ObjectTree
     from module_utils.stcrest import StcRest
+    from module_utils.tags import TagManager
     from module_utils.xpath import Linker
     from module_utils.logger import Logger
     from module_utils.drv import DRV
@@ -263,6 +265,7 @@ class MetaModel:
             props = self.templater.get(properties, i)
             if command == "DeviceCreate":
                 props["name"] = name
+                TagManager(self).update(props)
             r = self.performConfig(command, props)
             if r.isError():
                 return r
@@ -424,6 +427,7 @@ class MetaModel:
 
     def createObject(self, objects, parent):
 
+        TagManager(self).update(objects)
         return self.createOrConfigObject(objects, parent, False)
 
     # --------------------------------------------------------------------
