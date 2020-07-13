@@ -39,7 +39,7 @@ class MapWorker:
         #log.debug("worker: without post_%s" % self._method)
 
     def pre_metamodel_action(self, *args, **kwargs):
-        log.debug("worker: pre_metamodel_action")
+        #log.debug("worker: pre_metamodel_action")
         params = args[1]
         action = params["action"]     
         if action == "create":
@@ -61,28 +61,28 @@ class MapWorker:
                     del params['object'] 
 
     def post_xpath_resolveSingleObject(self, ret, *args, **kwargs):
-        log.debug("worker: post_xpath_resolveSingleObject")
+        #log.debug("worker: post_xpath_resolveSingleObject")
         xpath_worker = args[0]
         ref = args[1]
         tagm = TagManager()
         return tagm.update_tag_references(ref, True, xpath_worker)
 
     def post_xpath_resolveObjects(self, ret, *args, **kwargs):
-        log.debug("worker: post_xpath_resolveObjects")
+        #log.debug("worker: post_xpath_resolveObjects")
         xpath_worker = args[0]
         ref = args[1]
         tagm = TagManager()
         return tagm.update_tag_references(ref, False, xpath_worker)
 
     def pre_metamodel_createObject(self, *args, **kwargs):
-        log.debug("worker: pre_metamodel_createObject")
+        #log.debug("worker: pre_metamodel_createObject")
         objects = args[1]
         metamodel = args[0]
         tagm = TagManager()
         tagm.update_tag_properties("", objects, metamodel)
 
     def pre_metamodel_configObject(self, *args, **kwargs):
-        log.debug("worker: pre_metamodel_configObject")
+        #log.debug("worker: pre_metamodel_configObject")
         root = args[1].handle
         properties = args[2]
         metamodel = args[0]
@@ -91,7 +91,7 @@ class MapWorker:
         tagm.update_tag_properties(taghnds, properties, metamodel)
 
     def pre_metamodel_perform(self, *args, **kwargs):
-        log.debug("worker: pre_metamodel_perform")
+        #log.debug("worker: pre_metamodel_perform")
         properties = args[2]
         metamodel = args[0]
         tagm = TagManager()
