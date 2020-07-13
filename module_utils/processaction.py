@@ -1,6 +1,6 @@
 
 try:
-    from module_utils.tag import TagManager
+    from ansible.module_utils.tag import TagManager
     from ansible.module_utils.logger import Logger
     from ansible.module_utils.utils import *
 except ImportError:

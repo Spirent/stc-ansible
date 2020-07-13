@@ -140,6 +140,8 @@ class TagOnEqual(Tag):
                             newret = ret.intersect(myret)
                             if newret != None:
                                 ret = newret
+                            else:
+                                return None
         return ret
 
 class TagOnContains(Tag):
