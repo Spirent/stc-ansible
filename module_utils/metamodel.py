@@ -74,7 +74,7 @@ class MetaModel:
                 portNames = []
 
             if len(ports) != 0 and len(portNames) != 0 and len(ports) != len(portNames):
-                log.error("The number of ports and names does not match, please check")
+                return Result.error("The number of ports and names does not match, please check")
 
             # print(">>> new session <<< user:%s name:%s chassis:%s" %
             #       (Color.blue(params["user"]), Color.blue(params["name"]), Color.green(str(chassis))))

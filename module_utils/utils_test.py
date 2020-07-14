@@ -9,8 +9,20 @@ class TestUtils:
         v = resolveNames(names)
         assert v == retList
 
+    def test1_neg(self):
+        names = "port[1:4 ethernet2/5"
+        retList = ['port[1:4', 'ethernet2/5']
+        v = resolveNames(names)
+        assert v == retList
+
     def test2a(self):
         ports = "//chassis[0]/1/1-3,6,8 //chassis[0]/5/7 //chassis[1]/2/1-3,6-8"
         retList = ['//chassis[0]/1/1', '//chassis[0]/1/2', '//chassis[0]/1/3', '//chassis[0]/1/6', '//chassis[0]/1/8', '//chassis[0]/5/7', '//chassis[1]/2/1', '//chassis[1]/2/2', '//chassis[1]/2/3', '//chassis[1]/2/6', '//chassis[1]/2/7', '//chassis[1]/2/8']
+        v = resolvePorts(ports)
+        assert v == retList
+
+    def test2_neg(self):
+        ports = "//chassis[0]/1/xx-bb]"
+        retList = []
         v = resolvePorts(ports)
         assert v == retList

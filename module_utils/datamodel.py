@@ -39,14 +39,6 @@ class DataModel:
         if i < len(self.chassis):
             return self.chassis[i]
 
-    def getPorts(self, i):
-        if i < len(self.props["ports"]):
-            return self.props["ports"][i]
-
-    def getNames(self, i):
-        if i < len(self.props["names"]):
-            return self.props["names"][i]
-
     def getRoot(self, objtype):
         node = objtype + "1"
         if not (node in self.root):
