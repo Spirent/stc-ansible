@@ -62,6 +62,11 @@ def main():
             "required": False,
             "type": "str"
         },
+        "names": {
+            "required": False,
+            "type": "str"
+        },
+
         "reset_existing": {
             "required": False,
             "type": "bool",

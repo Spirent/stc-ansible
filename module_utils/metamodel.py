@@ -63,16 +63,32 @@ class MetaModel:
 
             ports = params["ports"] if "ports" in params else None
             if ports != None and ports != "":
-                ports = ports.split(" ")
+                try:
+                    ports = resolvePorts(ports)
+                    log.info("Ports: %s" % str(ports))
+                except Exception as err:
+                    return Result.error("Ports handling Exception: %s" % str(err))
+                
             else:
                 ports = []
 
+            portNames = params["names"] if "names" in params else None
+            if portNames != None and portNames != "":
+                portNames = resolveNames(portNames)
+                log.info("PortNames: %s" % str(portNames))
+            else:
+                portNames = []
+
+            if len(ports) != 0 and len(portNames) != 0 and len(ports) != len(portNames):
+                return Result.error("The number of ports and names does not match, please check")
+
             # print(">>> new session <<< user:%s name:%s chassis:%s" %
             #       (Color.blue(params["user"]), Color.blue(params["name"]), Color.green(str(chassis))))
+            propsDict = {"ports":ports, "names":portNames}
 
             reset_existing = (not ("reset_existing" in params)) or (params["reset_existing"] == True)
             kill_existing = "kill_existing" in params and params["kill_existing"]
-            result = self.new_session(params["user"], params["name"], chassis, ports, reset_existing, kill_existing)
+            result = self.new_session(params["user"], params["name"], chassis, propsDict, reset_existing, kill_existing)
 
         elif action == "create":
 
@@ -184,9 +200,9 @@ class MetaModel:
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
 
-    def new_session(self, user_name, session_name, chassis=[], ports=[], reset_existing=True, kill_existing=False):
+    def new_session(self, user_name, session_name, chassis=[], props={"ports":[], "names":[]}, reset_existing=True, kill_existing=False):
 
-        self.datamodel.new(session_name + " - " + user_name, chassis, ports),
+        self.datamodel.new(session_name + " - " + user_name, chassis, props),
         if not self.rest.new_session(user_name, session_name, reset_existing, kill_existing):
             return Result.error("Failed to create a session: %s" % self.rest.errorInfo)
 
@@ -558,3 +574,4 @@ class MetaModel:
             handles.append(obj["object"].handle)
 
         return Result.value(handles)
+

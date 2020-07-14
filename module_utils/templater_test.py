@@ -11,9 +11,10 @@ from module_utils.xpath import NodeSelector, Linker, Selector
 
 class TestTemplater:
 
-    def createTemplater(self, chassis=[], ports=[]):
+    def createTemplater(self, chassis=[], ports=[], names=[]):
         dm = DataModel()
-        dm.new("dummy-session", chassis, ports)
+        props = {"ports": ports, "names": names}
+        dm.new("dummy-session", chassis, props)
         return Templater(dm)
 
     def test1a(self):
@@ -50,3 +51,4 @@ class TestTemplater:
         t = self.createTemplater(['10.61.55.23', '10.61.65.12'])
         v = t.get("${chassis[$item]}", 1)
         assert v == '10.61.65.12'
+
