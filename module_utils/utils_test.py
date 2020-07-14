@@ -23,6 +23,10 @@ class TestUtils:
 
     def test2_neg(self):
         ports = "//chassis[0]/1/xx-bb]"
-        retList = []
-        v = resolvePorts(ports)
-        assert v == retList
+        hasError = False
+        try:
+            v = resolvePorts(ports)
+        except Exception as err:
+            hasError = True
+
+        assert hasError == True

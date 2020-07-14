@@ -61,8 +61,12 @@ class MetaModel:
 
             ports = params["ports"] if "ports" in params else None
             if ports != None and ports != "":
-                ports = resolvePorts(ports)
-                log.info("Ports: %s" % str(ports))
+                try:
+                    ports = resolvePorts(ports)
+                    log.info("Ports: %s" % str(ports))
+                except Exception as err:
+                    return Result.error("Ports handling Exception: %s" % str(err))
+                
             else:
                 ports = []
 

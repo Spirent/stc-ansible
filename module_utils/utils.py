@@ -62,8 +62,7 @@ def resolvePorts(ports):
         tmList = it.rsplit('/', 1)
         # Handle exception
         if 2 != len(tmList):
-            print("GET Invalid ports: %s" % (it))
-            return []
+            raise Exception("GET Invalid ports: %s" % (it))
 
         key = tmList[0]
         port = tmList[1]
@@ -76,8 +75,8 @@ def resolvePorts(ports):
                 start = each.split('-')[0]
                 end = each.split('-')[1]
                 if not start.isdigit() or not end.isdigit():
-                    print("GET Invalid ports format: %s" % (each))
-                    return []
+                    raise Exception("GET Invalid ports format: %s" % (each))
+                    
                 start = int(start)
                 end = int(end) + 1
                 newList += [key + '/' + str(item) for item in list(range(start, end))]
