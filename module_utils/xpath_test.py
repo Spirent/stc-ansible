@@ -175,7 +175,6 @@ class TestSet:
         assert NodeSelector().isDifferent(None)
         assert set1.isDifferent(NodeSelector())
 
-
     def test_intersect(self):
         self.createModel()
         set1 = NodeSelector(self.root)
@@ -189,7 +188,6 @@ class TestSet:
         assert set1.intersect(set2).count() == 1
         assert set1.intersect(set3).count() == 0
         assert set1.intersect(None).count() == 0
-
 
 
 class TestLinker:

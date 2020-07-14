@@ -92,8 +92,7 @@ class StcRest:
                 continue
 
             url = "http://" + self.server + "/stcapi/files/" + file
-            rsp = self.conn.get(url,
-                               timeout=300)
+            rsp = self.conn.get(url, timeout=300)
             log.info("FILE %s -> [%d] %d bytes" % (url, rsp.status_code, len(rsp.content)))
             if rsp.status_code != 200:
                 self.errorInfo = "download failed\n - url:%s\n - code:%d\n - response:%s\n - session:%s" % (
@@ -143,8 +142,7 @@ class StcRest:
             paramters of the object to be configured
         """
         url = "http://" + self.server + "/stcapi/objects/" + handle
-        rsp = self.conn.put(url,data=params,
-                           timeout=60)
+        rsp = self.conn.put(url, data=params, timeout=60)
 
         if rsp.status_code == 200 or rsp.status_code == 204:
             self.errorInfo = None
@@ -199,7 +197,7 @@ class StcRest:
 
         url = "http://" + self.server + "/stcapi/objects/" + object_handle
         log.info("DELETE %s" % (url))
-        rsp = self.conn.delete(url,timeout=60)
+        rsp = self.conn.delete(url, timeout=60)
 
         if rsp.status_code == 200 or rsp.status_code == 204:
             log.info("DELETE status_code: %d -> %s" % (rsp.status_code, rsp.content))
@@ -215,8 +213,7 @@ class StcRest:
     def _post(self, container, params={}):
         url = "http://" + self.server + "/stcapi/" + container
         log.info("POST %s %s" % (url, json.dumps(params, indent=4)))
-        rsp = self.conn.post(url,json=params,
-                            timeout=60)
+        rsp = self.conn.post(url, json=params, timeout=60)
 
         if rsp.status_code == 200 or rsp.status_code == 201:
             self.errorInfo = None

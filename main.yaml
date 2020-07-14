@@ -7,10 +7,10 @@
       include_tasks: playbooks/bgp-traffic.yaml
 
     - name: Create a basic device
-      include_tasks: playbooks/basic-device.yaml
+      include_tasks: playbooks/device-basic.yaml
 
     - name: Create a device and Reconnect session
-      include_tasks: playbooks/create-device.yaml 
+      include_tasks: playbooks/device-create.yaml 
       
     - name: Create an IGMP network
       include_tasks: playbooks/igmp-network.yaml

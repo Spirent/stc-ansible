@@ -2,13 +2,14 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-07-03 16:34:17
+# @Last Modified time: 2020-07-13 17:01:45
 
 try:
     from ansible.module_utils.templater import Templater
     from ansible.module_utils.datamodel import DataModel
     from ansible.module_utils.objtree import ObjectTree
     from ansible.module_utils.stcrest import StcRest
+    from ansible.module_utils.tags import TagManager
     from ansible.module_utils.xpath import Linker
     from ansible.module_utils.logger import Logger
     from ansible.module_utils.drv import DRV
@@ -18,6 +19,7 @@ except ImportError:
     from module_utils.datamodel import DataModel
     from module_utils.objtree import ObjectTree
     from module_utils.stcrest import StcRest
+    from module_utils.tags import TagManager
     from module_utils.xpath import Linker
     from module_utils.logger import Logger
     from module_utils.drv import DRV
@@ -154,7 +156,7 @@ class MetaModel:
 
         elif action[0:4] == "drv.":
 
-            if objects!=None:
+            if objects != None:
                 if type(objects) is list:
                     if len(objects) != 1:
                         return Result.error("There should be only one object, but there are %d: %s" %
@@ -163,21 +165,20 @@ class MetaModel:
 
                 objects = self.xpath.resolveObjects(objects)
 
-            if objects==None:
+            if objects == None:
                 return Result.error("Can not fetch DRV: no valid objects selected")
 
             drv = DRV(objects, self.rest)
-            if action[4:]=="fetch":
+            if action[4:] == "fetch":
                 result = Result.value(drv.fetch())
 
-            elif action[4:]=="subscribe":
+            elif action[4:] == "subscribe":
                 result = Result.value(drv.subscribe())
 
             else:
                 result = Result.error("Unknown DRV action %s" % action[4:])
 
             return result
-
 
         else:
 
@@ -279,6 +280,7 @@ class MetaModel:
             props = self.templater.get(properties, i)
             if command == "DeviceCreate":
                 props["name"] = name
+                TagManager(self).update(props)
             r = self.performConfig(command, props)
             if r.isError():
                 return r
@@ -440,6 +442,7 @@ class MetaModel:
 
     def createObject(self, objects, parent):
 
+        TagManager(self).update(objects)
         return self.createOrConfigObject(objects, parent, False)
 
     # --------------------------------------------------------------------
