@@ -75,9 +75,7 @@ class PlaybookEmulator:
                         print("[emulator] Overwritting Chassis with %s" % self.chassis)
                         task["stc"]["chassis"] = " ".join(self.chassis)
 
-                    print("**** ports:", task["stc"]["ports"])
                     mgPort = re.search(r'\{\{(\s*)hostvars\[inventory_hostname\]\.ports(\s*)\}\}', task["stc"]["ports"])
-                    print("**** names:", task["stc"]["names"])
                     if len(self.ports) > 0 and mgPort:
                         print("[emulator] Overwritting Ports with %s" % self.ports)
                         task["stc"]["ports"] = " ".join(self.ports)

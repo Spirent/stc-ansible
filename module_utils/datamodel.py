@@ -23,18 +23,16 @@ class DataModel:
     def __init__(self):
         self._session = None
         self.chassis = []
-        self.ports = []
-        self.names = []
+        self.props = {'names': [], 'ports':[]}
         self.unserialize()
 
     def session(self):
         return self._session
 
-    def new(self, session, chassis, ports, names):
+    def new(self, session, chassis, props):
         self._session = session
         self.chassis = chassis
-        self.ports = ports
-        self.names = names
+        self.props = props
         self.reset()
 
     def getChassis(self, i):
@@ -42,12 +40,12 @@ class DataModel:
             return self.chassis[i]
 
     def getPorts(self, i):
-        if i < len(self.ports):
-            return self.ports[i]
+        if i < len(self.props["ports"]):
+            return self.props["ports"][i]
 
     def getNames(self, i):
-        if i < len(self.names):
-            return self.names[i]
+        if i < len(self.props["names"]):
+            return self.props["names"][i]
 
     def getRoot(self, objtype):
         node = objtype + "1"
@@ -67,8 +65,8 @@ class DataModel:
 
                 self._session = model["session"]
                 self.chassis = model["chassis"]
-                self.ports = model["ports"]
-                self.names = model["names"]
+                self.props["ports"] = model["ports"]
+                self.props["names"] = model["names"]
                 project1 = model["model"]["project1"]
                 project = ObjectModel("project1", project1["attributes"], None)
                 project.unserialize(model["model"])
@@ -85,7 +83,7 @@ class DataModel:
 
         filename = "model-temp/stc-ansible-datamodel.json"
         with open(filename, 'w') as outfile:
-            data = {"model": {}, "session": self._session, "chassis": self.chassis, "ports": self.ports, "names": self.names}
+            data = {"model": {}, "session": self._session, "chassis": self.chassis, "ports": self.props["ports"], "names": self.props["names"]}
             if "project1" in self.root:
                 data["model"] = self.root["project1"].serialize()
             json.dump(data, outfile, indent=4)

@@ -13,7 +13,8 @@ class TestTemplater:
 
     def createTemplater(self, chassis=[], ports=[], names=[]):
         dm = DataModel()
-        dm.new("dummy-session", chassis, ports, names)
+        props = {"ports": ports, "names": names}
+        dm.new("dummy-session", chassis, props)
         return Templater(dm)
 
     def test1a(self):
