@@ -16,8 +16,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument('playbook', type=str, help='Ansible playbook to emulate')
 parser.add_argument('-labserver', '-s', required=True, metavar='lab-server', help="lab server IP address or DNS")
 parser.add_argument('-chassis',  '-c',  help="list of chassis IP address, comma separated", default="")
-parser.add_argument('-ports',  '-p',  help="list of ports, comma separated", default="")
-parser.add_argument('-names',  '-n',  help="list of the names of ports, comma separated", default="")
+parser.add_argument('-ports',  '-p',  help="list of ports, semicolon separated", default="")
+parser.add_argument('-names',  '-n',  help="list of the names of ports, semicolon separated", default="")
 parser.add_argument('-v',  '--verbose', action='store_true', help="verbose output")
 parser.add_argument('-vvv',  '--extraverbose', action='store_true', help="extra verbose output")
 

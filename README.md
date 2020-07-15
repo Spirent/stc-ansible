@@ -266,6 +266,64 @@ Voila, last step is to add a task to attach to the ports:
 
 Notice the reference `ref:/port`: It refers to all the port handles.
 
+### Defining Multiple ports and names
+
+Multiple ports and names can also be defined by adding the lists of ports and names to the inventory, and then reference them in the tasks. 
+
+The first step is to declare the ports and names in the inventory. For instance, this will add 16 ports and names to the playbook. 
+
+```ini
+[labservers]
+my-labserver-1 ansible_host=10.61.67.200 chassis = "10.61.67.216 10.61.67.199" ports="//10.61.67.216/1/1-4,7,9-10 //10.61.67.199/1/4-6,9,12-14 //10.61.67.199/2/18-19" names="port[1:5] ethA ethB eth_[8:16]_if"
+```
+
+For ports, the format shall be "//IP/slot/num1-num2,num3". "-" means the port is from num1 to num2. non-continuous number is separated by comma (","). For names, the range is specified by [num1:num2].
+
+For example, ports = "//10.61.67.216/1/1-3,7" means ports = "//10.61.67.216/1/1 //10.61.67.216/1/2 //10.61.67.216/1/3 //10.61.67.216/1/7". names = "port[1:3]" means names = "port1 port2 port3".
+
+**Notes:  The number of ports and names must be the same, otherwise an error will be reported.  This number will be the value of count when creating the ports.**
+
+Then, when creating the session, specify the ports and names property:
+
+```yaml
+- name: Create a session with predefined chassis
+  stc: 
+    action: session
+    user: ansible
+    name: basic_device
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+    ports: "{{ hostvars[inventory_hostname].ports }}"
+    names: "{{ hostvars[inventory_hostname].names }}"
+```
+
+The `{{ hostvars[inventory_hostname].ports }}` is used to reference to the ports defined in the inventory while `{{ hostvars[inventory_hostname].names }}` is used to reference to the names. Alternatively, the ports and names can be specified directly in the session task as below:
+
+```yaml
+- name: Create a session with predefined chassis
+  stc: 
+    action: session
+    user: ansible
+    name: basic_device
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+    ports: "//${chassis[0]}/1/1-3,6,8 //${chassis[1]}/2/1-3,6-8"
+    names: "port[1:4] ethernet2/5 [4:9]_Ethernet1_9"
+```
+
+Once the ports and names are defined in the `session` task, the keywork `${ports[item]}` and  `${names[item]}` can be used to reference them. An example is given as below:
+
+```yaml
+-
+  name: Create the base ports
+  stc:
+    action: create
+    count: 16
+    objects:
+      - project:
+          - port:
+              location: ${ports[item]}
+              name: ${names[item]}
+```
+
 
 ### Starting the Traffic
 
