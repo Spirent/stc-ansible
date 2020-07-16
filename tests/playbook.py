@@ -74,16 +74,16 @@ class PlaybookEmulator:
                     if len(self.chassis) > 0:
                         print("[emulator] Overwritting Chassis with %s" % self.chassis)
                         task["stc"]["chassis"] = " ".join(self.chassis)
-
-                    mgPort = re.search(r'\{\{(\s*)hostvars\[inventory_hostname\]\.ports(\s*)\}\}', task["stc"]["ports"])
-                    if len(self.ports) > 0 and mgPort:
-                        print("[emulator] Overwritting Ports with %s" % self.ports)
-                        task["stc"]["ports"] = " ".join(self.ports)
-
-                    mgName = re.search(r'\{\{(\s*)hostvars\[inventory_hostname\]\.names(\s*)\}\}', task["stc"]["names"])
-                    if len(self.names) > 0 and mgName:
-                        print("[emulator] Overwritting Names with %s" % self.names)
-                        task["stc"]["names"] = " ".join(self.names)
+                    if "ports" in task["stc"]:
+                        mgPort = re.search(r'\{\{(\s*)hostvars\[inventory_hostname\]\.ports(\s*)\}\}', task["stc"]["ports"])
+                        if len(self.ports) > 0 and mgPort:
+                            print("[emulator] Overwritting Ports with %s" % self.ports)
+                            task["stc"]["ports"] = " ".join(self.ports)
+                    if "names" in task["stc"]:
+                        mgName = re.search(r'\{\{(\s*)hostvars\[inventory_hostname\]\.names(\s*)\}\}', task["stc"]["names"])
+                        if len(self.names) > 0 and mgName:
+                            print("[emulator] Overwritting Names with %s" % self.names)
+                            task["stc"]["names"] = " ".join(self.names)
 
                 if "dest" in task["stc"]:
                     task["stc"]["dest"] = task["stc"]["dest"].replace("{{ tempfolder.path }}", "/tmp")
