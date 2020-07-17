@@ -2,7 +2,7 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-07-17 10:47:06
+# @Last Modified time: 2020-07-17 11:10:11
 
 try:
     from ansible.module_utils.datamodel import DataModel
@@ -96,7 +96,7 @@ class StcRest:
                                headers={
                                    'Accept': 'application/octet-stream',
                                    "X-STC-API-Session": self.session
-                               },
+                               })
             log.info("FILE %s -> [%d] %d bytes" % (url, rsp.status_code, len(rsp.content)))
             if rsp.status_code != 200:
                 self.errorInfo = "download failed\n - url:%s\n - code:%d\n - response:%s\n - session:%s" % (
