@@ -82,7 +82,7 @@ class DataModel:
 
     def tree(self):
 
-        return root["project1"].serialize()
+        return self.root["project1"].serialize()
 
     def dump(self, node=None, level=0):
 
