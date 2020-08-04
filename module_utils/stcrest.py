@@ -33,8 +33,7 @@ class StcRest:
     def new_session(self, user_name, session_name, reset_existing=True, kill_existing=False):
 
         conn = self.conn
-        conn.headers.update({'Accept': 'application/json', "X-STC-API-Session": self.session})
-
+        
         url = "http://" + self.server + "/stcapi/system"
         systemInfo = json.loads(conn.get(url).content)
         log.info("SYSTEM %s -> %s" % (url, json.dumps(systemInfo, indent=4)))
