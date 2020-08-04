@@ -77,7 +77,7 @@
   stc: 
     action: config
     count: 2
-    objects: /EmulatedDevice[@Name='dev-$item']
+    objects: /EmulatedDevice[@Name='client-$item']
     properties:
         Ipv4If: 
           AddrStep: 0.0.0.1
