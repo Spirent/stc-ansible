@@ -1,0 +1,53 @@
+
+-
+  name: Create session
+  stc:
+    action: session
+    user: ansible
+    name: tag_config
+    kill_existing: false
+    reset_existing: true
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+-
+  name: Create ports and tags
+  stc:
+    action: create
+    objects:
+      - project:
+          - port:
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+              tag: "portServer PortDhcp"
+
+-
+  name: create 2 block of 5 devices
+  stc:
+    action: perform
+    command: DeviceCreate
+    properties:
+      ParentList:  ref:/project
+      CreateCount: 2
+      DeviceCount: 5
+      Port: ref:/port[@name='Port1']
+      IfStack: Ipv4If PppIf PppoeIf EthIIIf
+      IfCount: '1 1 1 1'
+      name: "dev-$item"
+      tag: "devTagDhcp devtag-$item"
+
+
+-
+  name: Configure the traffic generator
+  stc:
+    count: 2
+    action: create
+    under: ref:/project
+    objects:
+    - StreamBlock:
+        tag: "traffMesh traff-$item"
+        EnableStreamOnlyGeneration: true
+        TrafficPattern: MESH
+        SrcBinding-targets: ref:/EmulatedDevice[@name='dev-$item']/Ipv4If
+        DstBinding-targets: ref:/EmulatedDevice[@name!='dev-$item']/Ipv4If
+        AffiliationStreamBlockLoadProfile:
+          Load: 100
