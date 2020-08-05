@@ -1,5 +1,9 @@
 
+
+from module_utils.metamodel import MetaModel
 from module_utils.tags import TagManager
+from module_utils.xpath import Linker
+from module_utils.datamodel import DataModel
 
 import pytest
 
@@ -9,13 +13,16 @@ class RestMock:
     def __init__(self):
         self.count = 10
 
-    def create(self, handle, props):
+    def create(self, object_type, props):
 
         self.count = self.count + 1
-        return handle + "-" + str(self.count)
+        return object_type + "-" + str(self.count)
 
     def children(self, handle):
-        return ['tag1', 'tag2']
+        if handle == 'tags1':
+            return ['tag1', 'tag2']
+        else:
+            return []
 
     def get(self, handle, props=""):
 
@@ -32,11 +39,51 @@ class RestMock:
                 "defaulttag-Sources": "tags1",
                 "Name": "Client" }
 
+    def config(self, handle, params):
+
+        if '$item' in params:
+            return False
+
+        return True
+
+    def perform(self, command, params={}):
+        if command == "DeviceCreate":
+            return {
+                "LoopbackIf": "false",
+                "DeviceTags": "",
+                "State": "COMPLETED",
+                "ProgressCurrentValue": "0",
+                "EndTime": "1596608498.64631",
+                "ReturnList": "router1 router2",
+                "Status": "Create Device (Router) is successful",
+                "ParentList": "project1",
+                "IfStack": "Ipv4If PppIf PppoeIf EthIIIf",
+                "DeviceCount": "5",
+                "CreateClassId": "",
+                "Active": "true",
+                "ProgressCancelled": "false",
+                "parent": "system1",
+                "IfCount": "1 1 1 1",
+                "ElapsedTime": "3",
+                "ProgressDisplayCounter": "true",
+                "DeviceType": "Router",
+                "ProgressStepsCount": "1",
+                "ProgressCurrentStep": "1",
+                "AffiliatedDevice": "",
+                "CreateCount": "2",
+                "name": "dev-$item",
+                "ProgressCurrentStepName": "",
+                "StartTime": "1596608498.64288",
+                "ProgressMaxValue": "0",
+                "DeviceRole": "",
+                "Port": "port1" }
 
 class TestTags:
 
     def createTagManager(self):
         return TagManager(RestMock())
+
+
 
     def test1a(self):
         tM = self.createTagManager()
@@ -131,3 +178,35 @@ class TestTags:
         tags = tM.getPoppedTags(params)
 
         assert tags == ret
+
+    def createMetaModel(self):
+        mm = MetaModel("127.0.0.1")
+        mm.datamodel = DataModel()
+
+        mm.rest = RestMock()
+        mm.xpath = Linker(mm.datamodel, mm.rest)
+        mm.rest = RestMock()
+        mm.tagMgr = TagManager(mm.rest)
+
+        mm.datamodel.new("dummy-session", [], [])
+        mm.datamodel.insert("project1", {"object_type": "project"})
+        return mm
+
+    def test_performConfig_1a(self):
+        t = self.createMetaModel()
+
+        command = 'DeviceCreate'
+        props = {'ParentList': 'project1',
+                 'CreateCount': 2,
+                 'DeviceCount': 5,
+                 'Port': "Port1",
+                 'IfStack': 'Ipv4If PppIf PppoeIf EthIIIf',
+                 'IfCount': '1 1 1 1',
+                 'name': 'dev-$item',
+                 'tag': 'devTagDhcp devtag-$item'}
+
+        retVal = "Value: ['router1', 'router2']"
+
+        ret = str(t.performConfig(command, props))
+        print(ret, type(ret))
+        assert ret == retVal
