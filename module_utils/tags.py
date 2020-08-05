@@ -30,14 +30,12 @@ class TagManager:
             objects.pop("tag")
             return {'tag': val}
 
-    def handleTags(self, objects, index=0):
-        log.info("HANDLE tags From object: %s, index: %d" % (str(objects), index))
+    def handleTags(self, objects):
+        log.info("HANDLE tags From object: %s" % (str(objects)))
         val = objects.get('tag')
         if val == None:
             log.info("No tags contained in objects!")
             return
-
-        val = val.replace("$item", str(index))
 
         objects.pop("tag")
         objects["usertag-targets"] = self.getTagsHandle(val)

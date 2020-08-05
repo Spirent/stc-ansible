@@ -430,7 +430,7 @@ class MetaModel:
         for i in range(len(handles)):
             handle = handles[i]
             newTag = self.templater.get(userTags, i)
-            self.tagMgr.handleTags(newTag, i)
+            self.tagMgr.handleTags(newTag)
 
             attributes = {"name": self.templater.get(props["name"], i), "usertag-targets": newTag.get("usertag-targets", "")}
             if not self.rest.config(handle, attributes):

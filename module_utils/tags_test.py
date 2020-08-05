@@ -1,6 +1,4 @@
-from module_utils.metamodel import MetaModel
-from module_utils.datamodel import DataModel
-from module_utils.xpath import NodeSelector, Linker, Selector
+
 from module_utils.tags import TagManager
 
 import pytest
@@ -9,102 +7,127 @@ import pytest
 class RestMock:
 
     def __init__(self):
-        self.count = 0
+        self.count = 10
 
-    def create(self, obj, props):
+    def create(self, handle, props):
 
         self.count = self.count + 1
-        return obj + "-" + str(self.count)
+        return handle + "-" + str(self.count)
 
-    def get(self, obj, props=""):
+    def children(self, handle):
+        return ['tag1', 'tag2']
 
-        if obj == "tags1":
-            return {"children": "tag1 tag2"}
-        if obj == "tag1":
-            return {"Name": "ABC-1"}
-        if obj == "tag2":
-            return {"Name": "ABC-2"}
+    def get(self, handle, props=""):
+
+        if handle == "tag1":
+            return {
+                "Active": "true",
+                "parent": "tags1",
+                "defaulttag-Sources": "tags1",
+                "Name": "Router" }
+        if handle == "tag2":
+            return {
+                "Active": "true",
+                "parent": "tags1",
+                "defaulttag-Sources": "tags1",
+                "Name": "Client" }
 
 
-class TestTag:
+class TestTags:
 
-    def createModel(self):
+    def createTagManager(self):
+        return TagManager(RestMock())
 
-        self.dm = DataModel()
-        self.dm.new("dummy-session", [], [])
+    def test1a(self):
+        tM = self.createTagManager()
 
-        self.root = project1 = self.dm.insert("project1", {"object_type": "project"})
-        self.tags = self.dm.insert("tags1", {"object_type": "tags"}, project1)
+        params = {'under': 'project1',
+                  'location': '//10.61.67.78/1/1',
+                  'name': 'Port1',
+                  'tag': 'Router portdhcp'}
 
-        self.port1 = self.dm.insert("port1", {"object_type": "port", "name": "port1"}, project1)
-        self.port2 = self.dm.insert("port2", {"object_type": "port", "name": "port2"}, project1)
+        tM.handleTags(params)
+        val = params.get('tag')
 
-        self.dev1 = self.dm.insert("emulateddevice1", {"object_type": "emulateddevice", "name": "dev1"}, self.port1)
-        self.dev2 = self.dm.insert("emulateddevice2", {"object_type": "emulateddevice", "name": "dev2"}, self.port2)
+        assert val == None
+        assert params["usertag-targets"] == "tag1 tag-11"
 
-        self.mm = MetaModel()
-        self.mm.rest = RestMock()
-        self.mm.datamodel = self.dm
+    def test2a(self):
+        tM = self.createTagManager()
 
-    def test1(self):
-        self.createModel()
+        params = {'ParentList': 'ref:/project',
+                  'CreateCount': 2,
+                  'DeviceCount': 5,
+                  'Port': "ref:/port[@name='Port1']",
+                  'IfStack': 'Ipv4If PppIf PppoeIf EthIIIf',
+                  'IfCount': '1 1 1 1',
+                  'name': 'dev-$item',
+                  'tag': 'devtagzyf devtag-0'}
 
-        params = {'action': 'create', 'under': '/Project', 'objects': {}}
-        params['objects'] = [{
-            'EmulatedDevice': {
-                'AffiliatedPort': "ref:/port[@name='Port1']",
-                'name': 'BGPRouter 1',
-                'tag': 'ctag'
-            }
-        }, {
-            'EmulatedDevice': {
-                'AffiliatedPort': "ref:/port[@name='Port1']",
-                'name': 'BGPRouter 2',
-                'tag': 'btag'
-            }
-        }]
-        tagm = TagManager(self.mm)
-        tags = tagm.update(params['objects'])
-        assert params["objects"][0]["EmulatedDevice"]["usertag-targets"] == "tag-1"
-        assert params["objects"][1]["EmulatedDevice"]["usertag-targets"] == "tag-2"
-        assert len(tags) == 2
+        tM.handleTags(params)
+        val = params.get('tag')
 
-    def test2(self):
-        self.createModel()
+        assert val == None
+        assert params["usertag-targets"] == "tag-11 tag-12"
 
-        params = {'action': 'create', 'under': '/Project', 'objects': {}}
-        params['objects'] = {
-            'EmulatedDevice': {
-                'AffiliatedPort': "ref:/port[@name='Port1']",
-                'name': 'BGPRouter 1',
-                'tag': 'atag btag'
-            }
-        }
-        tagm = TagManager(self.mm)
-        tags = tagm.update(params['objects'])
-        assert params["objects"]["EmulatedDevice"]["usertag-targets"] == "tag-1 tag-2"
-        assert len(tags) == 2
+    def test3a(self):
+        tM = self.createTagManager()
 
-    def test3(self):
-        self.createModel()
+        params = {'under': 'project1',
+                  'tag': 'Client traff-0',
+                  'EnableStreamOnlyGeneration': True,
+                  'TrafficPattern': 'MESH',
+                  'SrcBinding-targets': 'ipv4if1',
+                  'DstBinding-targets': 'ipv4if2',
+                  'AffiliationStreamBlockLoadProfile.Load': 100}
 
-        params = {'action': 'create', 'under': '/Project', 'objects': {}}
-        params['objects'] = [{
-            'EmulatedDevice': {
-                'AffiliatedPort': "ref:/port[@name='Port1']",
-                'name': 'BGPRouter 1',
-                'tag': 'btag'
-            }
-        }, {
-            'EmulatedDevice': {
-                'AffiliatedPort': "ref:/port[@name='Port1']",
-                'name': 'BGPRouter 2',
-                'tag': 'btag'
-            }
-        }]
+        tM.handleTags(params)
+        val = params.get('tag')
 
-        tagm = TagManager(self.mm)
-        tags = tagm.update(params['objects'])
-        assert params["objects"][0]["EmulatedDevice"]["usertag-targets"] == "tag-1"
-        assert params["objects"][1]["EmulatedDevice"]["usertag-targets"] == "tag-1"
-        assert len(tags) == 1
+        assert val == None
+        assert params["usertag-targets"] == "tag2 tag-11"
+
+    def test4a(self):
+        tM = self.createTagManager()
+
+        params = {'under': 'project1',
+                  'location': '//10.61.67.78/1/1',
+                  'name': 'Port1'}
+
+        tM.handleTags(params)
+
+        assert params == params
+
+
+    def test1b(self):
+        tM = self.createTagManager()
+
+        params = {'under': 'project1',
+                  'tag': 'Client traff-$item',
+                  'EnableStreamOnlyGeneration': True,
+                  'TrafficPattern': 'MESH',
+                  'SrcBinding-targets': 'ipv4if1',
+                  'DstBinding-targets': 'ipv4if2',
+                  'AffiliationStreamBlockLoadProfile.Load': 100}
+        ret = {'tag': 'Client traff-$item'}
+
+        tags = tM.getPoppedTags(params)
+        val = params.get('tag')
+
+        assert val == None
+        assert tags == ret
+
+    def test2b(self):
+        tM = self.createTagManager()
+
+        params = {'under': 'project1',
+                  'EnableStreamOnlyGeneration': True,
+                  'TrafficPattern': 'MESH',
+                  'SrcBinding-targets': 'ipv4if1',
+                  'DstBinding-targets': 'ipv4if2',
+                  'AffiliationStreamBlockLoadProfile.Load': 100}
+        ret = {}
+
+        tags = tM.getPoppedTags(params)
+
+        assert tags == ret
