@@ -14,9 +14,12 @@ class RestMock:
         self.count = 10
 
     def create(self, object_type, props):
+        print("create:", object_type, props)
+        if '$item' in props['Name']:
+            return 'ERROR'
 
         self.count = self.count + 1
-        return object_type + "-" + str(self.count)
+        return props['Name'] + "-" + object_type + "-" + str(self.count)
 
     def children(self, handle):
         if handle == 'tags1':
@@ -40,9 +43,14 @@ class RestMock:
                 "Name": "Client" }
 
     def config(self, handle, params):
+        print(handle, params)
 
-        if '$item' in params:
-            return False
+        if handle == 'router1':
+            if params['usertag-targets'] != 'devTagDhcp-tag-11 devtag-0-tag-12':
+                return False
+        if handle == 'router2':
+            if params['usertag-targets'] != 'devTagDhcp-tag-11 devtag-1-tag-13':
+                return False
 
         return True
 
@@ -97,7 +105,7 @@ class TestTags:
         val = params.get('tag')
 
         assert val == None
-        assert params["usertag-targets"] == "tag1 tag-11"
+        assert params["usertag-targets"] == "tag1 portdhcp-tag-11"
 
     def test2a(self):
         tM = self.createTagManager()
@@ -115,7 +123,7 @@ class TestTags:
         val = params.get('tag')
 
         assert val == None
-        assert params["usertag-targets"] == "tag-11 tag-12"
+        assert params["usertag-targets"] == "devtagzyf-tag-11 devtag-0-tag-12"
 
     def test3a(self):
         tM = self.createTagManager()
@@ -132,7 +140,7 @@ class TestTags:
         val = params.get('tag')
 
         assert val == None
-        assert params["usertag-targets"] == "tag2 tag-11"
+        assert params["usertag-targets"] == "tag2 traff-0-tag-11"
 
     def test4a(self):
         tM = self.createTagManager()
