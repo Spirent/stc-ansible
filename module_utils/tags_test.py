@@ -193,7 +193,6 @@ class TestTags:
 
         mm.rest = RestMock()
         mm.xpath = Linker(mm.datamodel, mm.rest)
-        mm.rest = RestMock()
         mm.tagMgr = TagManager(mm.rest)
 
         mm.datamodel.new("dummy-session", [], [])
