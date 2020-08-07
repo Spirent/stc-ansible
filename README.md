@@ -324,6 +324,70 @@ Once the ports and names are defined in the `session` task, the keywork `${ports
               name: ${names[item]}
 ```
 
+### Adding Tags to Ports, Emulated Devices and Stream blocks
+
+When creating Ports, Emulated Device or Stream blocks, the "tag" can be identified. 
+
+##### 1. Tag Ports
+
+The example below is given by tagging each port with "Server, myPortTag-0" and "Server, myPortTag-1".
+
+```yaml
+-
+  name: Create the ports
+  stc:
+    action: create
+    count: 2
+    objects:
+      - project:
+          - port:
+              location: ${ports[item]}
+              name: ${names[item]}
+              tag: "Server myPortTag-$item"
+```
+
+##### 2. Tag Emulated Devices
+
+The example below is given by tagging each Emulated Device with "devTagDhcp, devtag-0" and "devTagDhcp, devtag-1".
+
+```yaml
+-
+  name: create 2 block of 5 devices
+  stc:
+    action: perform
+    command: DeviceCreate
+    properties:
+      ParentList:  ref:/project
+      CreateCount: 2
+      DeviceCount: 5
+      Port: ref:/port[@name='Port1']
+      IfStack: Ipv4If PppIf PppoeIf EthIIIf
+      IfCount: '1 1 1 1'
+      name: "dev-$item"
+      tag: "devTagDhcp devtag-$item"
+```
+
+##### 3. Tag Stream blocks
+
+The example below is given by tagging each stream block with "traffMesh, traff-0" and "traffMesh, traff-1".
+
+```yaml
+-
+  name: Configure the traffic generator
+  stc:
+    count: 2
+    action: create
+    under: ref:/project
+    objects:
+    - StreamBlock:
+        tag: "traffMesh traff-$item"
+        EnableStreamOnlyGeneration: true
+        TrafficPattern: MESH
+        SrcBinding-targets: ref:/EmulatedDevice[@name='dev-$item']/Ipv4If
+        DstBinding-targets: ref:/EmulatedDevice[@name!='dev-$item']/Ipv4If
+        AffiliationStreamBlockLoadProfile:
+          Load: 100
+```
 
 ### Starting the Traffic
 
