@@ -44,3 +44,7 @@
       
     - name: Create a dynamic result view
       include_tasks: playbooks/stream-drv.yaml
+
+    - name: Create multiple offline ports
+      include_tasks: playbooks/ports-multi.yaml
+
