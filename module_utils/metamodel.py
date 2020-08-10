@@ -41,6 +41,7 @@ class MetaModel:
         self.rest = StcRest(server, self.datamodel.session())
         self.xpath = Linker(self.datamodel, self.rest)
         self.templater = Templater(self.datamodel)
+        self.tagMgr = TagManager(self.rest)
 
     def action(self, params):
 
@@ -276,11 +277,14 @@ class MetaModel:
 
         handles = {}
         name = properties["name"] if "name" in properties else ""
+        userTags = properties["tag"] if "tag" in properties else ""
         for i in range(0, count):
             props = self.templater.get(properties, i)
             if command == "DeviceCreate":
                 props["name"] = name
-                TagManager(self).update(props)
+                if userTags != "":
+                    props["tag"] = userTags
+
             r = self.performConfig(command, props)
             if r.isError():
                 return r
@@ -404,6 +408,12 @@ class MetaModel:
                 val = " ".join(objects.handles())
             params[key] = val
 
+        # The tags are configured with device config
+        userTags = {}
+        if command == "DeviceCreate":
+            userTags = self.tagMgr.getPoppedTags(params)
+            log.info("Pop user tags(%s) for later configuration" % str(userTags))
+
         result = self.rest.perform(command, params)
         if result == None:
             return Result.error(self.rest.errorInfo)
@@ -419,7 +429,10 @@ class MetaModel:
 
         for i in range(len(handles)):
             handle = handles[i]
-            attributes = {"name": self.templater.get(props["name"], i)}
+            newTag = self.templater.get(userTags, i)
+            self.tagMgr.handleTags(newTag)
+
+            attributes = {"name": self.templater.get(props["name"], i), "usertag-targets": newTag.get("usertag-targets", "")}
             if not self.rest.config(handle, attributes):
                 return Result.error(self.rest.errorInfo)
 
@@ -442,7 +455,6 @@ class MetaModel:
 
     def createObject(self, objects, parent):
 
-        TagManager(self).update(objects)
         return self.createOrConfigObject(objects, parent, False)
 
     # --------------------------------------------------------------------
@@ -487,6 +499,12 @@ class MetaModel:
                 # print("Creating",json.dumps(params,indent=4))
                 fparams = {key: value for (key, value) in params.items() if key.find(".object_type") < 0}
                 # print("Creating",json.dumps(fparams,indent=4))
+                if under != None:
+                    # When project1 is created, if project1's children is not got, 
+                    # getting children in tag1 will fail. 
+                    self.rest.children("project1")
+                    self.tagMgr.handleTags(fparams)
+
                 handle = self.rest.create(obj["type"], fparams)
                 if handle == None:
                     return Result.error(self.rest.errorInfo)

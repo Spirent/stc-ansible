@@ -5,81 +5,77 @@
 # @Last Modified time: 2020-07-13 16:58:59
 
 try:
-    from ansible.module_utils.xpath import NodeSelector
     from ansible.module_utils.logger import Logger
-    from ansible.module_utils.utils import *
+
 except ImportError:
-    import sys
-    from os.path import os, abspath, dirname, join
-    path = os.path.dirname(os.path.abspath(__file__))
-    sys.path.append(os.path.normpath(os.path.join(path, '../')))
     from module_utils.logger import Logger
-    from module_utils.xpath import NodeSelector
 
-import re
-
-log = Logger("tag")
+log = Logger("TagManager")
 
 
 class TagManager:
 
-    def __init__(self, mm):
-        self.metamodel = mm
-        self.tags = None
+    def __init__(self, rstHdl):
+        self.rest = rstHdl
+        self.tags = {}
 
-    def update(self, objects):
+    def getPoppedTags(self, objects):
+        log.info("POPPING tags From object: %s" % (str(objects)))
+        val = objects.get('tag')
+        if val == None:
+            log.info("No tags contained in objects!")
+            return {}
 
-        tags_created = {}
-        self._init_tags_by_attributes(objects, tags_created)
-        return tags_created
+        else:
+            objects.pop("tag")
+            return {'tag': val}
 
-    def _init_tags_by_attributes(self, attributes, tags_created={}):
+    def handleTags(self, objects):
+        log.info("HANDLE tags From object: %s" % (str(objects)))
+        val = objects.get('tag')
+        if val == None:
+            log.info("No tags contained in objects!")
+            return
 
-        if type(attributes) is list:
-            for child in attributes:
-                self._init_tags_by_attributes(child, tags_created)
+        objects.pop("tag")
+        objects["usertag-targets"] = self.getTagsHandle(val)
 
-        elif type(attributes) is dict:
+        return
 
-            keys = attributes.keys()
-            if "tag" in keys:
-                handles = []
-                for tagname in attributes["tag"].split(" "):
-                    handle = self._create_tag_by_name(tagname)
-                    handles.append(handle)
-                    tags_created[handle] = attributes
-                attributes.pop("tag")
-                attributes["usertag-targets"] = " ".join(handles)
-                return
+    def initTags(self):
 
-            for key in attributes.keys():
+        if len(self.tags) != 0:
+            log.info("Tags have been updated!")
+            return
 
-                val = attributes[key]
-                if type(val) is list:
-                    self._init_tags_by_attributes(val, tags_created)
+        children = self.rest.children("tags1")
+        for handle in children:
+            tagProps = self.rest.get(handle)
+            self.tags[tagProps['Name']] = handle
 
-                elif type(val) is dict:
-                    self._init_tags_by_attributes(val, tags_created)
+        log.info("The existing Tags: %s" % str(self.tags))
+        return
 
-    def _init_datamodel_tags(self):
+    def getTagByName(self, tagName):
+        handle = self.tags.get(tagName)
+        if handle != None:
+            return handle
 
-        if self.tags == None:
-            tags = self.metamodel.rest.get("tags1")
-            if len(tags["children"]):
-                self.tags = dict((handle, self.metamodel.rest.get(handle)) for handle in tags["children"].split(" "))
-            else:
-                self.tags = []
+        #Create tags for tagName
+        props = {'Name': tagName, 'under': 'tags1'}
+        handle = self.rest.create("tag", props)
 
-    def _create_tag_by_name(self, tagname):
-
-        self._init_datamodel_tags()
-        for handle, tag in self.tags.items():
-            if ("Name" in tag) and tag["Name"] == tagname:
-                return handle
-            if ("name" in tag) and tag["name"] == tagname:
-                return handle
-
-        props = {'Name': tagname, 'under': 'tags1'}
-        handle = self.metamodel.rest.create("tag", props)
-        self.tags[handle] = props
+        self.tags[tagName] = handle
+        log.info("After creating, Tags: %s" % str(self.tags))
         return handle
+
+    def getTagsHandle(self, tagNames):
+        tagList = tagNames.split(' ')
+        log.info("Handle Tags in List: %s" % str(tagList))
+        self.initTags()
+        handles = []
+        for tagName in tagList:
+            handles.append(self.getTagByName(tagName))
+
+        return " ".join(handles)
+
