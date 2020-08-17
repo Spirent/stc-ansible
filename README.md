@@ -328,6 +328,8 @@ Once the ports and names are defined in the `session` task, the keywork `${ports
 
 When creating Ports, Emulated Device or Stream blocks, the "tag" can be identified. 
 
+**Notes: Multiple tags are seperated by SPACE in ansible. Thus, SPACE is not allowed to define one single tag. Otherwise, it will be treated as multiple tags. **
+
 ##### 1. Tag Ports
 
 The example below is given by tagging each port with "Server, myPortTag-0" and "Server, myPortTag-1".
