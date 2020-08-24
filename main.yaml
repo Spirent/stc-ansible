@@ -47,4 +47,9 @@
 
     - name: Create multiple offline ports
       include_tasks: playbooks/ports-multi.yaml
+    
+    - name: Create ipv4/ipv6/single/dual/vlan devices using create action
+      include_tasks: playbooks/device-create-all.yaml
 
+    - name: Create ipv4/ipv6/single/dual/vlan devices using device_create command
+      include_tasks: playbooks/device-create-perform-all.yaml

@@ -288,6 +288,9 @@ class Selector:
                 selection.append(node)
 
         log.debug("Selector: candidates are %s" % [str(n) for n in selection])
+        # sort handles to get correct order
+        selection.sort(key=lambda n: str(n))
+
 
         for selector in self.selectors:
 
