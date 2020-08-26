@@ -289,8 +289,7 @@ class Selector:
 
         log.debug("Selector: candidates are %s" % [str(n) for n in selection])
         # sort handles to get correct order
-        selection.sort(key=lambda n: str(n))
-
+        selection.sort(key=lambda n: n.handle)
 
         for selector in self.selectors:
 
