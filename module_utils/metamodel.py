@@ -365,8 +365,9 @@ class MetaModel:
                 if selection != None:
                     nodes += selection.nodes
 
-        if len(nodes) == 0:
-            return Result.error("Can not find any object matching %s (count=%d)" % (obj, count))
+        #ignore when no object found
+        #if len(nodes) == 0:
+        #    return Result.error("Can not find any object matching %s (count=%d)" % (obj, count))
 
         return Result.value(nodes)
 
@@ -504,6 +505,13 @@ class MetaModel:
                     # getting children in tag1 will fail. 
                     self.rest.children("project1")
                     self.tagMgr.handleTags(fparams)
+
+                ## DynamicResultView with the same name will be created multiple times, which cause
+                ## subscription failed
+                if obj["type"] == 'DynamicResultView':
+                    drvName = fparams.get('name')
+                    if drvName != None:
+                        self.delete('ref:/project/DynamicResultView[name="%s"]' % drvName)
 
                 handle = self.rest.create(obj["type"], fparams)
                 if handle == None:
