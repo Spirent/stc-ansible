@@ -505,6 +505,13 @@ class MetaModel:
                     self.rest.children("project1")
                     self.tagMgr.handleTags(fparams)
 
+                ## DynamicResultView with the same name will be created multiple times, which cause
+                ## subscription failed
+                if obj["type"] == 'DynamicResultView':
+                    drvName = fparams.get('name')
+                    if drvName != None:
+                        self.delete('ref:/project/DynamicResultView[name="%s"]' % drvName)
+
                 handle = self.rest.create(obj["type"], fparams)
                 if handle == None:
                     return Result.error(self.rest.errorInfo)
