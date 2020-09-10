@@ -365,9 +365,8 @@ class MetaModel:
                 if selection != None:
                     nodes += selection.nodes
 
-        #ignore when no object found
-        #if len(nodes) == 0:
-        #    return Result.error("Can not find any object matching %s (count=%d)" % (obj, count))
+        if len(nodes) == 0:
+            return Result.error("Can not find any object matching %s (count=%d)" % (obj, count))
 
         return Result.value(nodes)
 
