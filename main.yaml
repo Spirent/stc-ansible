@@ -47,4 +47,27 @@
 
     - name: Create multiple offline ports
       include_tasks: playbooks/ports-multi.yaml
+   
+    - name: create ipv6 device
+      include_tasks: playbooks/device-create-ipv6-device.yaml
 
+    - name: create ipv4 ipv6 device
+      include_tasks: playbooks/device-create-ipv4-ipv6-device.yaml
+
+    - name: create ipv4 single vlan device
+      include_tasks: playbooks/device-create-ipv4-single-vlan.yaml
+
+    - name: create ipv6 single vlan device
+      include_tasks: playbooks/device-create-ipv6-single-vlan.yaml
+
+    - name: create ipv4 ipv6 single vlan device
+      include_tasks: playbooks/device-create-ipv4-ipv6-single-vlan.yaml
+
+    - name: create ipv4 dual vlan device
+      include_tasks: playbooks/device-create-ipv4-dual-vlan.yaml
+
+    - name: create ipv6 dual vlan device
+      include_tasks: playbooks/device-create-ipv6-dual-vlan.yaml
+
+    - name: create ipv4 ipv6 dual vlan device
+      include_tasks: playbooks/device-create-ipv4-ipv6-dual-vlan.yaml 

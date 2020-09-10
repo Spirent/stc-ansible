@@ -1,0 +1,164 @@
+-
+  name: Create session
+  stc:
+    action: session
+    user: ansible
+    name: device_create_ipv4_ipv6_dual_vlan
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+
+-
+  name: Create the base ports
+  stc:
+    action: create
+    objects:
+      - project:
+          - port:
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+
+          - port:
+              location: "//${chassis[1]}/1/1"
+              name: Port2
+
+
+
+-
+  name: Create 1 emulated devices - port1
+  stc:
+    action: create
+    under: ref:/project
+    count: 1
+    objects:
+    - emulateddevice:
+        AffiliatedPort: ref:/port[@name='Port1']
+        DeviceCount: 1
+        name: "ipv4_ipv6_dual_vlan_1"
+        PrimaryIf: ref:./Ipv6If
+        TopLevelIf: ref:./Ipv6If
+        EthIIIf:
+          SourceMac: 00:10:96:00:00:01
+        VlanIf:
+          VlanId: 100
+        Ipv4If:
+          AddrStep: 0.0.0.1
+          Address: 192.168.1.1
+          Gateway: 192.168.1.2
+        Ipv6If:
+          AddrStep: ::1
+          Address: 2002::2
+          Gateway: 2002::1
+
+-
+  name: create VlanIf under device 1
+  stc:
+    action: create
+    under: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']
+    count: 1
+    objects:
+      - VlanIf:
+          VlanId: 100
+
+-
+  name: Create ipv6if for device 1
+  stc:
+    action: create
+    under: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']
+    count: 1
+    objects:
+    - Ipv6If:
+        AddrStep: ::1
+        Address: fe80::1
+        PrimaryIfSource: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']
+        TopLevelIfSource: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']
+
+-
+  name: config VlanIf for device 1
+  stc:
+    action: config
+    objects: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']/VlanIf[1]
+    properties:
+      StackedOnEndpoint-targets: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']/VlanIf[0]
+
+-
+  name: config Ipv4If for device 1
+  stc:
+    action: config
+    objects: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']/Ipv4If
+    properties:
+      StackedOnEndpoint-targets: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']/VlanIf[1]
+      PrimaryIfSource: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']
+      TopLevelIfSource: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']
+
+-
+  name: config Ipv6If for device 1
+  stc:
+    action: config
+    objects: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']/Ipv6If[0]
+    properties:
+      StackedOnEndpoint-targets: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']/VlanIf[1]
+
+-
+  name: config Ipv6If for device 1
+  stc:
+    action: config
+    objects: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']/Ipv6If[1]
+    properties:
+      StackedOnEndpoint-targets: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']/VlanIf[1]
+
+-
+  name: config VlanIf for device 1
+  stc:
+    action: config
+    objects: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']/VlanIf[0]
+    properties:
+      StackedOnEndpoint-targets: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_1']/EthIIIf
+
+
+
+
+-
+  name: create 1 block of 1 devices - ipv4 ipv6 dual vlan
+  stc:
+    action: perform
+    command: DeviceCreate
+    properties:
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port2']
+      IfStack: Ipv6If Ipv4If VlanIf VlanIf EthIIIf
+      IfCount: '1 1 1 1 1'
+      name: "ipv4_ipv6_dual_vlan_2"
+
+-
+  name: config ipv4if
+  stc:
+    action: config
+    objects: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_2']/Ipv4If
+    properties:
+      TopLevelIfSource: ref:/EmulatedDevice[@Name="ipv4_ipv6_dual_vlan_2"]
+
+-
+  name: config ipv6if
+  stc:
+    action: config
+    objects: ref:/EmulatedDevice[@Name='ipv4_ipv6_dual_vlan_2']/Ipv6If
+    properties:
+      StackedOnEndpoint-targets: ref:/EmulatedDevice[@Name="ipv4_ipv6_dual_vlan_2"]/VlanIf[0]
+
+-
+  name: Create ipv6if
+  stc:
+    action: create
+    under: ref:/EmulatedDevice[@Name="ipv4_ipv6_dual_vlan_2"]
+    count: 1
+    objects:
+      - Ipv6If:
+          AddrStep: ::1
+          Address: fe80::5
+          PrimaryIfSource: ref:/EmulatedDevice[@Name="ipv4_ipv6_dual_vlan_2"]
+          TopLevelIfSource: ref:/EmulatedDevice[@Name="ipv4_ipv6_dual_vlan_2"]
+          StackedOnEndpoint-targets: ref:/EmulatedDevice[@Name="ipv4_ipv6_dual_vlan_2"]/VlanIf[0]
+
+

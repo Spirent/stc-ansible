@@ -1,0 +1,103 @@
+-
+  name: Create session
+  stc:
+    action: session
+    user: ansible
+    name: device_create_ipv6_device
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+
+-
+  name: Create the base ports
+  stc:
+    action: create
+    objects:
+      - project:
+          - port:
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+
+          - port:
+              location: "//${chassis[1]}/1/1"
+              name: Port2
+
+
+-
+  name: Create 1 emulated devices - port1
+  stc:
+    action: create
+    under: ref:/project
+    count: 1
+    objects:
+    - emulateddevice:
+        AffiliatedPort: ref:/port[@name='Port1']
+        DeviceCount: 1
+        name: "ipv6_device_1"
+        PrimaryIf: ref:./Ipv6If
+        TopLevelIf: ref:./Ipv6If
+        EthIIIf:
+          SourceMac: be:ef:00:00:00:00
+        Ipv6If:
+          AddrStep: ::1
+          Address: 2002::3
+          Gateway: 2002::1
+
+-
+  name: Create ipv6if under device 1
+  stc:
+    action: create
+    under: ref:/EmulatedDevice[@Name='ipv6_device_1']
+    count: 1
+    objects:
+    - Ipv6If:
+        AddrStep: ::1
+        Address: fe80::1
+        PrimaryIfSource: ref:/EmulatedDevice[@Name='ipv6_device_1']
+        TopLevelIfSource: ref:/EmulatedDevice[@Name='ipv6_device_1']
+
+-
+  name: config EthIIIf
+  stc:
+    action: config
+    objects: ref:/EmulatedDevice[@Name='ipv6_device_1']/EthIIIf
+    properties:
+        stackedonendpoint-Sources: ref:/EmulatedDevice[@Name='ipv6_device_1']/Ipv6If
+
+
+
+-
+  name: create 1 block of 1 devices
+  stc:
+    action: perform
+    command: DeviceCreate
+    properties:
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port2']
+      IfStack: Ipv6If EthIIIf
+      IfCount: '1 1'
+      name: "ipv6_device_2"
+
+-
+  name: Config ipv6if address
+  stc:
+    action: config
+    objects: ref:/EmulatedDevice[@Name='ipv6_device_2']/Ipv6If
+    properties:
+      Address: 2002::3
+      Gateway: 2002::1
+
+-
+  name: Create ipv6if
+  stc:
+    action: create
+    under: ref:/EmulatedDevice[@Name="ipv6_device_2"]
+    count: 1
+    objects:
+      - Ipv6If:
+          AddrStep: ::1
+          Address: fe80::1
+          PrimaryIfSource: ref:/EmulatedDevice[@Name="ipv6_device_2"]
+          TopLevelIfSource: ref:/EmulatedDevice[@Name="ipv6_device_2"]
+          StackedOnEndpoint-targets: ref:/EmulatedDevice[@Name="ipv6_device_2"]/EthIIIf
