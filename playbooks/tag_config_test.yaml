@@ -1,0 +1,160 @@
+################################################################################################################
+# Playbook Name : multiple-chassis-ports-config.yaml
+# Description : In STC Ansible, need to create tags for PORT, EMULATEDDEVICE and STREAMBLOCK
+#
+# Ticket in Salesforce: [STC-I-265](https://ideas.spirent.com/ideas/STC-I-265)
+#                       [STC-I-265] create tags for PORT, EMULATEDDEVICE and STREAMBLOCK
+#
+# Owner : Madhuri Katta
+# Created : 17/08/2020
+#################################################################################################################
+
+-
+  name: Create session
+  stc:
+    action: session
+    user: ansible
+    name: tag_config
+    kill_existing: false
+    reset_existing: true
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+-
+  name: Create ports and tags
+  stc:
+    action: create
+    objects:
+      - project:
+          - port:
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+              tag: "portServer PortDhcp"
+
+-
+  name: create 2 block of 5 devices
+  stc:
+    action: perform
+    command: DeviceCreate
+    properties:
+      ParentList:  ref:/project
+      CreateCount: 2
+      DeviceCount: 5
+      Port: ref:/port[@name='Port1']
+      IfStack: Ipv4If PppIf PppoeIf EthIIIf
+      IfCount: '1 1 1 1'
+      name: "dev-$item"
+      tag: "devTag devtag-$item"
+
+-
+  name: create devices with tag name has special characters
+  stc:
+    action: perform
+    command: DeviceCreate
+    properties:
+      ParentList:  ref:/project
+      CreateCount: 2
+      DeviceCount: 2
+      Port: ref:/port[@name='Port1']
+      IfStack: Ipv4If PppIf PppoeIf EthIIIf
+      IfCount: '1 1 1 1'
+      name: "dev-$item"
+      tag: "@!#%^&*()+_><~ devtag-$item"
+
+
+-
+  name: create 2 block of 2 ipv6 devices
+  stc:
+    action: perform
+    command: DeviceCreate
+    properties:
+      ParentList:  ref:/project
+      CreateCount: 2
+      DeviceCount: 2
+      Port: ref:/port[@name='Port1']
+      IfStack: Ipv6If EthIIIf
+      IfCount: '1 1'
+      name: "dev-$item"
+      tag: "devTagv6 devtagv6-$item"
+
+# -
+  # name: create tag name with space -- not supported (Limitation)
+  # stc:
+    # action: perform
+    # command: DeviceCreate
+    # properties:
+      # ParentList:  ref:/project
+      # CreateCount: 1
+      # DeviceCount: 1
+      # Port: ref:/port[@name='Port1']
+      # IfStack: Ipv6If EthIIIf
+      # IfCount: '1 1'
+      # name: "dev-v6-$item"
+      # tag: "devv6 tag"
+
+
+-
+  name: Configure the traffic generator
+  stc:
+    count: 2
+    action: create
+    under: ref:/project
+    objects:
+    - StreamBlock:
+        tag: "traffMesh traff-$item"
+        EnableStreamOnlyGeneration: true
+        TrafficPattern: MESH
+        SrcBinding-targets: ref:/EmulatedDevice[@name='dev-$item']/Ipv4If
+        DstBinding-targets: ref:/EmulatedDevice[@name!='dev-$item']/Ipv4If
+        AffiliationStreamBlockLoadProfile:
+          Load: 100
+
+-
+  name: Save xml
+  stc: 
+    action: perform
+    command: SaveAsXml
+    properties: 
+      FileName: "tag_config.xml"
+
+- name: list the available files
+  register: files
+  stc:
+    action: files
+
+- debug:
+    var: files
+
+- name: create temporary build directory
+  register: tempfolder
+  tempfile:
+    state: directory
+    suffix: build
+
+- name: download xml from STC
+  register: files
+  stc:
+     action: download
+     file: "tag_config.xml"
+     dest: "{{ tempfolder.path }}"
+
+- fetch: 
+    src: "{{ tempfolder.path }}/{{ item }}"
+    dest: logs/
+  with_items: "{{ files.result }}"
+
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port
