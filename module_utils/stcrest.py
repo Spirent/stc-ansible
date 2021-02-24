@@ -78,6 +78,61 @@ class StcRest:
 
         return True
 
+    def attach_session(self, session_name, user_name):
+        conn = self.conn
+        
+        url = "http://" + self.server + "/stcapi/sessions"
+        existingSessions = json.loads(conn.get(url).content)
+        log.info("SESSIONS %s -> %s" % (url, json.dumps(existingSessions, indent=4)))
+
+        sessionID = session_name + " - " + user_name
+
+        if sessionID in existingSessions:
+            self.session = sessionID
+            self.conn.headers.update({'Accept': 'application/json', "X-STC-API-Session": self.session})
+            log.info("Existing session attached Successfully")
+        else:
+            log.error("Not found an existing session with session ID \"%s\"" % sessionID)
+            return False
+            
+        return True
+
+    def delete_session(self, session_name):
+        conn = self.conn
+        
+        url = "http://" + self.server + "/stcapi/sessions"
+
+        if session_name != "":
+            for sessionID in session_name:
+                log.info("Deleting the session \"%s\"" % sessionID)
+                rsp = conn.delete(url + "/" + sessionID, params="kill")
+                log.info("DELETE SESSION -> [%d] %s" % (rsp.status_code, rsp.content))
+        else:
+            log.error("Not found any existing sessions")
+            return False
+
+        return True
+
+    def delete_all_sessions(self):
+        conn = self.conn
+
+        url = "http://" + self.server + "/stcapi/sessions"
+        existingSessions = json.loads(conn.get(url).content)
+        log.info("SESSIONS %s -> %s" % (url, json.dumps(existingSessions, indent=4)))
+
+        if existingSessions != "":
+            for sessionID in existingSessions:
+                log.info("Deleting all the sessions")
+                rsp = conn.delete(url + "/" + sessionID, params="kill")
+        else:
+            log.error("Not found any existing sessions")
+            return False
+
+        existingSessions = json.loads(conn.get(url).content)
+        log.info("SESSIONS %s -> %s" % (url, json.dumps(existingSessions, indent=4)))
+
+        return True
+
     def files(self):
         return self._get("files")
 
@@ -243,3 +298,11 @@ class StcRest:
         self.errorInfo = "failed - url:%s - code:%d - content:%s!" % (url, rsp.status_code, rsp.content)
         log.error("GET " + self.errorInfo)
         return None
+
+    def _getSessions(self):
+        conn = self.conn
+        
+        url = "http://" + self.server + "/stcapi/sessions"
+        existingSessions = json.loads(conn.get(url).content)
+        log.info("SESSIONS %s -> %s" % (url, json.dumps(existingSessions, indent=4)))
+        return existingSessions
