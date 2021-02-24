@@ -54,7 +54,7 @@ class MetaModel:
 
         log.info("Action: %s" % json.dumps(params, indent=4))
 
-        if action == "session":
+        if (action == "session") or (action == "create_session"):
 
             chassis = params["chassis"] if "chassis" in params else None
             if chassis != None and chassis != "":
@@ -90,6 +90,38 @@ class MetaModel:
             reset_existing = (not ("reset_existing" in params)) or (params["reset_existing"] == True)
             kill_existing = "kill_existing" in params and params["kill_existing"]
             result = self.new_session(params["user"], params["name"], chassis, propsDict, reset_existing, kill_existing)
+
+        elif action == "attach_session":
+            userName = params["user"] if "user" in params else None
+            sessionName = params["name"]
+            result = self.attach_session(sessionName, userName)
+
+        elif action == "delete_session":
+            user_name = params["user"] if "user" in params else None
+            sessionName = params["name"]
+            sessions = []
+            existingSessions=self.rest._getSessions()
+            
+            if re.search(',', params["name"]) != None:
+                sessionNames = params["name"].split(", ")
+                for sessionName in sessionNames:
+                    if user_name != None:
+                        sessionName = sessionName+" - "+user_name
+                    if sessionName in existingSessions:
+                        sessions.append(sessionName)
+                    else:
+                        return Result.error("Session \"%s\" is not exist." % sessionName)
+            else:
+                if user_name != None:
+                    sessionName = sessionName+" - "+user_name
+                if sessionName in existingSessions:
+                    sessions.append(sessionName)
+                else:
+                    return Result.error("Session \"%s\" is not exist." % sessionName)
+            result = self.delete_session(sessions)
+
+        elif action == "delete_all_sessions":
+            result = self.delete_all_sessions()
 
         elif action == "create":
 
@@ -209,6 +241,27 @@ class MetaModel:
 
         if len(chassis) > 0 and not self.rest.connect(chassis):
             return Result.error("Failed to connect to the chassis: %s" % self.rest.errorInfo)
+
+        return Result.value(1)
+
+    def attach_session(self, session_name, user_name, chassis=[], props={"ports":[], "names":[]}, reset_existing=True, kill_existing=False):
+        self.datamodel.new(session_name + " - " + user_name, chassis, props)
+        if not self.rest.attach_session(session_name, user_name):
+            return Result.error("Failed to attach session: %s" % self.rest.errorInfo)
+
+        return Result.value(1)
+
+    def delete_session(self, session_name):
+        self.datamodel.deleteSession(session_name)
+        if not self.rest.delete_session(session_name):
+            return Result.error("Failed to delete session: %s" % self.rest.errorInfo)
+
+        return Result.value(1)
+        
+    def delete_all_sessions(self):
+        self.datamodel.session()
+        if not self.rest.delete_all_sessions():
+            return Result.error("Failed to delete all sessions: %s" % self.rest.errorInfo)
 
         return Result.value(1)
 

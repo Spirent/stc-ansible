@@ -29,6 +29,9 @@ class DataModel:
     def session(self):
         return self._session
 
+    def deleteSession(self, sessions):
+        self._sessions = sessions
+
     def new(self, session, chassis, props):
         self._session = session
         self.chassis = chassis
