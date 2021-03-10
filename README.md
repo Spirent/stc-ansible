@@ -64,7 +64,10 @@ The `stc` Ansible module makes it possible to execute one of the following 8 act
 
 | action      | description                                                                                                                                                                                                                  |
 | -------     | -------------                                                                                                                                                                                                                |
-| session.    | Attach to an existing session. If the session does not exsit, a new session is created. If the session exists, the data model is first reset to the default data model.                                                      |
+| create_session or session.    | Attach to an existing session. If the session does not exsit, a new session is created. If the session exists, the data model is first reset to the default data model.                                                      |
+| attach_session | Attach to an existing session. If the session does not exisit, the script will fail.
+| delete_session | Deletes a specific session or few sessions specified.
+| delete_all_sessions | Deletes all the existing sessions.
 | load        | Loads a predefined XML data model. Note that the model must first be copied to the target STC Lab Server using the `copy` module. Check the [datamodel-loader.yaml](playbooks/datamodel-loader.yaml) playbook for reference. |
 | create      | Creates a new object in the data model.                                                                                                                                                                                      |
 | config      | Configures an existing object in the data model.                                                                                                                                                                             |
@@ -74,7 +77,7 @@ The `stc` Ansible module makes it possible to execute one of the following 8 act
 | wait        | Waits for one of several object attribute to become a specific value (eg wait for the attritube `BlockState` of the PPPoE object `PppoeClientBlockConfig` to become `CONNECTING` )                                        |
 | download     | Download files such as _bll.log_, _bll.session.log_, etc...                              |
 
-### Attach to a Session
+### Create or Attach to a Session
 
 The first task of the playbook must be to attach to an STC session:
 
@@ -87,6 +90,46 @@ The first task of the playbook must be to attach to an STC session:
 ```
 
 There are two optional parameters: `kill_existing` and `reset_existing`: If the session already exists on the server, it will respectively be first killed, or reset (using the _ResetConfig_ command)
+
+### Attach to a Session
+
+Attach to an existing session. If the session doen't exist, the playbook will fail.
+
+```yaml
+- name: Attach session
+  stc: 
+    action: attach_session
+    user: ansible
+    name: Session1
+```
+
+### Delete Sessions
+
+Deletes the sessions specified under `name`. The optional parameter `user` can be specified when specific user created sessions need to be deleted.
+
+```yaml
+- name: Delete session
+  stc: 
+    action: delete_session
+    user: ansible
+    name: Session1
+```
+
+```yaml
+- name: Delete session
+  stc: 
+    action: delete_session
+    user: ansible
+    name: Session1, Session 2, Session3
+```
+
+Deletes all the existing sessions in the connected lab server.
+
+```yaml
+- name: Delete session
+  stc: 
+    action: delete_all_sessions
+```
 
 ### Create a Few Ports
 
