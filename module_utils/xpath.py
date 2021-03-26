@@ -2,14 +2,12 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-07-03 16:24:32
+# @Last Modified time: 2020-07-13 15:17:13
 
 try:
     from ansible.module_utils.logger import Logger
-    from ansible.module_utils.processaction import process_action
 except ImportError:
     from module_utils.logger import Logger
-    from module_utils.processaction import process_action
 
 import requests
 import json
@@ -25,7 +23,6 @@ class Linker:
         self.datamodel = datamodel
         self.rest = rest
 
-    @process_action()
     def resolveSingleObject(self, ref):
 
         selection = self._resolve(ref)
@@ -37,12 +34,18 @@ class Linker:
 
         return selection.firstNode()
 
-    @process_action()
     def resolveObjects(self, ref, current=None):
-        selection = self._resolve(ref, current)
-        if selection == None or selection.count() == 0:
+        myrefs = re.split(",|;", ref)
+        myselections = NodeSelector()
+        for myref in myrefs:
+            if myref.strip() == "":
+                continue
+            selection = self._resolve(myref, current)
+            if selection != None and selection.count() > 0:
+                myselections.extendex(selection)
+        if myselections.count() == 0:
             return None
-        return selection
+        return myselections
 
     def _resolve(self, ref, current=None):
         if ref == None:
@@ -184,6 +187,9 @@ class NodeSelector:
         if other != None:
             if self.nodes == other.nodes:
                 return False
+            if len(other.nodes) == 0:
+                return len(self.nodes) > 0
+
             for n in other.nodes:
                 if n not in self.nodes:
                     return True
@@ -196,14 +202,17 @@ class NodeSelector:
                 if n not in self.nodes:
                     self.nodes.append(n)
 
+    def extendex(self, other):
+        if other != None:
+            for n in other.nodes:
+                self.nodes.append(n)
+
     def intersect(self, other):
         new = NodeSelector()
         if other != None:
             for n in other.nodes:
                 if n in self.nodes:
                     new.nodes.append(n)
-        if new.count() == 0:
-            return None
         return new
 
 
@@ -245,14 +254,9 @@ class Selector:
             found = False
             for operator, id in operators.items():
                 matcher = "^(\\w+)\\s*" + operator + "\\s*(.*)$"
-                #fix the bug: cannot work for usertag-targets if "-" in the selector
-                matcher2 = "^(\\w+\\-\\w+)\\s*" + operator + "\\s*(.*)$"  
-                if re.search(matcher, selector) != None or \
-                    re.search(matcher2, selector) != None:  
+                if re.search(matcher, selector) != None:
 
                     match = re.findall(matcher, selector)
-                    if len(match) == 0:
-                        match = re.findall(matcher2, selector)
                     value = match[0][1]
                     if value.startswith("'") and value.endswith("'"):
                         value = value[1:-1]
@@ -296,6 +300,8 @@ class Selector:
                 selection.append(node)
 
         log.debug("Selector: candidates are %s" % [str(n) for n in selection])
+        # sort handles to get correct order
+        selection.sort(key=lambda n: n.handle)
 
         for selector in self.selectors:
 
@@ -326,9 +332,10 @@ class Selector:
         value = str(attr[attrKey]).lower()
         if selector["type"] == Selector.equal:
             if attr["object_type"] == "port":
-                isValid = ((value == selectorValue) or (re.sub(r"\s//.*", "", value)== re.sub(r"\s//.*", "", selectorValue)))
+                isValid = ((value == selectorValue) or
+                           (re.sub(r"\s//.*", "", value) == re.sub(r"\s//.*", "", selectorValue)))
             else:
-                isValid = (value == selectorValue) 
+                isValid = (value == selectorValue)
 
         elif selector["type"] == Selector.different:
 

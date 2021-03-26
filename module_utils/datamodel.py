@@ -23,25 +23,24 @@ class DataModel:
     def __init__(self):
         self._session = None
         self.chassis = []
-        self.ports = []
+        self.props = {'names': [], 'ports':[]}
         self.unserialize()
 
     def session(self):
         return self._session
 
-    def new(self, session, chassis, ports):
+    def deleteSession(self, sessions):
+        self._sessions = sessions
+
+    def new(self, session, chassis, props):
         self._session = session
         self.chassis = chassis
-        self.ports = ports
+        self.props = props
         self.reset()
 
     def getChassis(self, i):
         if i < len(self.chassis):
             return self.chassis[i]
-
-    def getPorts(self, i):
-        if i < len(self.ports):
-            return self.ports[i]
 
     def getRoot(self, objtype):
         node = objtype + "1"
@@ -61,7 +60,8 @@ class DataModel:
 
                 self._session = model["session"]
                 self.chassis = model["chassis"]
-                self.ports = model["ports"]
+                self.props["ports"] = model["ports"]
+                self.props["names"] = model["names"]
                 project1 = model["model"]["project1"]
                 project = ObjectModel("project1", project1["attributes"], None)
                 project.unserialize(model["model"])
@@ -78,14 +78,14 @@ class DataModel:
 
         filename = "model-temp/stc-ansible-datamodel.json"
         with open(filename, 'w') as outfile:
-            data = {"model": {}, "session": self._session, "chassis": self.chassis, "ports": self.ports}
+            data = {"model": {}, "session": self._session, "chassis": self.chassis, "ports": self.props["ports"], "names": self.props["names"]}
             if "project1" in self.root:
                 data["model"] = self.root["project1"].serialize()
             json.dump(data, outfile, indent=4)
 
     def tree(self):
 
-        return root["project1"].serialize()
+        return self.root["project1"].serialize()
 
     def dump(self, node=None, level=0):
 
@@ -96,23 +96,6 @@ class DataModel:
         for key in node.keys():
             print("%s%s" % (prefix, node[key].dump("\n" + prefix + "-")))
             self.dump(node[key].children, level + 1)
-
-    def update(self, obj, attributes, parent=None):
-        if obj != None:
-            hnd = obj['object'].handle
-            nodes = self.root
-            if parent != None:
-                nodes = parent.children
-            if hnd in nodes:
-                nodes[hnd].config(attributes)
-                return nodes[hnd]
-            elif parent != None and hnd == parent.handle:
-                parent.config(attributes)
-                return parent
-            else:
-                obj['object'].config(attributes)
-                return obj['object']
-        return None
 
     def insert(self, handle, attributes, parent=None):
 

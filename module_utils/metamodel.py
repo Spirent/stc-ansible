@@ -2,29 +2,28 @@
 # @Author: rjezequel
 # @Date:   2019-12-20 09:18:14
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-07-03 16:34:17
+# @Last Modified time: 2020-07-13 17:01:45
 
 try:
-    from ansible.module_utils.processaction import process_action
     from ansible.module_utils.templater import Templater
     from ansible.module_utils.datamodel import DataModel
     from ansible.module_utils.objtree import ObjectTree
     from ansible.module_utils.stcrest import StcRest
+    from ansible.module_utils.tags import TagManager
     from ansible.module_utils.xpath import Linker
     from ansible.module_utils.logger import Logger
     from ansible.module_utils.drv import DRV
     from ansible.module_utils.utils import *
 except ImportError:
-    from module_utils.processaction import process_action
     from module_utils.templater import Templater
     from module_utils.datamodel import DataModel
     from module_utils.objtree import ObjectTree
     from module_utils.stcrest import StcRest
+    from module_utils.tags import TagManager
     from module_utils.xpath import Linker
     from module_utils.logger import Logger
     from module_utils.drv import DRV
     from module_utils.utils import *
-
 
 import requests
 import pickle
@@ -36,13 +35,14 @@ log = Logger("metamodel")
 
 
 class MetaModel:
+
     def __init__(self, server="127.0.0.1"):
         self.datamodel = DataModel()
         self.rest = StcRest(server, self.datamodel.session())
         self.xpath = Linker(self.datamodel, self.rest)
         self.templater = Templater(self.datamodel)
+        self.tagMgr = TagManager(self.rest)
 
-    @process_action()
     def action(self, params):
 
         action = params["action"]
@@ -54,7 +54,7 @@ class MetaModel:
 
         log.info("Action: %s" % json.dumps(params, indent=4))
 
-        if action == "session":
+        if (action == "session") or (action == "create_session"):
 
             chassis = params["chassis"] if "chassis" in params else None
             if chassis != None and chassis != "":
@@ -64,16 +64,64 @@ class MetaModel:
 
             ports = params["ports"] if "ports" in params else None
             if ports != None and ports != "":
-                ports = ports.split(" ")
+                try:
+                    ports = resolvePorts(ports)
+                    log.info("Ports: %s" % str(ports))
+                except Exception as err:
+                    return Result.error("Ports handling Exception: %s" % str(err))
+                
             else:
                 ports = []
 
+            portNames = params["names"] if "names" in params else None
+            if portNames != None and portNames != "":
+                portNames = resolveNames(portNames)
+                log.info("PortNames: %s" % str(portNames))
+            else:
+                portNames = []
+
+            if len(ports) != 0 and len(portNames) != 0 and len(ports) != len(portNames):
+                return Result.error("The number of ports and names does not match, please check")
+
             # print(">>> new session <<< user:%s name:%s chassis:%s" %
             #       (Color.blue(params["user"]), Color.blue(params["name"]), Color.green(str(chassis))))
+            propsDict = {"ports":ports, "names":portNames}
 
             reset_existing = (not ("reset_existing" in params)) or (params["reset_existing"] == True)
             kill_existing = "kill_existing" in params and params["kill_existing"]
-            result = self.new_session(params["user"], params["name"], chassis, ports, reset_existing, kill_existing)
+            result = self.new_session(params["user"], params["name"], chassis, propsDict, reset_existing, kill_existing)
+
+        elif action == "attach_session":
+            userName = params["user"] if "user" in params else None
+            sessionName = params["name"]
+            result = self.attach_session(sessionName, userName)
+
+        elif action == "delete_session":
+            user_name = params["user"] if "user" in params else None
+            sessionName = params["name"]
+            sessions = []
+            existingSessions=self.rest._getSessions()
+            
+            if re.search(',', params["name"]) != None:
+                sessionNames = params["name"].split(", ")
+                for sessionName in sessionNames:
+                    if user_name != None:
+                        sessionName = sessionName+" - "+user_name
+                    if sessionName in existingSessions:
+                        sessions.append(sessionName)
+                    else:
+                        return Result.error("Session \"%s\" is not exist." % sessionName)
+            else:
+                if user_name != None:
+                    sessionName = sessionName+" - "+user_name
+                if sessionName in existingSessions:
+                    sessions.append(sessionName)
+                else:
+                    return Result.error("Session \"%s\" is not exist." % sessionName)
+            result = self.delete_session(sessions)
+
+        elif action == "delete_all_sessions":
+            result = self.delete_all_sessions()
 
         elif action == "create":
 
@@ -141,7 +189,7 @@ class MetaModel:
 
         elif action[0:4] == "drv.":
 
-            if objects!=None:
+            if objects != None:
                 if type(objects) is list:
                     if len(objects) != 1:
                         return Result.error("There should be only one object, but there are %d: %s" %
@@ -150,21 +198,20 @@ class MetaModel:
 
                 objects = self.xpath.resolveObjects(objects)
 
-            if objects==None:
+            if objects == None:
                 return Result.error("Can not fetch DRV: no valid objects selected")
 
             drv = DRV(objects, self.rest)
-            if action[4:]=="fetch":
+            if action[4:] == "fetch":
                 result = Result.value(drv.fetch())
 
-            elif action[4:]=="subscribe":
+            elif action[4:] == "subscribe":
                 result = Result.value(drv.subscribe())
 
             else:
                 result = Result.error("Unknown DRV action %s" % action[4:])
 
             return result
-
 
         else:
 
@@ -186,14 +233,35 @@ class MetaModel:
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
 
-    def new_session(self, user_name, session_name, chassis=[], ports=[], reset_existing=True, kill_existing=False):
+    def new_session(self, user_name, session_name, chassis=[], props={"ports":[], "names":[]}, reset_existing=True, kill_existing=False):
 
-        self.datamodel.new(session_name + " - " + user_name, chassis, ports),
+        self.datamodel.new(session_name + " - " + user_name, chassis, props),
         if not self.rest.new_session(user_name, session_name, reset_existing, kill_existing):
             return Result.error("Failed to create a session: %s" % self.rest.errorInfo)
 
         if len(chassis) > 0 and not self.rest.connect(chassis):
             return Result.error("Failed to connect to the chassis: %s" % self.rest.errorInfo)
+
+        return Result.value(1)
+
+    def attach_session(self, session_name, user_name, chassis=[], props={"ports":[], "names":[]}, reset_existing=True, kill_existing=False):
+        self.datamodel.new(session_name + " - " + user_name, chassis, props)
+        if not self.rest.attach_session(session_name, user_name):
+            return Result.error("Failed to attach session: %s" % self.rest.errorInfo)
+
+        return Result.value(1)
+
+    def delete_session(self, session_name):
+        self.datamodel.deleteSession(session_name)
+        if not self.rest.delete_session(session_name):
+            return Result.error("Failed to delete session: %s" % self.rest.errorInfo)
+
+        return Result.value(1)
+        
+    def delete_all_sessions(self):
+        self.datamodel.session()
+        if not self.rest.delete_all_sessions():
+            return Result.error("Failed to delete all sessions: %s" % self.rest.errorInfo)
 
         return Result.value(1)
 
@@ -219,84 +287,57 @@ class MetaModel:
     def config(self, properties, objref=None, count=1):
 
         handles = {}
-        objs = self.xpath.resolveObjects(objref)
+        for i in range(0, count):
 
-        if count > 1 and objs != None and objs.count() > 1:
-            return Result.error("config: cannot config mutilple objects returned by xpath and based on count at same time")
-        
-        if objs != None and objs.count() > 1:
-            i = 0
-            for obj in objs.nodes:
-                r = self.configObject(obj, self.templater.get(properties, i))
-                if r.isError():
-                    return r
+            ref = self.templater.get(objref, i)
+            obj = self.xpath.resolveSingleObject(ref)
+            if obj == None:
+                return Result.error("config: Can not find parent object %s" % ref)
 
-                handles[i] = r.val
-                i += 1
-        else:   
-            for i in range(0, count):
+            r = self.configObject(obj, self.templater.get(properties, i))
+            if r.isError():
+                return r
 
-                ref = self.templater.get(objref, i)
-                obj = self.xpath.resolveSingleObject(ref)
-                if obj == None:
-                    return Result.error("config: Can not find parent object %s" % ref)
+            handles[i] = r.val
 
-                r = self.configObject(obj, self.templater.get(properties, i))
-                if r.isError():
-                    return r
-
-                handles[i] = r.val
-
-            if count == 1:
-                handles = handles[0]
+        if count == 1:
+            handles = handles[0]
         return Result.value(handles)
 
     def create(self, objects, under=None, count=1):
 
         handles = {}
-        parents = self.xpath.resolveObjects(under)
+        for i in range(0, count):
 
-        if count > 1 and parents != None and parents.count() > 1:
-            return Result.error("config: cannot create under mutilple objects returned by xpath and based on count at same time")
-        
-        if parents != None and parents.count() > 1:
-            i = 0
-            for parent in parents.nodes:
-                r = self.createObject(self.templater.get(objects, i), parent)
-                if r.isError():
-                    return r
+            parent = None
+            if under != None:
+                ref = self.templater.get(under, i)
+                parent = self.xpath.resolveSingleObject(ref)
+                if parent == None:
+                    return Result.error("create: Can not find parent object %s" % ref)
 
-                handles[i] = r.val
-                i += 1
-        else:
-            for i in range(0, count):
+            r = self.createObject(self.templater.get(objects, i), parent)
+            if r.isError():
+                return r
 
-                parent = None
-                if under != None:
-                    ref = self.templater.get(under, i)
-                    parent = self.xpath.resolveSingleObject(ref)
-                    if parent == None:
-                        return Result.error("create: Can not find parent object %s" % ref)
+            handles[i] = r.val
 
-                r = self.createObject(self.templater.get(objects, i), parent)
-                if r.isError():
-                    return r
-
-                handles[i] = r.val
-
-            if count == 1:
-                handles = handles[0]
+        if count == 1:
+            handles = handles[0]
         return Result.value(handles)
 
-    @process_action()
     def perform(self, command, properties, count=1):
 
         handles = {}
         name = properties["name"] if "name" in properties else ""
+        userTags = properties["tag"] if "tag" in properties else ""
         for i in range(0, count):
             props = self.templater.get(properties, i)
             if command == "DeviceCreate":
                 props["name"] = name
+                if userTags != "":
+                    props["tag"] = userTags
+
             r = self.performConfig(command, props)
             if r.isError():
                 return r
@@ -406,6 +447,7 @@ class MetaModel:
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
+
     def performConfig(self, command, props):
 
         params = {}
@@ -418,6 +460,12 @@ class MetaModel:
                     return Result.error("Failed to resolve: %s" % val)
                 val = " ".join(objects.handles())
             params[key] = val
+
+        # The tags are configured with device config
+        userTags = {}
+        if command == "DeviceCreate":
+            userTags = self.tagMgr.getPoppedTags(params)
+            log.info("Pop user tags(%s) for later configuration" % str(userTags))
 
         result = self.rest.perform(command, params)
         if result == None:
@@ -434,7 +482,10 @@ class MetaModel:
 
         for i in range(len(handles)):
             handle = handles[i]
-            attributes = {"name": self.templater.get(props["name"], i)}
+            newTag = self.templater.get(userTags, i)
+            self.tagMgr.handleTags(newTag)
+
+            attributes = {"name": self.templater.get(props["name"], i), "usertag-targets": newTag.get("usertag-targets", "")}
             if not self.rest.config(handle, attributes):
                 return Result.error(self.rest.errorInfo)
 
@@ -450,13 +501,11 @@ class MetaModel:
     # --------------------------------------------------------------------
     # --------------------------------------------------------------------
 
-    @process_action()
     def configObject(self, root, properties):
 
         objects = [{root.objectType(): properties}]
         return self.createOrConfigObject(objects, root, True)
 
-    @process_action()
     def createObject(self, objects, parent):
 
         return self.createOrConfigObject(objects, parent, False)
@@ -503,6 +552,19 @@ class MetaModel:
                 # print("Creating",json.dumps(params,indent=4))
                 fparams = {key: value for (key, value) in params.items() if key.find(".object_type") < 0}
                 # print("Creating",json.dumps(fparams,indent=4))
+                if under != None:
+                    # When project1 is created, if project1's children is not got, 
+                    # getting children in tag1 will fail. 
+                    self.rest.children("project1")
+                    self.tagMgr.handleTags(fparams)
+
+                ## DynamicResultView with the same name will be created multiple times, which cause
+                ## subscription failed
+                if obj["type"] == 'DynamicResultView':
+                    drvName = fparams.get('name')
+                    if drvName != None:
+                        self.delete('ref:/project/DynamicResultView[name="%s"]' % drvName)
+
                 handle = self.rest.create(obj["type"], fparams)
                 if handle == None:
                     return Result.error(self.rest.errorInfo)
@@ -527,7 +589,6 @@ class MetaModel:
                 if not self.rest.config(parent.handle, fparams):
                     return Result.error(self.rest.errorInfo)
                 obj["object"] = parent
-                self.datamodel.update(obj, fparams, parent)
 
         # print("children:", json.dumps(obj["children"], indent=4))
 
@@ -585,10 +646,10 @@ class MetaModel:
             if config != {}:
                 if not self.rest.config(obj["object"].handle, config):
                     return Result.error(self.rest.errorInfo)
-                self.datamodel.update(obj, config)
 
         handles = []
         for obj in tree.objects:
             handles.append(obj["object"].handle)
 
         return Result.value(handles)
+
