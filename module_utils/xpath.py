@@ -202,6 +202,8 @@ class NodeSelector:
                 if n not in self.nodes:
                     self.nodes.append(n)
 
+    #requires the duplicate like: 
+    #ipv4netwokblock1 ipv4netwokblock2 ipv4netwokblock1 ipv4netwokblock2
     def extendex(self, other):
         if other != None:
             for n in other.nodes:
