@@ -2,7 +2,7 @@
 # @Author: ronanjs
 # @Date:   2020-01-13 14:09:07
 # @Last Modified by:   ronanjs
-# @Last Modified time: 2020-02-06 12:35:40
+# @Last Modified time: 2020-07-13 17:10:47
 
 import yaml
 import json
@@ -10,6 +10,7 @@ import time
 import glob
 import shutil
 import sys, os
+import re
 from module_utils.utils import *
 from module_utils.metamodel import MetaModel
 from tests.mintaka import MintakaConfig
@@ -17,7 +18,7 @@ from tests.mintaka import MintakaConfig
 
 class PlaybookEmulator:
 
-    def __init__(self, labServer, chassis=[], ports=[]):
+    def __init__(self, labServer, chassis=[], ports=[], names=[]):
 
         if labServer[0] == '@':
             config = MintakaConfig(labServer[1:], "5")
@@ -28,6 +29,7 @@ class PlaybookEmulator:
         self.labServer = labServer
         self.chassis = chassis
         self.ports = ports
+        self.names = names
 
     def play(self, playbook):
 
@@ -50,7 +52,7 @@ class PlaybookEmulator:
 
             count = 1
             if "pause" in task:
-                print("\033[93m------------ PAUSING ------------\033[0m")
+                print("\033[95m------------ PAUSING ------------\033[0m")
                 if "pause" in task:
                     if "seconds" in task["pause"]:
                         print("Waiting for %s seconds" % task["pause"]["seconds"])
@@ -64,7 +66,7 @@ class PlaybookEmulator:
                     print("Sorry, I do not understand this task... %s" % task)
 
             elif "stc" in task:
-                print("\033[93m------------ TASK %s ------------\033[0m" % task["name"])
+                print("\033[95m------------ TASK %s ------------\033[0m" % task["name"])
                 start = time.time()
                 model = MetaModel(self.labServer)
 
@@ -72,16 +74,23 @@ class PlaybookEmulator:
                     if len(self.chassis) > 0:
                         print("[emulator] Overwritting Chassis with %s" % self.chassis)
                         task["stc"]["chassis"] = " ".join(self.chassis)
-                    if len(self.ports) > 0:
-                        print("[emulator] Overwritting Ports with %s" % self.ports)
-                        task["stc"]["ports"] = " ".join(self.ports)
+                    if "ports" in task["stc"]:
+                        mgPort = re.search(r'\{\{(\s*)hostvars\[inventory_hostname\]\.ports(\s*)\}\}', task["stc"]["ports"])
+                        if len(self.ports) > 0 and mgPort:
+                            print("[emulator] Overwritting Ports with %s" % self.ports)
+                            task["stc"]["ports"] = " ".join(self.ports)
+                    if "names" in task["stc"]:
+                        mgName = re.search(r'\{\{(\s*)hostvars\[inventory_hostname\]\.names(\s*)\}\}', task["stc"]["names"])
+                        if len(self.names) > 0 and mgName:
+                            print("[emulator] Overwritting Names with %s" % self.names)
+                            task["stc"]["names"] = " ".join(self.names)
 
                 if "dest" in task["stc"]:
                     task["stc"]["dest"] = task["stc"]["dest"].replace("{{ tempfolder.path }}", "/tmp")
 
-                if "datamodel" in task["stc"] and "action" in task["stc"] :
+                if "datamodel" in task["stc"] and "action" in task["stc"]:
                     task["stc"]["datamodel"] = task["stc"]["datamodel"].replace("{{ tempfolder.path }}", "asset")
-                    
+
                 result = model.action(task["stc"])
 
                 if result.isError():
@@ -112,7 +121,7 @@ class PlaybookEmulator:
                     shutil.copyfile(src, dst)
 
             elif not "debug" in task:
-                print("\033[93m------------ UNKNOWN TASK ------------\033[0m")
+                print("\033[95m------------ UNKNOWN TASK ------------\033[0m")
                 print("Sorry, I do not understand this task... %s" % task)
 
         elapsed = time.time() - pbstart
@@ -124,7 +133,7 @@ if __name__ == "__main__":
 
     emulator = PlaybookEmulator("@bdc")
 
-    # emulator.play("./playbooks/bgp-traffic.yaml")
+    # emulator.play("./playbooks/device-create.yaml")
 
     for file in glob.glob("./playbooks/*.yaml"):
         print("\n\n%s %s %s\n\n" % (Color.blue("=" * 60), Color.bold(file), Color.blue("=" * 60)))

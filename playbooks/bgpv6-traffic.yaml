@@ -1,0 +1,340 @@
+#####################################
+# bgp ipv6 config, traffic and Savexml
+#####################################
+
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: bgp_traffic
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+
+- 
+  name: Create the base ports
+  stc: 
+    action: create
+    objects: 
+      - project: 
+          - port: 
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+
+          - port: 
+              location: "//${chassis[1]}/1/1"
+              name: Port2
+
+-
+  name: create 1 bgp device under port1
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port1']
+      IfStack: Ipv6If EthIIIf
+      IfCount: '1 1'
+      name: "BGPDevice1"
+
+-
+  name: config global ipv6if device BGPDevice1
+  stc:
+    action: config
+    count: 1
+    objects: ref:/Emulateddevice[@Name='BGPDevice1']
+    properties:
+        Ipv6If:
+          name: "global IPv6"
+          Address: 2001::5
+          Gateway: 2001::6
+          PrefixLength: 64
+
+-
+  name: create the linklocal Ipv6If of device BGPDevice1
+  stc:
+    action: create
+    under: /EmulatedDevice[@Name='BGPDevice1']
+    count: 1
+    objects: 
+    - Ipv6If:  
+          name: "linklocal IPv6"
+          stackedon: ref:/Emulateddevice[@Name='BGPDevice1']/ethiiif
+          toplevelif-sources: ref:/Emulateddevice[@Name='BGPDevice1']
+          PrimaryIf-sources: ref:/Emulateddevice[@Name='BGPDevice1']
+          Address: fe80::1
+          Gateway: ::1
+          PrefixLength: 128
+
+-
+  name: create bgp on this device 1
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='BGPDevice1']
+    count: 1
+    objects: 
+    - BgpRouterConfig: 
+        IpVersion: IPV6
+        AsNum: 1111
+        DutAsNum: 1111
+        name: "BGPRouter1"
+
+-
+  name: create ipv6 route on device1
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']
+    count: 1
+    objects: 
+    - BgpIpv6RouteConfig: 
+        name: "BGPV6Route"
+        AsPath: 1111
+
+-
+  name: config another ipv6 route on device1
+  stc: 
+    action: config
+    count: 1
+    objects: /EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']
+    properties:
+        BgpIpv6RouteConfig:
+           Ipv6NetworkBlock: 
+             NetworkCount: 100
+             StartIpList: 2000::1
+
+-
+  name: create 1 bgp device under port2
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port2']
+      IfStack: Ipv6If EthIIIf
+      IfCount: '1 1'
+      name: "BGPDevice2"
+
+-
+  name: config global ipv6if device BGPDevice2
+  stc:
+    action: config
+    count: 1
+    objects: ref:/Emulateddevice[@Name='BGPDevice2']
+    properties:
+        Ipv6If:
+          name: "global-IPv61"
+          Address: 2001::6
+          Gateway: 2001::5
+          PrefixLength: 64
+
+-
+  name: create the linklocal Ipv6If of device BGPDevice2
+  stc:
+    action: create
+    under: /EmulatedDevice[@Name='BGPDevice2']
+    count: 1
+    objects: 
+    - Ipv6If: 
+          name: "BGPDevice2-LinkLocal"
+          stackedon: ref:/Emulateddevice[@Name='BGPDevice2']/ethiiif
+          toplevelif-sources: ref:/Emulateddevice[@Name='BGPDevice2']
+          PrimaryIf-sources: ref:/Emulateddevice[@Name='BGPDevice2']
+          Address: fe80::2
+          Gateway: ::1
+          PrefixLength: 128
+
+-
+  name: create bgp on the device2
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='BGPDevice2']
+    count: 1
+    objects: 
+    - BgpRouterConfig: 
+        IpVersion: IPV6
+        AsNum: 1111
+        DutAsNum: 1111
+        name: "BGPRouter2"
+
+-
+  name: create ipv6 route on device2
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']
+    count: 1
+    objects: 
+    - BgpIpv6RouteConfig: 
+        name: "BGPV6Route2"
+        AsPath: 1111
+
+-
+  name: config another ipv6route on device2
+  stc: 
+    action: config
+    count: 1
+    objects: /EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']
+    properties:
+        BgpIpv6RouteConfig:
+           Ipv6NetworkBlock: 
+             NetworkCount: 100
+             StartIpList: 3000::1
+
+-            
+  name: Configure the traffic generator1
+  stc: 
+    count: 1
+    action: create
+    under: /project
+    objects: 
+    - StreamBlock: 
+        EnableStreamOnlyGeneration: true
+        SrcBinding-targets: ref:/EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']/BgpIpv6RouteConfig/Ipv6NetworkBlock
+        DstBinding-targets: ref:/EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']/BgpIpv6RouteConfig/Ipv6NetworkBlock
+        AffiliationStreamBlockLoadProfile: 
+          Load: 10
+
+-
+  name: Configure the traffic generator2
+  stc: 
+    count: 1
+    action: create
+    under: /project
+    objects: 
+    - StreamBlock: 
+        EnableStreamOnlyGeneration: true
+        SrcBinding-targets: ref:/EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']/BgpIpv6RouteConfig/Ipv6NetworkBlock
+        DstBinding-targets: ref:/EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']/BgpIpv6RouteConfig/Ipv6NetworkBlock
+        AffiliationStreamBlockLoadProfile: 
+          Load: 10
+
+
+-
+  name: Save xml
+  stc: 
+    action: perform
+    command: SaveAsXml
+    properties: 
+      FileName: "bgp_config.xml"
+
+- name: list the available files
+  register: files
+  stc:
+    action: files
+
+- debug:
+    var: files
+
+- name: create temporary build directory
+  register: tempfolder
+  tempfile:
+    state: directory
+    suffix: build
+
+- name: download xml from STC
+  register: files
+  stc:
+     action: download
+     file: "bgp_config.xml"
+     dest: "{{ tempfolder.path }}"
+
+- fetch: 
+    src: "{{ tempfolder.path }}/{{ item }}"
+    dest: logs/
+  with_items: "{{ files.result }}"
+
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port
+
+-
+  name: start devices
+  stc: 
+    action: perform
+    command: DeviceStart
+
+-
+  name: Wait for the BGP1 to be established
+  stc: 
+    action: wait
+    objects: ref:/EmulatedDevice[@Name='BGPDevice1']/BgpRouterConfig[@Name='BGPRouter1']
+    until: RouterState=ESTABLISHED
+
+-
+  name: Wait for the BGP2 to be established
+  stc: 
+    action: wait
+    objects: ref:/EmulatedDevice[@Name='BGPDevice2']/BgpRouterConfig[@Name='BGPRouter2']
+    until: RouterState=ESTABLISHED
+
+
+- name: wait 10 sec
+  pause: 
+    seconds: 10
+
+-
+  name: Start the traffic
+  stc: 
+    action: perform
+    command: GeneratorStart
+    properties: 
+      GeneratorList: ref:/project 
+
+
+-
+  name: subscribe to streamblock results
+  stc: 
+    action: perform
+    command: SubscribeResultsView
+    properties: 
+      ExecuteSynchronous: true
+      TemplateUri: "Result Views/Stream Results/Stream Block Results.xml"
+
+- name: wait 10 sec
+  pause: 
+    seconds: 10
+
+
+-
+  name: Stop the traffic
+  stc: 
+    action: perform
+    command: GeneratorStop
+    properties: 
+      GeneratorList: ref:/project 
+
+- name: wait 10 sec
+  pause: 
+    seconds: 10
+
+-
+  name: get StreamBlock Rx Results
+  register: resultRx
+  stc: 
+    action: get
+    objects: /port/StreamBlock/RxStreamBlockResults
+
+
+-
+  name: get StreamBlock Results
+  register: result
+  stc: 
+    action: get
+    objects: /port/StreamBlock/TxStreamBlockResults 
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port

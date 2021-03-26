@@ -64,7 +64,10 @@ The `stc` Ansible module makes it possible to execute one of the following 8 act
 
 | action      | description                                                                                                                                                                                                                  |
 | -------     | -------------                                                                                                                                                                                                                |
-| session.    | Attach to an existing session. If the session does not exsit, a new session is created. If the session exists, the data model is first reset to the default data model.                                                      |
+| create_session or session.    | Attach to an existing session. If the session does not exsit, a new session is created. If the session exists, the data model is first reset to the default data model.                                                      |
+| attach_session | Attach to an existing session. If the session does not exisit, the script will fail.
+| delete_session | Deletes a specific session or few sessions specified.
+| delete_all_sessions | Deletes all the existing sessions.
 | load        | Loads a predefined XML data model. Note that the model must first be copied to the target STC Lab Server using the `copy` module. Check the [datamodel-loader.yaml](playbooks/datamodel-loader.yaml) playbook for reference. |
 | create      | Creates a new object in the data model.                                                                                                                                                                                      |
 | config      | Configures an existing object in the data model.                                                                                                                                                                             |
@@ -74,7 +77,7 @@ The `stc` Ansible module makes it possible to execute one of the following 8 act
 | wait        | Waits for one of several object attribute to become a specific value (eg wait for the attritube `BlockState` of the PPPoE object `PppoeClientBlockConfig` to become `CONNECTING` )                                        |
 | download     | Download files such as _bll.log_, _bll.session.log_, etc...                              |
 
-### Attach to a Session
+### Create or Attach to a Session
 
 The first task of the playbook must be to attach to an STC session:
 
@@ -87,6 +90,46 @@ The first task of the playbook must be to attach to an STC session:
 ```
 
 There are two optional parameters: `kill_existing` and `reset_existing`: If the session already exists on the server, it will respectively be first killed, or reset (using the _ResetConfig_ command)
+
+### Attach to a Session
+
+Attach to an existing session. If the session doen't exist, the playbook will fail.
+
+```yaml
+- name: Attach session
+  stc: 
+    action: attach_session
+    user: ansible
+    name: Session1
+```
+
+### Delete Sessions
+
+Deletes the sessions specified under `name`. The optional parameter `user` can be specified when specific user created sessions need to be deleted.
+
+```yaml
+- name: Delete session
+  stc: 
+    action: delete_session
+    user: ansible
+    name: Session1
+```
+
+```yaml
+- name: Delete session
+  stc: 
+    action: delete_session
+    user: ansible
+    name: Session1, Session 2, Session3
+```
+
+Deletes all the existing sessions in the connected lab server.
+
+```yaml
+- name: Delete session
+  stc: 
+    action: delete_all_sessions
+```
 
 ### Create a Few Ports
 
@@ -266,6 +309,128 @@ Voila, last step is to add a task to attach to the ports:
 
 Notice the reference `ref:/port`: It refers to all the port handles.
 
+### Defining Multiple ports and names
+
+Multiple ports and names can also be defined by adding the lists of ports and names to the inventory, and then reference them in the tasks. 
+
+The first step is to declare the ports and names in the inventory. For instance, this will add 16 ports and names to the playbook. 
+
+```ini
+[labservers]
+my-labserver-1 ansible_host=10.61.67.200 chassis = "10.61.67.216 10.61.67.199" ports="//10.61.67.216/1/1-4,7,9-10 //10.61.67.199/1/4-6,9,12-14 //10.61.67.199/2/18-19" names="port[1:5] ethA ethB eth_[8:16]_if"
+```
+
+For ports, the format shall be "//IP/slot/num1-num2,num3". "-" means the port is from num1 to num2. non-continuous number is separated by comma (","). For names, the range is specified by [num1:num2].
+
+For example, ports = "//10.61.67.216/1/1-3,7" means ports = "//10.61.67.216/1/1 //10.61.67.216/1/2 //10.61.67.216/1/3 //10.61.67.216/1/7". names = "port[1:3]" means names = "port1 port2 port3".
+
+**Notes:  The number of ports and names must be the same, otherwise an error will be reported.  This number will be the value of count when creating the ports.**
+
+Then, when creating the session, specify the ports and names property:
+
+```yaml
+- name: Create a session with predefined chassis
+  stc: 
+    action: session
+    user: ansible
+    name: basic_device
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+    ports: "{{ hostvars[inventory_hostname].ports }}"
+    names: "{{ hostvars[inventory_hostname].names }}"
+```
+
+The `{{ hostvars[inventory_hostname].ports }}` is used to reference to the ports defined in the inventory while `{{ hostvars[inventory_hostname].names }}` is used to reference to the names. Alternatively, the ports and names can be specified directly in the session task as below:
+
+```yaml
+- name: Create a session with predefined chassis
+  stc: 
+    action: session
+    user: ansible
+    name: basic_device
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+    ports: "//${chassis[0]}/1/1-3,6,8 //${chassis[1]}/2/1-3,6-8"
+    names: "port[1:4] ethernet2/5 [4:9]_Ethernet1_9"
+```
+
+Once the ports and names are defined in the `session` task, the keywork `${ports[item]}` and  `${names[item]}` can be used to reference them. An example is given as below:
+
+```yaml
+-
+  name: Create the base ports
+  stc:
+    action: create
+    count: 16
+    objects:
+      - project:
+          - port:
+              location: ${ports[item]}
+              name: ${names[item]}
+```
+
+### Adding Tags to Ports, Emulated Devices and Stream blocks
+
+When creating Ports, Emulated Device or Stream blocks, the "tag" can be identified. Multiple tags are separated by SPACE in Ansible. Thus, SPACE is not allowed to define one single tag. Otherwise, it will be treated as multiple tags.
+
+##### 1. Tag Ports
+
+The example below is given by tagging each port with "Server, myPortTag-0" and "Server, myPortTag-1".
+
+```yaml
+-
+  name: Create the ports
+  stc:
+    action: create
+    count: 2
+    objects:
+      - project:
+          - port:
+              location: ${ports[item]}
+              name: ${names[item]}
+              tag: "Server myPortTag-$item"
+```
+
+##### 2. Tag Emulated Devices
+
+The example below is given by tagging each Emulated Device with "devTagDhcp, devtag-0" and "devTagDhcp, devtag-1".
+
+```yaml
+-
+  name: create 2 block of 5 devices
+  stc:
+    action: perform
+    command: DeviceCreate
+    properties:
+      ParentList:  ref:/project
+      CreateCount: 2
+      DeviceCount: 5
+      Port: ref:/port[@name='Port1']
+      IfStack: Ipv4If PppIf PppoeIf EthIIIf
+      IfCount: '1 1 1 1'
+      name: "dev-$item"
+      tag: "devTagDhcp devtag-$item"
+```
+
+##### 3. Tag Stream blocks
+
+The example below is given by tagging each stream block with "traffMesh, traff-0" and "traffMesh, traff-1".
+
+```yaml
+-
+  name: Configure the traffic generator
+  stc:
+    count: 2
+    action: create
+    under: ref:/project
+    objects:
+    - StreamBlock:
+        tag: "traffMesh traff-$item"
+        EnableStreamOnlyGeneration: true
+        TrafficPattern: MESH
+        SrcBinding-targets: ref:/EmulatedDevice[@name='dev-$item']/Ipv4If
+        DstBinding-targets: ref:/EmulatedDevice[@name!='dev-$item']/Ipv4If
+        AffiliationStreamBlockLoadProfile:
+          Load: 100
+```
 
 ### Starting the Traffic
 

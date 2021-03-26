@@ -1,0 +1,66 @@
+################################################
+# Session create, attach and delete
+################################################
+
+-
+  name: Create session
+  stc:
+    action: session
+    user: ansible
+    name: Session1
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+-
+  name: Create session 1
+  stc:
+    action: create_session
+    user: ansible
+    name: Session1
+
+-
+  name: Create session 2
+  stc:
+    action: create_session
+    user: ansible
+    name: Session2
+
+-
+  name: Create session 3
+  stc:
+    action: create_session
+    user: ansible
+    name: Session3
+
+-
+  name: Create session 4
+  stc:
+    action: create_session
+    user: ansible
+    name: Session4
+
+-
+  name: Attach an existing session
+  stc:
+    action: attach_session
+    user: ansible
+    name: Session1
+
+- 
+  name: Delete specific session
+  stc: 
+    action: delete_session
+    user: ansible
+    name: Session2
+
+- 
+  name: Delete some specific sessions
+  stc: 
+    action: delete_session
+    user: ansible
+    name: Session2, Session3
+
+- 
+  name: Delete all the existing sessions
+  stc: 
+    action: delete_all_sessions
+

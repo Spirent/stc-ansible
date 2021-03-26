@@ -1,0 +1,160 @@
+-
+  name: Create session
+  stc:
+    action: session
+    user: ansible
+    name: streamblock_with_udp_header
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+-
+  name: Create the base ports
+  stc:
+    action: create
+    objects:
+      - project:
+          - port:
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+
+          - port:
+              location: "//${chassis[1]}/1/1"
+              name: Port2
+
+-
+  name: Create  emulated device 1
+  stc: 
+    action: create
+    under: ref:/project
+    count: 1
+    objects: 
+    - emulateddevice: 
+        AffiliatedPort: ref:/port[name=Port1]
+        DeviceCount: 1
+        name: "Device 1"
+        PrimaryIf: ref:./Ipv4If
+        TopLevelIf: ref:./Ipv4If
+        EthIIIf: 
+          SourceMac: be:ef:00:00:1:00
+        Ipv4If: 
+          AddrStep: 0.0.0.1
+          Address: 192.85.1.3
+          Gateway: 192.85.1.4
+          PrefixLength: 24
+          stackedon: ref:./EthIIIf
+          
+-
+  name: Create  emulated device 2
+  stc: 
+    action: create
+    under: ref:/project
+    count: 1
+    objects: 
+    - emulateddevice: 
+        AffiliatedPort: ref:/port[name=Port2]
+        DeviceCount: 1
+        name: "Device 2"
+        PrimaryIf: ref:./Ipv4If
+        TopLevelIf: ref:./Ipv4If
+        EthIIIf: 
+          SourceMac: be:ef:00:00:2:00
+        Ipv4If: 
+          AddrStep: 0.0.0.2
+          Address: 192.85.1.4
+          Gateway: 192.85.1.3
+          PrefixLength: 24
+          stackedon: ref:./EthIIIf
+          
+- 
+  name: Create a stream block
+  stc: 
+    action: create
+    under: ref:/project
+    objects: 
+    - streamblock: 
+        name: "Streamblock1"
+        EnableBidirectionalTraffic: True
+        EnableStreamOnlyGeneration: true
+        SrcBinding-targets: ref:/EmulatedDevice[@Name='Device 1']/Ipv4If
+        DstBinding-targets: ref:/EmulatedDevice[@Name='Device 2']/Ipv4If
+        AffiliationStreamBlockLoadProfile:
+          Load: 10
+
+- 
+  name: Create udp header under streamblock
+  stc: 
+    action: create
+    under: /Streamblock[@Name='Streamblock1']
+    objects:
+    - "udp:Udp":
+         name: 'udp1'
+         sourcePort: '1024'
+    - RangeModifier:
+         name: 'rangemodifier 1'
+         OffsetReference: udp1.destPort
+         ModifierMode: INCR
+         data: '50000'
+         RecycleCount: 8000
+         StepValue: 1
+         Mask: 65535
+    # - TableModifier:
+         # name: 'tablemodifier 1'
+         # OffsetReference: udp1.sourcePort
+         # data: '1025 1024'
+
+-
+  name: Verify the configuration
+  stc: 
+    action: perform
+    command: ApplyToIL
+
+-
+  name: Start the traffic
+  stc: 
+    action: perform
+    command: GeneratorStart
+    properties: 
+      GeneratorList: ref:/project 
+
+-
+  name: subscribe to streamblock results
+  stc: 
+    action: perform
+    command: SubscribeResultsView
+    properties: 
+      ExecuteSynchronous: true
+      TemplateUri: "Result Views/Stream Results/Stream Block Results.xml"
+
+- name: wait 10 sec
+  pause: 
+    seconds: 10
+
+-
+  name: Stop the traffic
+  stc: 
+    action: perform
+    command: GeneratorStop
+    properties: 
+      GeneratorList: ref:/project 
+
+-
+  name: get StreamBlock Rx Results
+  register: resultRx
+  stc: 
+    action: get
+    objects: /port/StreamBlock/RxStreamBlockResults
+
+
+-
+  name: get StreamBlock Results
+  register: result
+  stc: 
+    action: get
+    objects: /port/StreamBlock/TxStreamBlockResults 
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port
