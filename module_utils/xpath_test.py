@@ -321,3 +321,9 @@ class TestLinker:
         linker = Linker(self.createModel())
         with pytest.raises(Exception):
             assert linker._resolve("/port/emulateddevice[@name *= 'dev']'/ipv4if")
+
+    def test11(self):
+        # mulitple refs
+        linker = Linker(self.createModel())
+        nodes = linker.resolveObjects("ref:/port/emulateddevice[*]/ipv4if,ref:/port/emulateddevice[*]/ipv4if")
+        assert nodes.count() == 6

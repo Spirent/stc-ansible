@@ -35,10 +35,17 @@ class Linker:
         return selection.firstNode()
 
     def resolveObjects(self, ref, current=None):
-        selection = self._resolve(ref, current)
-        if selection == None or selection.count() == 0:
+        myrefs = re.split(",|;", ref)
+        myselections = NodeSelector()
+        for myref in myrefs:
+            if myref.strip() == "":
+                continue
+            selection = self._resolve(myref, current)
+            if selection != None and selection.count() > 0:
+                myselections.extendex(selection)
+        if myselections.count() == 0:
             return None
-        return selection
+        return myselections
 
     def _resolve(self, ref, current=None):
         if ref == None:
@@ -195,6 +202,13 @@ class NodeSelector:
                 if n not in self.nodes:
                     self.nodes.append(n)
 
+    #requires the duplicate like: 
+    #ipv4netwokblock1 ipv4netwokblock2 ipv4netwokblock1 ipv4netwokblock2
+    def extendex(self, other):
+        if other != None:
+            for n in other.nodes:
+                self.nodes.append(n)
+                
     def intersect(self, other):
         new = NodeSelector()
         if other != None:
