@@ -5,22 +5,10 @@
 # @Last Modified time: 2020-01-13 15:45:28
 
 - 
-  name: shell output
-  register: myshell
-  shell: >
-    {%- for x in range(1, 10) -%}
-        echo -n "abc"
-    {%- endfor -%}
- 
-- 
-  debug:
-    var: myshell
-
-- 
   name: Create session
   stc: 
     action: session
-    user: "{{ myshell.stdout }}"
+    user: "repeat"
     name: stream_results_repeat
     chassis: "{{ hostvars[inventory_hostname].chassis }}"
 
@@ -34,6 +22,20 @@
           - port: 
               location: "//${chassis[item]}/1/1"
               name: "port-$item"
+
+-
+  name: create one Emulated Device under port 1
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='port-0']
+      IfStack: Ipv4If EthIIIf
+      IfCount: 1 1
+      name: "mydevice"
 
 
 -
@@ -51,10 +53,11 @@
       name: "device-0"
 
 -
-  name: create one Emulated Device under and 2
+  name: create Emulated Devices under port 2
   stc: 
     action: perform
     command: DeviceCreate
+    count: 5
     properties: 
       ParentList:  ref:/project
       CreateCount: 1
@@ -62,28 +65,77 @@
       Port: ref:/port[@Name='port-1']
       IfStack: Ipv4If EthIIIf
       IfCount: 1 1
-      name: "device-1"
+      name: "otherdevice-${item}"
 
 - 
-  name: Create a stream block
+  name: Create a stream block 1 with "," or ";" seprator to configure multiple src&dst
+  register: create_stream1
   stc: 
     action: create
     under: ref:/project
     objects: 
     - streamblock: 
+        Name: mystream1
+        TrafficPattern: PAIR
+        EnableBidirectionalTraffic: True
+        EnableStreamOnlyGeneration: true
+        SrcBinding-targets: |
+          ref:/EmulatedDevice[@Name='device-0']/Ipv4If,ref:/EmulatedDevice[@Name='mydevice']/Ipv4If,
+        DstBinding-targets: ref:/EmulatedDevice[@Name^='otherdevice'][0]/Ipv4If;ref:/EmulatedDevice[@Name^='otherdevice'][1]/Ipv4If
+        AffiliationStreamBlockLoadProfile:
+          Load: 10
+
+- 
+  name: Create a stream block 2 with jinjia2 codes to configure multiple src&dst
+  register: create_stream
+  stc: 
+    action: create
+    under: ref:/project
+    objects: 
+    - streamblock: 
+        Name: mystream2
         TrafficPattern: PAIR
         EnableBidirectionalTraffic: True
         EnableStreamOnlyGeneration: true
         SrcBinding-targets: |-
-          {%- for x in range(0, 9) -%}
-          ref:/EmulatedDevice[0]/Ipv4If,
+          {%- for x in range(0, 5) -%}
+          ref:/EmulatedDevice[@Name='device-0']/Ipv4If,
           {%- endfor -%}
-        DstBinding-targets: |-
-          {%- for x in range(1, 10) -%}
-          ref:/EmulatedDevice[1]/Ipv4If,
-          {%- endfor -%}
+        DstBinding-targets: ref:/EmulatedDevice[@Name^='otherdevice']/Ipv4If
         AffiliationStreamBlockLoadProfile:
           Load: 10
+
+- 
+  debug:
+    var: create_stream
+
+-
+  name: Save xml
+  stc: 
+    action: perform
+    command: SaveAsXml
+    properties: 
+      FileName: "stream_config.xml"
+
+
+- name: create temporary build directory
+  register: tempfolder
+  tempfile:
+    state: directory
+    suffix: build
+    
+- name: download xml from STC
+  register: files
+  stc:
+     action: download
+     file: "stream_config.xml"
+     dest: "{{ tempfolder.path }}"
+
+- fetch: 
+    src: "{{ tempfolder.path }}/{{ item }}"
+    dest: logs/
+  with_items: "{{ files.result }}"
+  
 
 -
   name: Take the ports online
@@ -103,15 +155,6 @@
     properties: 
       ExecuteSynchronous: true
       TemplateUri: /Result Views/Stream Results/Stream Block Results.xml
-
-
--
-  name: Get the stream block result object
-  register: results
-  stc: 
-    action: get
-    objects: ref:/port/StreamBlock
-
 
 
 -
