@@ -5,22 +5,10 @@
 # @Last Modified time: 2020-01-13 15:45:28
 
 - 
-  name: shell output
-  register: myshell
-  shell: >
-    {%- for x in range(1, 3) -%}
-        echo "ffstc"
-    {%- endfor -%}
- 
-- 
-  debug:
-    var: myshell
-
-- 
   name: Create session
   stc: 
     action: session
-    user: "{{ myshell.stdout }}"
+    user: "repeat"
     name: stream_results_repeat
     chassis: "{{ hostvars[inventory_hostname].chassis }}"
 
