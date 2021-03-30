@@ -13,6 +13,7 @@ import requests
 import json
 import re
 import os
+from functools import cmp_to_key
 
 log = Logger("linker")
 
@@ -273,6 +274,18 @@ class Selector:
 
         log.debug("Selector %s -> %s" % (element, selectors))
         self.selectors = selectors
+    
+    def cmp_handle(self, item1, item2):
+        obj1 = item1.handle
+        obj2 = item2.handle
+        objType = re.sub(r'\d+$', "", obj1)
+        len1 = len(objType)
+        log.debug("cmp_handle-- %s, %s" % (obj1, objType))
+        if int(obj1[len1:]) > int(obj2[len1:]):
+            return 1
+        elif int(obj1[len1:]) < int(obj2[len1:]):
+            return -1
+        return 0
 
     def filterNodes(self, nodes):
 
@@ -301,9 +314,9 @@ class Selector:
 
                 selection.append(node)
 
-        log.debug("Selector: candidates are %s" % [str(n) for n in selection])
+        log.debug("Selector: candidates are %s" % [str(n.handle) for n in selection])
         # sort handles to get correct order
-        selection.sort(key=lambda n: n.handle)
+        selection.sort(key=cmp_to_key(self.cmp_handle))
 
         for selector in self.selectors:
 
