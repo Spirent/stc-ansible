@@ -291,7 +291,10 @@ class MetaModel:
 
             ref = self.templater.get(objref, i)
             obj = self.xpath.resolveSingleObject(ref)
-            if obj == None:
+            if ref[:7] == "ref:? /" and obj == None:
+                log.warning("config: Can not find parent object %s" % ref[7:])
+                continue
+            elif obj == None:
                 return Result.error("config: Can not find parent object %s" % ref)
 
             r = self.configObject(obj, self.templater.get(properties, i))
@@ -638,7 +641,7 @@ class MetaModel:
                 objects = self.xpath.resolveObjects(val, obj["object"])
                 if objects == None:
                     log.error("Failed to resolve '\033[91m%s\033[0m' for property %s in %s" % (val, key, obj["object"]))
-                    continue
+                    return Result.error("Invalid reference '\033[91m%s\033[0m' for property %s in %s" % (val, key, obj["object"]))
 
                 config[key] = " ".join(objects.handles())
                 log.info("Reference '\033[92m%s\033[0m' resolved to %s" % (val, objects))
