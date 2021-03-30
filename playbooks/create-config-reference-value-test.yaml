@@ -1,0 +1,113 @@
+# Purpose: To verify https://jira.spirenteng.com/browse/CIPCD-16798 fix
+
+# Description/Scenario:
+#• When creating or configuring an object:
+#o If any property is using a reference, and the reference returns no results (empty node set), then the script should fail.
+
+#When configuring an object properties using iteration:
+#o If the customer really wants to allow empty references, it should use the keyword "ref:?" instead.
+#“This case could happen when you use templating (eg count: 10). 
+#For example, out of the 10 devices, only 8 would have a given property. 
+#So the customer would use ref:? to explicitly say that some property can be null”
+
+
+-
+  name: Create session
+  stc:
+    action: session
+    user: ansible
+    name: reference_correction
+    reset_existing: true
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+
+-
+  name: Create the base ports
+  stc:
+    action: create
+    objects:
+      - project:
+          - port:
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+
+          - port:
+              location: "//${chassis[1]}/1/1"
+              name: Port2
+
+- name: Create devices on Port1
+  stc:
+    action: create
+    under: ref:/project
+    count: 9
+    objects:
+    - emulateddevice:
+        AffiliatedPort: ref:/port[@name='Port1']
+        DeviceCount: 1
+        name: "Device$item"
+        tag: "Port1Device"
+        PrimaryIf: ref:./Ipv4If
+        TopLevelIf: ref:./Ipv4If
+        EthIIIf:
+          SourceMac: 00:10:94:00:00:$item
+        VlanIf:
+          VlanId: "10$item"
+          StackedOnEndpoint-targets: ref:./EthIIIf
+        Ipv4If:
+          Address: "192.85.1.${item+3}"
+          Gateway: "192.85.1.1"
+          PrefixLength: 24
+          StackedOnEndpoint-targets: ref:./VlanIf
+          TopLevelIfSource: ref:/EmulatedDevice[@Name="Device$item"]
+          PrimaryIfSource: ref:/EmulatedDevice[@Name="Device$item"]
+          
+- name: Create devices on Port2
+  stc:
+    action: create
+    under: ref:/project
+    count: 1
+    objects:
+    - emulateddevice:
+        AffiliatedPort: ref:/port[@name='Port2']
+        DeviceCount: 1
+        name: "Device10"
+        PrimaryIf: ref:./Ipv4If
+        TopLevelIf: ref:./Ipv4If
+        EthIIIf:
+          SourceMac: 00:10:94:00:00:33
+        VlanIf:
+          VlanId: "100"
+          StackedOnEndpoint-targets: ref:./EthIIIf
+        Ipv4If:
+          Address: "10.1.1.2"
+          Gateway: "10.1.1.1"
+          PrefixLength: 24
+          StackedOnEndpoint-targets: ref:./VlanIf
+          TopLevelIfSource: ref:/EmulatedDevice[@Name="Device10"]
+          PrimaryIfSource: ref:/EmulatedDevice[@Name="Device10"]
+          
+
+# Verify passing incorrect reference values. Playbook should fail in this scenario.
+
+# -
+  # name: Config given bgp properties if any BGP enabled device found
+  # stc: 
+    # action: config
+    # count: 1
+    # object: /EmulatedDevice[@Name='Device15']/BgpRouterConfig
+    # properties: 
+         # AsNum: 2
+         # DutAsNum: 2
+          
+
+# Verify "ref:?" scenario
+
+-
+  name: Config given bgp properties if any BGP enabled device found
+  stc: 
+    action: config
+    count: 10
+    object: ref:? /EmulatedDevice[@Name='Device$item']/BgpRouterConfig
+    properties: 
+         AsNum: 111
+         DutAsNum: 222
