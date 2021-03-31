@@ -200,6 +200,7 @@ class TestLinker:
 
         self.port1 = port1 = self.dm.insert("port1", {"object_type": "port", "name": "port 1"}, project1)
         self.port2 = port2 = self.dm.insert("port2", {"object_type": "port", "name": "port 2"}, project1)
+        self.port12 = port12 = self.dm.insert("port12", {"object_type": "port", "name": "port 12"}, project1)
 
         self.dev1 = self.dm.insert("emulateddevice1", {"object_type": "emulateddevice", "name": "Device 1"}, port1)
         self.ip1 = self.dm.insert("ipv4if1", {"object_type": "ipv4if", "name": "ipv4if 1"}, self.dev1)
@@ -327,3 +328,9 @@ class TestLinker:
         linker = Linker(self.createModel())
         nodes = linker.resolveObjects("ref:/port/emulateddevice[*]/ipv4if,ref:/port/emulateddevice[*]/ipv4if")
         assert nodes.count() == 6
+
+    def test12(self):
+        # the handles are sorted on the number in the handle
+        linker = Linker(self.createModel())
+        nodes = linker.resolveObjects("ref:/port")
+        assert nodes.count() == 3 and nodes.get(0) == self.port1 and nodes.get(1) == self.port2 and nodes.get(2) == self.port12
