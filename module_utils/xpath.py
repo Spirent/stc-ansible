@@ -279,6 +279,9 @@ class Selector:
         log.debug("Selector %s -> %s" % (element, selectors))
         self.selectors = selectors
     
+    #comparing the handles like: router9 router11 based on the number in the handle
+    #to sort on the number in the handle, the ascending sort is : router9 router11
+    #to sort in dictionary, the ascending sort is : router11 router9
     def cmp_handle(self, item1, item2):
         obj1 = item1.handle
         obj2 = item2.handle
