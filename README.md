@@ -3,6 +3,7 @@
 This is an *experimental* [Ansible](https://www.ansible.com/) plugin to configure Spirent Test Center data models and execute tests. 
 
 [![CircleCI](https://circleci.com/gh/Spirent/stc-ansible.svg?style=svg)](https://circleci.com/gh/Spirent/stc-ansible)
+[![Workflow](https://github.com/Spirent/stc-ansible/actions/workflows/python-app.yml/badge.svg)
 
 ### Links
 

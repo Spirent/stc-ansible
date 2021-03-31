@@ -86,6 +86,10 @@ class Linker:
             current = self.datamodel.getRoot("project")
             ref = ref[1:]
 
+        elif ref[:3] == "? /":
+            current = self.datamodel.getRoot("project")
+            ref = ref[3:]
+
         else:
             log.warning("Invalid reference syntax: '%s'" % (ref))
             return None
