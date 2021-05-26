@@ -1,0 +1,111 @@
+#############################################################################################
+# Purpose of this playbook is to verify the CIPCD-16791 Spirent Ansible 
+# currently does not perform error-checking to ensure that the value of 
+# traffic_pattern is appropriate for the defined endpoints
+#
+# Solution: Add an implicit Apply To IL after Stream Block creation / manipulation in Ansible
+#
+#############################################################################################
+
+-
+  name: Create session
+  stc:
+    action: session
+    user: ansible
+    name: streamblock11
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+-
+  name: Create the base ports
+  stc:
+    action: create
+    objects:
+      - project:
+          - port:
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+
+          - port:
+              location: "//${chassis[1]}/1/1"
+              name: Port2
+
+-
+  name: Create  emulated device 1
+  stc: 
+    action: create
+    under: ref:/project
+    count: 1
+    objects: 
+    - emulateddevice: 
+        AffiliatedPort: ref:/port[name=Port1]
+        DeviceCount: 1
+        name: "Device 1"
+        tag: "Device"
+        PrimaryIf: ref:./Ipv4If
+        TopLevelIf: ref:./Ipv4If
+        EthIIIf: 
+          SourceMac: be:ef:00:00:1:00
+        Ipv4If: 
+          AddrStep: 0.0.0.1
+          Address: 192.85.1.3
+          Gateway: 192.85.1.4
+          PrefixLength: 24
+          stackedon: ref:./EthIIIf
+          
+-
+  name: Create  emulated device 2
+  stc: 
+    action: create
+    under: ref:/project
+    count: 1
+    objects: 
+    - emulateddevice: 
+        AffiliatedPort: ref:/port[name=Port2]
+        DeviceCount: 1
+        tag: "Device"
+        name: "Device 2"
+        PrimaryIf: ref:./Ipv4If
+        TopLevelIf: ref:./Ipv4If
+        EthIIIf: 
+          SourceMac: be:ef:00:00:2:00
+        Ipv4If: 
+          AddrStep: 0.0.0.2
+          Address: 192.85.1.4
+          Gateway: 192.85.1.3
+          PrefixLength: 24
+          stackedon: ref:./EthIIIf
+          
+- 
+  name: Create a stream block1
+  stc: 
+    action: create
+    under: ref:/Port[@Name='Port1']
+    objects: 
+    - streamblock: 
+        name: "Streamblock1"
+        TrafficPattern: PAIR
+        EnableBidirectionalTraffic: True
+        EnableStreamOnlyGeneration: true
+        SrcBinding-targets: ref:/EmulatedDevice[@Name='Device 1']/Ipv4If
+        DstBinding-targets: ref:/EmulatedDevice[@Name='Device 2']/Ipv4If
+        AffiliationStreamBlockLoadProfile:
+          Load: 10
+
+# "ApplyToIL" will perform internally at the end of the streamblock creation and hence
+# the following task will fail due to the mismatch in source and destination targets
+
+- 
+  name: Create a stream block2
+  stc: 
+    action: create
+    under: ref:/Port[@Name='Port1']
+    objects: 
+    - streamblock: 
+        name: "Streamblock1"
+        TrafficPattern: PAIR
+        EnableBidirectionalTraffic: True
+        EnableStreamOnlyGeneration: true
+        SrcBinding-targets: ref:/EmulatedDevice[@tag='Device']/Ipv4If
+        DstBinding-targets: ref:/EmulatedDevice[@Name='Device 2']/Ipv4If
+        AffiliationStreamBlockLoadProfile:
+          Load: 10

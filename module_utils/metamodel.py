@@ -327,6 +327,12 @@ class MetaModel:
 
         if count == 1:
             handles = handles[0]
+          
+        if (re.search ("streamblock", str(handles[0]))):
+            res=self.rest.perform("ApplyToIL")
+            if res==None:
+                return Result.error(self.rest.errorInfo)
+      
         return Result.value(handles)
 
     def perform(self, command, properties, count=1):
