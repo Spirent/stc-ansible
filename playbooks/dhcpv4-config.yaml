@@ -1,0 +1,205 @@
+# -*- coding: utf-8 -*-
+# @Author: mkatta for OSPFv3 and traffic
+# @Date:   2021-09-28 
+
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: dhcpv4-config
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+
+- 
+  name: Create the base ports
+  stc: 
+    action: create
+    objects: 
+      - project: 
+          - port: 
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+
+          - port: 
+              location: "//${chassis[1]}/1/1"
+              name: Port2
+
+-
+  name: create 1 device under port1
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port1']
+      IfStack: Ipv4If EthIIIf
+      IfCount: '1 1'
+      name: "Device1"
+
+
+-
+  name: Configure the IP address of device 1
+  stc: 
+    action: config
+    count: 1
+    objects: ref:/EmulatedDevice[@Name='Device1']
+    properties:
+        Ipv4If: 
+          Gateway: 192.85.1.1
+          Address: 192.85.1.3
+
+-
+  name: create DHCPv4 Server
+  stc: 
+    action: create
+    under: ref:/EmulatedDevice[@Name='Device1']
+    count: 1
+    objects: 
+    - Dhcpv4ServerConfig: 
+        HostName: server_@p-@b-@s
+        LeaseTime: 3600 
+        Ipv4Tos: 192
+        name: "DHCPv4Server"
+        dhcpv4serverdefaultpoolconfig:
+           StartIpList: 192.85.1.4
+
+-
+  name: DHCPv4 port config
+  stc: 
+    action: config
+    count: 1
+    objects: ref:/Port[@Name='Port2']/Dhcpv4PortConfig
+    properties:
+        LeaseTime: 60
+
+
+-
+  name: create 1 device under port2
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port2']
+      IfStack: Ipv4If EthIIIf
+      IfCount: '1 1'
+      name: "Device2"
+
+
+-
+  name: Configure the IP address of device 2
+  stc: 
+    action: config
+    count: 1
+    objects: ref:/EmulatedDevice[@Name='Device2']
+    properties:
+        Ipv4If: 
+          Gateway: 192.85.1.1
+
+-
+  name: create DHCPv4 client on the device2
+  stc: 
+    action: create
+    under: ref:/EmulatedDevice[@Name='Device2']
+    count: 1
+    objects: 
+    - Dhcpv4BlockConfig: 
+        UsesIf-targets: ref:/EmulatedDevice[@Name='Device2']/Ipv4if
+        HostName: client_@p-@b-@s
+        name: "DHCPv4Client"
+
+-
+  name: subscribe to DHCP Server results
+  stc: 
+    action: perform
+    command: SubscribeResultsView
+    properties: 
+      ExecuteSynchronous: true
+      TemplateUri: "/Result Views/Access Protocols/DHCP Server Results.xml"
+      
+-
+  name: subscribe to DHCP results
+  stc: 
+    action: perform
+    command: SubscribeResultsView
+    properties: 
+      ExecuteSynchronous: true
+      TemplateUri: "/Result Views/Access Protocols/DHCP Results.xml"
+
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port
+
+-
+  name: start devices
+  stc: 
+    action: perform
+    command: DeviceStart
+    properties:
+       DeviceList: ref:/project
+
+-
+  name: Wait for the DHCPv4 Server status UP
+  stc: 
+    action: wait
+    objects: ref:/EmulatedDevice[@Name='Device1']/Dhcpv4ServerConfig[@Name='DHCPv4Server']
+    until: ServerState=UP
+
+-
+  name: Wait for the DHCPv4 Client status BOUND
+  stc: 
+    action: wait
+    objects: ref:/EmulatedDevice[@Name='Device2']/Dhcpv4BlockConfig[@Name='DHCPv4Client']
+    until: BlockState=BOUND
+
+
+-
+  name: Get the DHCPv4 Server results
+  register: dhcpv4serverresult
+  stc:
+    action: get
+    objects: ref:/EmulatedDevice[@Name='Device1']/Dhcpv4ServerConfig/Dhcpv4ServerResults
+    
+- debug:
+    var: dhcpv4serverresult
+    
+-
+  name: Get the DHCPv4 Client results
+  register: dhcpv4clientresult
+  stc:
+    action: get
+    objects: ref:/EmulatedDevice[@Name='Device2']/Dhcpv4BlockConfig/Dhcpv4BlockResults
+    
+- debug:
+    var: dhcpv4clientresult
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port
+      
+- 
+  name: Delete DHCPv4 Server object
+  stc: 
+    action: delete
+    objects: ref:/EmulatedDevice[@Name='Device1']/Dhcpv4ServerConfig[@Name='DHCPv4Server']
+    
+- 
+  name: Delete DHCPv4 Client object
+  stc: 
+    action: delete
+    objects: ref:/EmulatedDevice[@Name='Device2']/Dhcpv4BlockConfig[@Name='DHCPv4Client']
