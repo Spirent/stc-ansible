@@ -1,0 +1,307 @@
+# -*- coding: utf-8 -*-
+# @Author: mkatta for IGMPv3 and traffic
+# @Date:   2021-09-28 
+
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: IGMP_traffic1
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+
+- 
+  name: Create the base ports
+  stc: 
+    action: create
+    objects: 
+      - project: 
+          - port: 
+              location: "//10.109.121.38/1/1"
+              name: Port1
+
+          - port: 
+              location: "//10.109.121.135/1/1"
+              name: Port2
+
+- 
+  name: Configure the IPv4 multicast group
+  stc: 
+    action: create
+    under: ref:/project
+    objects: 
+    - Ipv4Group: 
+        name: Ipv4Group1
+        Active: true
+        Ipv4NetworkBlock:
+          StartIpList: 225.0.0.1
+          PrefixLength: 32
+          NetworkCount: 10
+          Active: true
+          
+- 
+  name: Configure the IPv4 multicast group
+  stc: 
+    action: create
+    under: ref:/project
+    objects: 
+    - Ipv4Group: 
+        name: Ipv4Group2
+        Ipv4NetworkBlock:
+          StartIpList: 225.0.0.11
+          PrefixLength: 32
+          NetworkCount: 10
+          Active: true
+
+-
+  name: create 1 IGMP device under port1
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port1']
+      IfStack: Ipv4If EthIIIf
+      IfCount: '1 1'
+      name: "IGMPDevice1"
+
+
+-
+  name: Configure the IP address of device 1
+  stc: 
+    action: config
+    count: 1
+    objects: ref:/EmulatedDevice[@Name='IGMPDevice1']
+    properties:
+        Ipv4If: 
+          Gateway: 10.0.0.3
+          Address: 10.0.0.2
+
+-
+  name: create IGMP on this device 1
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='IGMPDevice1']
+    count: 1
+    objects: 
+    - IGMPhostConfig: 
+        Active: True
+        Version: IGMP_v3
+        name: "IGMPHost1"
+
+-
+  name: create 1 IGMP device under port2
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port2']
+      IfStack: Ipv4If EthIIIf
+      IfCount: '1 1'
+      name: "IGMPDevice2"
+
+
+-
+  name: Configure the IP address of device 2
+  stc: 
+    action: config
+    count: 1
+    objects: /EmulatedDevice[@Name='IGMPDevice2']
+    properties:
+        Ipv4If: 
+          Gateway: 10.0.0.2
+          Address: 10.0.0.3
+
+-
+  name: create IGMP on the device2
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='IGMPDevice2']
+    count: 1
+    objects: 
+      - IGMPhostConfig: 
+         Version: IGMP_V3
+         Active: True
+         name: "IGMPHost2"
+
+-
+  name: create IGMP group membership
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='IGMPDevice1']/IGMPhostConfig[@Name='IGMPHost1']
+    count: 1
+    objects: 
+      - IgmpGroupMembership:
+         name: "IGMPgroup1"
+         DeviceGroupMapping: MANY_TO_MANY
+         FilterMode: EXCLUDE
+         IsSourceList: FALSE
+         UserDefinedSources: FALSE
+         MulticastGroup: ref:/Ipv4Group[@Name='Ipv4Group1']
+         Ipv4NetworkBlock:
+            StartIpList: 192.0.1.0
+            NetworkCount: 10
+
+-
+  name: create IGMP group membership
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='IGMPDevice2']/IGMPhostConfig[@Name='IGMPHost2']
+    count: 1
+    objects: 
+      - IgmpGroupMembership:
+         name: "IGMPgroup2"
+         DeviceGroupMapping: MANY_TO_MANY
+         FilterMode: EXCLUDE
+         IsSourceList: FALSE
+         UserDefinedSources: FALSE
+         MulticastGroup: ref:/Ipv4Group[@Name='Ipv4Group2']
+         Ipv4NetworkBlock:
+            StartIpList: 193.0.1.0
+            NetworkCount: 10
+
+-
+  name: Configure the traffic generator
+  stc: 
+    count: 1
+    action: create
+    under: /project
+    objects: 
+       - StreamBlock: 
+          EnableStreamOnlyGeneration: true
+          SrcBinding-targets: |
+                              ref:/EmulatedDevice[@Name='IGMPDevice1']/IGMPhostConfig[@Name='IGMPhost1']
+                              /IgmpGroupMembership[@Name='IGMPgroup1']/Ipv4NetworkBlock
+          DstBinding-targets: |
+                              ref:/EmulatedDevice[@Name='IGMPDevice2']/IGMPhostConfig[@Name='IGMPhost2']
+                              /IgmpGroupMembership[@Name='IGMPgroup2']/Ipv4NetworkBlock
+          AffiliationStreamBlockLoadProfile: 
+             Load: 10
+          
+-
+  name: subscribe to IGMP results
+  stc: 
+    action: perform
+    command: SubscribeResultsView
+    properties: 
+      ExecuteSynchronous: true
+      TemplateUri: "/Result Views/Access Protocols/IGMP Results.xml"
+
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port
+
+-
+  name: start devices
+  stc: 
+    action: perform
+    command: DeviceStart
+    properties:
+       DeviceList: ref:/project
+
+-
+  name: Wait for the IGMP1 Adjacency to be formed
+  stc: 
+    action: wait
+    objects: ref:/EmulatedDevice[@Name='IGMPDevice1']/IGMPhostConfig[@Name='IGMPHost1']
+    until: BlockState=MEMBER
+
+-
+  name: Wait for the IGMP2 Adjacency to be formed
+  stc: 
+    action: wait
+    objects: ref:/EmulatedDevice[@Name='IGMPDevice2']/IGMPhostConfig[@Name='IGMPHost2']
+    until: BlockState=MEMBER
+
+
+-
+  name: Get the IGMP results
+  register: IGMPresult
+  stc:
+    action: get
+    objects: /EmulatedDevice[@Name='IGMPDevice1']/IGMPhostConfig/IGMPhostResults
+    
+- debug:
+    var: IGMPresult
+
+-
+  name: Start the traffic
+  stc: 
+    action: perform
+    command: GeneratorStart
+    properties: 
+      GeneratorList: ref:/project 
+
+
+-
+  name: subscribe to streamblock results
+  stc: 
+    action: perform
+    command: SubscribeResultsView
+    properties: 
+      ExecuteSynchronous: true
+      TemplateUri: "Result Views/Stream Results/Stream Block Results.xml"
+
+- name: wait 10 sec
+  pause: 
+    seconds: 10
+
+
+-
+  name: Stop the traffic
+  stc: 
+    action: perform
+    command: GeneratorStop
+    properties: 
+      GeneratorList: ref:/project 
+
+- name: wait 10 sec
+  pause: 
+    seconds: 10
+
+-
+  name: get StreamBlock Rx Results
+  register: resultRx
+  stc: 
+    action: get
+    objects: /port/StreamBlock/RxStreamBlockResults
+
+
+-
+  name: get StreamBlock Results
+  register: result
+  stc: 
+    action: get
+    objects: /port/StreamBlock/TxStreamBlockResults 
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port
+      
+- 
+  name: Delete IGMP object
+  stc: 
+    action: delete
+    objects: ref:/EmulatedDevice[@Name='IGMPDevice1']/IGMPhostConfig[@Name='IGMPHost1']
+    
+- 
+  name: Delete IGMP object
+  stc: 
+    action: delete
+    objects: ref:/EmulatedDevice[@Name='IGMPDevice2']/IGMPhostConfig[@Name='IGMPHost2']

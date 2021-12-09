@@ -1,0 +1,388 @@
+# -*- coding: utf-8 -*-
+# @Author: mkatta for VXLAN EVPN BGP config with traffic
+# @Date:   2021-07-20 
+
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: vxlan_bgp_evpn_config
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+
+- 
+  name: Create the base ports
+  stc: 
+    action: create
+    objects: 
+      - project: 
+          - port: 
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+
+          - port: 
+              location: "//${chassis[1]}/1/1"
+              name: Port2
+
+-
+  name: Create 1 emulated devices - port1
+  stc:
+    action: create
+    under: ref:/project
+    count: 1
+    objects:
+    - emulateddevice:
+        AffiliatedPort: ref:/port[@name='Port1']
+        DeviceCount: 1
+        name: "VM 1"
+        PrimaryIf: ref:./Ipv4If
+        TopLevelIf: ref:./Ipv4If
+        RouterId: 10.0.0.1
+        EthIIIf:
+          SourceMac: 00:00:00:00:00:11
+        Ipv4If:
+          AddrStep: 0.0.0.1
+          Address: 10.0.0.1
+          Gateway: 10.0.0.2
+
+-
+  name: config EthIIIf
+  stc:
+    action: config
+    objects: ref:/EmulatedDevice[@Name='VM 1']/EthIIIf
+    properties:
+        stackedonendpoint-Sources: ref:/EmulatedDevice[@Name='VM 1']/Ipv4If
+
+-
+  name: Create 1 emulated devices - port2
+  stc:
+    action: create
+    under: ref:/project
+    count: 1
+    objects:
+    - emulateddevice:
+        AffiliatedPort: ref:/port[@name='Port2']
+        DeviceCount: 1
+        name: "VM 2"
+        PrimaryIf: ref:./Ipv4If
+        TopLevelIf: ref:./Ipv4If
+        RouterId: 10.0.0.2
+        EthIIIf:
+          SourceMac: be:ef:00:00:00:00
+        Ipv4If:
+          AddrStep: 0.0.0.1
+          Address: 10.0.0.2
+          Gateway: 10.0.0.1
+
+-
+  name: config EthIIIf
+  stc:
+    action: config
+    objects: ref:/EmulatedDevice[@Name='VM 2']/EthIIIf
+    properties:
+        stackedonendpoint-Sources: ref:/EmulatedDevice[@Name='VM 2']/Ipv4If
+
+-
+  name: VTEP Device 1
+  stc:
+    action: create
+    under: ref:/project
+    count: 1
+    objects:
+    - emulateddevice:
+        AffiliatedPort: ref:/port[@name='Port1']
+        DeviceCount: 1
+        name: "VTEP 1"
+        PrimaryIf: ref:./Ipv4If
+        TopLevelIf: ref:./Ipv4If
+        RouterId: 1.0.0.2
+        EthIIIf:
+          SourceMac: 00:00:00:00:00:01
+          SrcMacStep: 00:00:00:00:00:01
+        Ipv4If:
+          AddrStep: 0.0.0.1
+          Address: 1.0.0.2
+          Gateway: 1.0.0.1
+          GatewayMac: 00:2A:10:0E:E1:29
+
+-
+  name: config EthIIIf
+  stc:
+    action: config
+    objects: ref:/EmulatedDevice[@Name='VTEP 1']/EthIIIf
+    properties:
+        stackedonendpoint-Sources: ref:/EmulatedDevice[@Name='VTEP 1']/Ipv4If
+        
+-
+  name: Create Vxlan VTEP config 1
+  stc:
+    action: create
+    under: ref:/project/Emulateddevice[@Name='VTEP 1']
+    count: 1
+    objects:
+    - VxlanVtepConfig:
+         Name: "VxlanVtep_1"
+         AutoSelectUdpSrcPort: "true"
+         MulticastType: MULTICAST_IGMP
+         UdpChecksumEnabled: "false"
+         UsesIf-targets: ref:/project/Emulateddevice[@Name='VTEP 1']/Ipv4If[0]
+
+-
+  name: Create Vxlanif
+  stc:
+    action: create
+    under: ref:/Emulateddevice[@Name='VTEP 1']
+    count: 1
+    objects:
+       - VxlanIf:
+           StackedOnEndpoint-targets: ref:/project/Emulateddevice[@Name='VTEP 1']/Ipv4If[0]
+
+-
+  name: Create Vxlan Segment
+  stc:
+    action: create
+    under: ref:/project
+    count: 1
+    objects:
+    - VxlanSegmentConfig:
+          Name: "Segment_1"
+          CommunicationType: EVPN_LEARNING
+          Vni: 100
+
+-
+  name: Create Vxlan VMinfo
+  stc:
+    action: create
+    under: ref:/project
+    count: 1
+    objects:
+      - VxlanVmInfo:
+           Name: "VM_info_1"
+           UseAttachedVtepIpAddr: "false"
+
+-
+  name: Config host1
+  stc:
+    action: config
+    objects: ref:/project/EmulatedDevice[@Name='VM 1']
+    properties:
+       UsesVxlanVmInfo-targets: ref:/project/VxlanVmInfo[@Name='VM_info_1']
+
+-
+  name: Create Link
+  stc:
+    action: perform
+    command: LinkCreate
+    properties:
+        SrcDev: ref:/project/EmulatedDevice[@Name='VM 1']
+        DstDev: ref:/project/Emulateddevice[@Name='VTEP 1']
+        LinkType: "VXLAN VM to VTEP Device Link"
+
+-
+  name: Config host1
+  stc:
+    action: config
+    objects: ref:/project/EmulatedDevice[@Name='VM 1']
+    properties:
+       ContainedLink-targets: ref:/project/EmulatedDevice[@Name='VM 1']/vxlanvmtovteplink
+       
+-
+  name: Config host1
+  stc:
+    action: config
+    objects: ref:/project/EmulatedDevice[@Name='VM 1']/vxlanvmtovteplink
+    properties:
+       LinkSrc-targets: ref:/EmulatedDevice[@Name='VM 1']/EthIIIf[0]
+       LinkDst-targets: ref:/EmulatedDevice[@Name='VTEP 1']/VxlanIf[0]
+       
+-
+  name: Config VM info 1
+  stc:
+    action: config
+    objects: ref:/project/VxlanVmInfo[@Name='VM_info_1']
+    properties:
+       MemberOfVxlanSegment-Sources: ref:/project/VxlanSegmentConfig[@Name='Segment_1']
+       
+-
+  name: Enable BGP on VTEP Device 1
+  stc: 
+    action: create
+    under: ref:/EmulatedDevice[@Name='VTEP 1']
+    count: 1
+    objects: 
+    - BgpRouterConfig: 
+        IpVersion: IPV4
+        AsNum: 1
+        DutAsNum: 1
+        name: "BGPRouter1"
+       
+
+-
+  name: VTEP Device 2
+  stc:
+    action: create
+    under: ref:/project
+    count: 1
+    objects:
+    - emulateddevice:
+        AffiliatedPort: ref:/port[@name='Port2']
+        DeviceCount: 1
+        name: "VTEP 2"
+        PrimaryIf: ref:./Ipv4If
+        TopLevelIf: ref:./Ipv4If
+        RouterId: 2.0.0.2
+        EthIIIf:
+          SourceMac: 00:00:00:00:00:22
+          SrcMacStep: 00:00:00:00:00:01
+        Ipv4If:
+          AddrStep: 0.0.0.1
+          Address: 2.0.0.2
+          Gateway: 2.0.0.1
+
+-
+  name: config EthIIIf
+  stc:
+    action: config
+    objects: ref:/EmulatedDevice[@Name='VTEP 2']/EthIIIf
+    properties:
+        stackedonendpoint-Sources: ref:/EmulatedDevice[@Name='VTEP 2']/Ipv4If
+
+-
+  name: Create Vxlan VTEP config 2
+  stc:
+    action: create
+    under: ref:/project/Emulateddevice[@Name='VTEP 2']
+    count: 1
+    objects:
+    - VxlanVtepConfig:
+         Name: "VxlanVtep_2"
+         AutoSelectUdpSrcPort: "true"
+         MulticastType: MULTICAST_IGMP
+         UdpChecksumEnabled: "false"
+         UsesIf-targets: ref:/project/Emulateddevice[@Name='VTEP 2']/Ipv4If[0]
+
+-
+  name: Create Vxlanif
+  stc:
+    action: create
+    under: ref:/Emulateddevice[@Name='VTEP 2']
+    count: 1
+    objects:
+       - VxlanIf:
+           StackedOnEndpoint-targets: ref:/project/Emulateddevice[@Name='VTEP 2']/Ipv4If[0]
+
+-
+  name: Create Vxlan Segment 2
+  stc:
+    action: create
+    under: ref:/project
+    count: 1
+    objects:
+    - VxlanSegmentConfig:
+          Name: "Segment_2"
+          CommunicationType: EVPN_LEARNING
+          Vni: 101
+
+-
+  name: Create Vxlan VMinfo 2
+  stc:
+    action: create
+    under: ref:/project
+    count: 1
+    objects:
+      - VxlanVmInfo:
+           Name: "VM_info_2"
+           UseAttachedVtepIpAddr: "false"
+
+-
+  name: Config host2
+  stc:
+    action: config
+    objects: ref:/project/EmulatedDevice[@Name='VM 2']
+    properties:
+       UsesVxlanVmInfo-targets: ref:/project/VxlanVmInfo[@Name='VM_info_2']
+
+-
+  name: Create Link
+  stc:
+    action: perform
+    command: LinkCreate
+    properties:
+        SrcDev: ref:/project/EmulatedDevice[@Name='VM 2']
+        DstDev: ref:/project/Emulateddevice[@Name='VTEP 2']
+        LinkType: "VXLAN VM to VTEP Device Link"
+
+-
+  name: Config host2
+  stc:
+    action: config
+    objects: ref:/project/EmulatedDevice[@Name='VM 2']
+    properties:
+       ContainedLink-targets: ref:/project/EmulatedDevice[@Name='VM 2']/vxlanvmtovteplink
+       
+-
+  name: Config host2
+  stc:
+    action: config
+    objects: ref:/project/EmulatedDevice[@Name='VM 2']/vxlanvmtovteplink
+    properties:
+       LinkSrc-targets: ref:/EmulatedDevice[@Name='VM 2']/EthIIIf[0]
+       LinkDst-targets: ref:/EmulatedDevice[@Name='VTEP 2']/VxlanIf[0]
+       
+-
+  name: Config VM 2
+  stc:
+    action: config
+    objects: ref:/project/VxlanVmInfo[@Name='VM_info_2']
+    properties:
+       MemberOfVxlanSegment-Sources: ref:/project/VxlanSegmentConfig[@Name='Segment_2']
+       
+-
+  name: Enable BGP on VTEP Device 2
+  stc: 
+    action: create
+    under: ref:/EmulatedDevice[@Name='VTEP 2']
+    count: 1
+    objects: 
+    - BgpRouterConfig: 
+        IpVersion: IPV4
+        AsNum: 1
+        DutAsNum: 1
+        name: "BGPRouter2"
+
+-
+  name: Configure the traffic between VM devices
+  stc: 
+    count: 1
+    action: create
+    under: /project
+    objects: 
+    - StreamBlock: 
+        EnableStreamOnlyGeneration: true
+        SrcBinding-targets: ref:/EmulatedDevice[@Name='VM 1']/Ipv4If
+        DstBinding-targets: ref:/EmulatedDevice[@Name='VM 2']/Ipv4If
+        AffiliationStreamBlockLoadProfile: 
+          Load: 10
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

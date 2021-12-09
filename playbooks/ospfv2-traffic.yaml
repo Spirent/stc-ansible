@@ -1,0 +1,268 @@
+# -*- coding: utf-8 -*-
+# @Author: mkatta for OSPFv3 and traffic
+# @Date:   2021-09-28 
+
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: ospf_traffic1
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+
+- 
+  name: Create the base ports
+  stc: 
+    action: create
+    objects: 
+      - project: 
+          - port: 
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+
+          - port: 
+              location: "//${chassis[1]}/1/1"
+              name: Port2
+
+-
+  name: create 1 OSPF device under port1
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port1']
+      IfStack: Ipv4If EthIIIf
+      IfCount: '1 1'
+      name: "OSPFDevice1"
+
+
+-
+  name: Configure the IP address of device 1
+  stc: 
+    action: config
+    count: 1
+    objects: ref:/EmulatedDevice[@Name='OSPFDevice1']
+    properties:
+        Ipv4If: 
+          Gateway: 10.0.0.3
+          Address: 10.0.0.2
+
+-
+  name: create OSPF on this device 1
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='OSPFDevice1']
+    count: 1
+    objects: 
+    - Ospfv2RouterConfig: 
+        AreaId: 0.0.0.0
+        NetworkType: P2P
+        name: "OSPFRouter1"
+
+-
+  name: create 1 OSPF device under port2
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port2']
+      IfStack: Ipv4If EthIIIf
+      IfCount: '1 1'
+      name: "OSPFDevice2"
+
+
+-
+  name: Configure the IP address of device 2
+  stc: 
+    action: config
+    count: 1
+    objects: /EmulatedDevice[@Name='OSPFDevice2']
+    properties:
+        Ipv4If: 
+          Gateway: 10.0.0.2
+          Address: 10.0.0.3
+
+-
+  name: create OSPF on the device2
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='OSPFDevice2']
+    count: 1
+    objects: 
+    - Ospfv2RouterConfig: 
+        AreaId: 0.0.0.0
+        NetworkType: P2P
+        name: "OSPFRouter2"
+
+-
+  name: create NSSA on device1
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='OSPFDevice1']/Ospfv2RouterConfig[@Name='OSPFRouter1']
+    count: 1
+    objects: 
+    - ExternalLsaBlock: 
+        name: "NSSA1"
+        Ipv4NetworkBlock: 
+           NetworkCount: 10
+           StartIpList: 2.2.2.2
+
+-
+  name: create NSSA on device2
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='OSPFDevice2']/Ospfv2RouterConfig[@Name='OSPFRouter2']
+    count: 1
+    objects: 
+    - ExternalLsaBlock: 
+        name: "NSSA2"
+        Ipv4NetworkBlock: 
+           NetworkCount: 10
+           StartIpList: 1.1.1.1
+
+-
+  name: Configure the traffic generator1
+  stc: 
+    count: 1
+    action: create
+    under: /project
+    objects: 
+    - StreamBlock: 
+        EnableStreamOnlyGeneration: true
+        SrcBinding-targets: |
+                            ref:/EmulatedDevice[@Name='OSPFDevice1']/Ospfv2RouterConfig[@Name='OSPFRouter1']
+                            /ExternalLsaBlock[@Name='NSSA1']/Ipv4NetworkBlock
+        DstBinding-targets: |
+                            ref:/EmulatedDevice[@Name='OSPFDevice2']/Ospfv2RouterConfig[@Name='OSPFRouter2']
+                            /ExternalLsaBlock[@Name='NSSA2']/Ipv4NetworkBlock
+        AffiliationStreamBlockLoadProfile: 
+          Load: 10
+          
+-
+  name: subscribe to ospf results
+  stc: 
+    action: perform
+    command: SubscribeResultsView
+    properties: 
+      ExecuteSynchronous: true
+      TemplateUri: "/Result Views/Routing Protocols/OSPFv2 Results.xml"
+
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port
+
+-
+  name: start devices
+  stc: 
+    action: perform
+    command: DeviceStart
+    properties:
+       DeviceList: ref:/project
+
+-
+  name: Wait for the OSPF1 Adjacency to be formed
+  stc: 
+    action: wait
+    objects: ref:/EmulatedDevice[@Name='OSPFDevice1']/Ospfv2RouterConfig[@Name='OSPFRouter1']
+    until: AdjacencyStatus=FULL
+
+-
+  name: Wait for the OSPF2 Adjacency to be formed
+  stc: 
+    action: wait
+    objects: ref:/EmulatedDevice[@Name='OSPFDevice2']/Ospfv2RouterConfig[@Name='OSPFRouter2']
+    until: AdjacencyStatus=FULL
+
+
+-
+  name: Get the OSPFv2 results
+  register: ospfv2result
+  stc:
+    action: get
+    objects: /EmulatedDevice[@Name='OSPFDevice1']/Ospfv2RouterConfig/Ospfv2RouterResults
+    
+- debug:
+    var: ospfv2result
+
+-
+  name: Start the traffic
+  stc: 
+    action: perform
+    command: GeneratorStart
+    properties: 
+      GeneratorList: ref:/project 
+
+
+-
+  name: subscribe to streamblock results
+  stc: 
+    action: perform
+    command: SubscribeResultsView
+    properties: 
+      ExecuteSynchronous: true
+      TemplateUri: "Result Views/Stream Results/Stream Block Results.xml"
+
+- name: wait 10 sec
+  pause: 
+    seconds: 10
+
+
+-
+  name: Stop the traffic
+  stc: 
+    action: perform
+    command: GeneratorStop
+    properties: 
+      GeneratorList: ref:/project 
+
+- name: wait 10 sec
+  pause: 
+    seconds: 10
+
+-
+  name: get StreamBlock Rx Results
+  register: resultRx
+  stc: 
+    action: get
+    objects: /port/StreamBlock/RxStreamBlockResults
+
+
+-
+  name: get StreamBlock Results
+  register: result
+  stc: 
+    action: get
+    objects: /port/StreamBlock/TxStreamBlockResults 
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port
+      
+- 
+  name: Delete OSPF object
+  stc: 
+    action: delete
+    objects: ref:/EmulatedDevice[@Name='OSPFDevice1']/Ospfv2RouterConfig[@Name='OSPFRouter1']
+    
+- 
+  name: Delete OSPF object
+  stc: 
+    action: delete
+    objects: ref:/EmulatedDevice[@Name='OSPFDevice2']/Ospfv2RouterConfig[@Name='OSPFRouter2']

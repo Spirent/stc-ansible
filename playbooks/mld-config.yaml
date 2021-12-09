@@ -1,0 +1,345 @@
+# -*- coding: utf-8 -*-
+# @Author: mkatta for MLDv2 and traffic
+# @Date:   2021-10-28 
+
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: MLD_traffic1
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+
+- 
+  name: Create the base ports
+  stc: 
+    action: create
+    objects: 
+      - project: 
+          - port: 
+              location: "//10.109.121.38/1/1"
+              name: Port1
+
+          - port: 
+              location: "//10.109.121.135/1/1"
+              name: Port2
+
+- 
+  name: Configure the IPv6 multicast group
+  stc: 
+    action: create
+    under: ref:/project
+    objects: 
+    - Ipv6Group: 
+        name: Ipv6Group1
+        Active: true
+        Ipv6NetworkBlock:
+          StartIpList: ff1e::1
+          PrefixLength: 128
+          NetworkCount: 10
+          Active: true
+          
+- 
+  name: Configure the IPv6 multicast group
+  stc: 
+    action: create
+    under: ref:/project
+    objects: 
+    - Ipv6Group: 
+        name: Ipv6Group2
+        Ipv6NetworkBlock:
+          StartIpList: ff1e::11
+          PrefixLength: 128
+          NetworkCount: 10
+          Active: true
+
+-
+  name: create 1 MLD device under port1
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port1']
+      IfStack: Ipv6If EthIIIf
+      IfCount: '1 1'
+      name: "MLDDevice1"
+
+
+-
+  name: config global ipv6if device MLDDevice1
+  stc:
+    action: config
+    count: 1
+    objects: ref:/Emulateddevice[@Name='MLDDevice1']
+    properties:
+        Ipv6If:
+          name: "global IPv6"
+          Address: 2001::5
+          Gateway: 2001::6
+          PrefixLength: 64
+
+-
+  name: create the linklocal Ipv6If of device MLDDevice1
+  stc:
+    action: create
+    under: /EmulatedDevice[@Name='MLDDevice1']
+    count: 1
+    objects: 
+      - Ipv6If:
+          name: "linklocal IPv6"
+          stackedon: ref:/Emulateddevice[@Name='MLDDevice1']/ethiiif
+          toplevelif-sources: ref:/Emulateddevice[@Name='MLDDevice1']
+          PrimaryIf-sources: ref:/Emulateddevice[@Name='MLDDevice1']
+          Address: fe80::1
+          Gateway: ::1
+          PrefixLength: 128
+          
+
+-
+  name: create MLD on this device 1
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='MLDDevice1']
+    count: 1
+    objects:
+      - MLDhostConfig:
+          Active: True
+          Version: MLD_v2
+          name: "MLDHost1"
+        
+
+-
+  name: create 1 MLD device under port2
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port2']
+      IfStack: Ipv6If EthIIIf
+      IfCount: '1 1'
+      name: "MLDDevice2"
+
+-
+  name: config global ipv6if device MLDDevice2
+  stc:
+    action: config
+    count: 1
+    objects: ref:/Emulateddevice[@Name='MLDDevice2']
+    properties:
+        Ipv6If:
+          name: "global-IPv61"
+          Address: 2001::6
+          Gateway: 2001::5
+          PrefixLength: 64
+
+-
+  name: create the linklocal Ipv6If of device MLDDevice2
+  stc:
+    action: create
+    under: /EmulatedDevice[@Name='MLDDevice2']
+    count: 1
+    objects: 
+      - Ipv6If: 
+          name: "MLDDevice2-LinkLocal"
+          stackedon: ref:/Emulateddevice[@Name='MLDDevice2']/ethiiif
+          toplevelif-sources: ref:/Emulateddevice[@Name='MLDDevice2']
+          PrimaryIf-sources: ref:/Emulateddevice[@Name='MLDDevice2']
+          Address: fe80::2
+          Gateway: ::1
+          PrefixLength: 128
+
+
+-
+  name: create MLD on the device2
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='MLDDevice2']
+    count: 1
+    objects: 
+      - MLDhostConfig: 
+         Version: MLD_V2
+         Active: True
+         name: "MLDHost2"
+
+-
+  name: create MLD group membership
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='MLDDevice1']/MLDhostConfig[@Name='MLDHost1']
+    count: 1
+    objects: 
+      - MLDGroupMembership:
+         name: "MLDgroup1"
+         DeviceGroupMapping: MANY_TO_MANY
+         FilterMode: EXCLUDE
+         IsSourceList: FALSE
+         UserDefinedSources: FALSE
+         MulticastGroup: ref:/Ipv6Group[@Name='Ipv6Group1']
+         Ipv6NetworkBlock:
+            StartIpList: 2000::1
+            NetworkCount: 10
+
+-
+  name: create MLD group membership
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='MLDDevice2']/MLDhostConfig[@Name='MLDHost2']
+    count: 1
+    objects: 
+      - MLDGroupMembership:
+         name: "MLDgroup2"
+         DeviceGroupMapping: MANY_TO_MANY
+         FilterMode: EXCLUDE
+         IsSourceList: FALSE
+         UserDefinedSources: FALSE
+         MulticastGroup: ref:/Ipv6Group[@Name='Ipv6Group2']
+         Ipv6NetworkBlock:
+            StartIpList: 2000::11
+            NetworkCount: 10
+
+-
+  name: Configure the traffic generator
+  stc: 
+    count: 1
+    action: create
+    under: /project
+    objects: 
+       - StreamBlock: 
+          EnableStreamOnlyGeneration: true
+          SrcBinding-targets: |
+                              ref:/EmulatedDevice[@Name='MLDDevice1']/MLDhostConfig[@Name='MLDhost1']
+                              /MLDGroupMembership[@Name='MLDgroup1']/Ipv6NetworkBlock
+          DstBinding-targets: |
+                              ref:/EmulatedDevice[@Name='MLDDevice2']/MLDhostConfig[@Name='MLDhost2']
+                              /MLDGroupMembership[@Name='MLDgroup2']/Ipv6NetworkBlock
+          AffiliationStreamBlockLoadProfile: 
+             Load: 10
+          
+-
+  name: subscribe to MLD results
+  stc: 
+    action: perform
+    command: SubscribeResultsView
+    properties: 
+      ExecuteSynchronous: true
+      TemplateUri: "/Result Views/Access Protocols/MLD Results.xml"
+
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port
+
+-
+  name: start devices
+  stc: 
+    action: perform
+    command: DeviceStart
+    properties:
+       DeviceList: ref:/project
+
+-
+  name: Wait for the MLD1 Adjacency to be formed
+  stc: 
+    action: wait
+    objects: ref:/EmulatedDevice[@Name='MLDDevice1']/MLDhostConfig[@Name='MLDHost1']
+    until: BlockState=MEMBER
+
+-
+  name: Wait for the MLD2 Adjacency to be formed
+  stc: 
+    action: wait
+    objects: ref:/EmulatedDevice[@Name='MLDDevice2']/MLDhostConfig[@Name='MLDHost2']
+    until: BlockState=MEMBER
+
+
+-
+  name: Get the MLD results
+  register: MLDresult
+  stc:
+    action: get
+    objects: /EmulatedDevice[@Name='MLDDevice1']/MLDhostConfig/MLDhostResults
+    
+- debug:
+    var: MLDresult
+
+-
+  name: Start the traffic
+  stc: 
+    action: perform
+    command: GeneratorStart
+    properties: 
+      GeneratorList: ref:/project 
+
+
+-
+  name: subscribe to streamblock results
+  stc: 
+    action: perform
+    command: SubscribeResultsView
+    properties: 
+      ExecuteSynchronous: true
+      TemplateUri: "Result Views/Stream Results/Stream Block Results.xml"
+
+- name: wait 10 sec
+  pause: 
+    seconds: 10
+
+
+-
+  name: Stop the traffic
+  stc: 
+    action: perform
+    command: GeneratorStop
+    properties: 
+      GeneratorList: ref:/project 
+
+- name: wait 10 sec
+  pause: 
+    seconds: 10
+
+-
+  name: get StreamBlock Rx Results
+  register: resultRx
+  stc: 
+    action: get
+    objects: /port/StreamBlock/RxStreamBlockResults
+
+
+-
+  name: get StreamBlock Results
+  register: result
+  stc: 
+    action: get
+    objects: /port/StreamBlock/TxStreamBlockResults 
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port
+      
+- 
+  name: Delete MLD object
+  stc: 
+    action: delete
+    objects: ref:/EmulatedDevice[@Name='MLDDevice1']/MLDhostConfig[@Name='MLDHost1']
+    
+- 
+  name: Delete MLD object
+  stc: 
+    action: delete
+    objects: ref:/EmulatedDevice[@Name='MLDDevice2']/MLDhostConfig[@Name='MLDHost2']

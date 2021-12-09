@@ -1,0 +1,238 @@
+# -*- coding: utf-8 -*-
+# @Author: mkatta for OSPFv3 and traffic
+# @Date:   2021-09-28 
+
+
+- 
+  name: Create session
+  stc: 
+    action: session
+    user: ansible
+    name: DHCPv6-config
+    chassis: "{{ hostvars[inventory_hostname].chassis }}"
+
+
+- 
+  name: Create the base ports
+  stc: 
+    action: create
+    objects: 
+      - project: 
+          - port: 
+              location: "//${chassis[0]}/1/1"
+              name: Port1
+
+          - port: 
+              location: "//${chassis[1]}/1/1"
+              name: Port2
+
+-
+  name: create 1 device under port1
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port1']
+      IfStack: Ipv6If EthIIIf
+      IfCount: '1 1'
+      name: "Device1"
+
+-
+  name: config global ipv6if device Device1
+  stc:
+    action: config
+    count: 1
+    objects: ref:/Emulateddevice[@Name='Device1']
+    properties:
+        Ipv6If:
+          name: "global IPv6"
+          Address: 2001::5
+          Gateway: 2001::1
+          PrefixLength: 64
+
+-
+  name: create the linklocal Ipv6If of device Device1
+  stc:
+    action: create
+    under: /EmulatedDevice[@Name='Device1']
+    count: 1
+    objects: 
+    - Ipv6If:  
+          name: "linklocal IPv6"
+          stackedon: ref:/Emulateddevice[@Name='Device1']/ethiiif
+          toplevelif-sources: ref:/Emulateddevice[@Name='Device1']
+          PrimaryIf-sources: ref:/Emulateddevice[@Name='Device1']
+          Address: fe80::1
+          Gateway: ::1
+          PrefixLength: 128
+
+-
+  name: create DHCPv6 Server
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='Device1']
+    count: 1
+    objects: 
+    - Dhcpv6ServerConfig: 
+        EmulationMode: DHCPV6
+        name: "DHCPv6Server"
+        Dhcpv6ServerDefaultPrefixPoolConfig:
+           StartIpList: 2001::10
+
+-
+  name: DHCPv6 port config
+  stc: 
+    action: config
+    count: 1
+    objects: /Port[@Name='Port2']
+    properties:
+        Dhcpv6PortConfig:
+            LeaseTime: 60
+
+
+-
+  name: create 1 device under port2
+  stc: 
+    action: perform
+    command: DeviceCreate
+    properties: 
+      ParentList:  ref:/project
+      CreateCount: 1
+      DeviceCount: 1
+      Port: ref:/port[@Name='Port2']
+      IfStack: Ipv6If EthIIIf
+      IfCount: '1 1'
+      name: "Device2"
+      
+-
+  name: create the linklocal Ipv6If of device Device2
+  stc:
+    action: create
+    under: /EmulatedDevice[@Name='Device2']
+    count: 1
+    objects: 
+    - Ipv6If:  
+          name: "linklocal IPv6"
+          stackedon: ref:/Emulateddevice[@Name='Device2']/ethiiif
+          toplevelif-sources: ref:/Emulateddevice[@Name='Device2']
+          PrimaryIf-sources: ref:/Emulateddevice[@Name='Device2']
+          Address: fe80::2
+          Gateway: ::1
+          PrefixLength: 128
+
+
+-
+  name: Configure the IP address of device 2
+  stc: 
+    action: config
+    count: 1
+    objects: /EmulatedDevice[@Name='Device2']
+    properties:
+        Ipv6If: 
+          Address: 2001::3
+          Gateway: 2001::1
+
+-
+  name: create DHCPv6 client on the device2
+  stc: 
+    action: create
+    under: /EmulatedDevice[@Name='Device2']
+    count: 1
+    objects: 
+    - Dhcpv6BlockConfig: 
+        Dhcpv6ClientMode: DHCPV6
+        UsesIf-targets: ref:/EmulatedDevice[@Name='Device2']/Ipv6if
+        name: "DHCPv6Client"
+
+-
+  name: subscribe to DHCP Server results
+  stc: 
+    action: perform
+    command: SubscribeResultsView
+    properties: 
+      ExecuteSynchronous: true
+      TemplateUri: "/Result Views/Access Protocols/All Access Protocol Results.xml"
+      
+# -
+  # name: subscribe to DHCP results
+  # stc: 
+    # action: perform
+    # command: SubscribeResultsView
+    # properties: 
+      # ExecuteSynchronous: true
+      # TemplateUri: "/Result Views/Access Protocols/DHCPv6 Session Results.xml"
+
+-
+  name: Take the ports online
+  stc: 
+    action: perform
+    command: AttachPorts
+    properties:
+      RevokeOwner: true
+      PortList: ref:/port
+
+-
+  name: start devices
+  stc: 
+    action: perform
+    command: DeviceStart
+    properties:
+       DeviceList: ref:/project
+
+-
+  name: Wait for the DHCPv6 Server status UP
+  stc: 
+    action: wait
+    objects: ref:/EmulatedDevice[@Name='Device1']/Dhcpv6ServerConfig[@Name='DHCPv6Server']
+    until: ServerState=UP
+
+-
+  name: Wait for the DHCPv6 Client status BOUND
+  stc: 
+    action: wait
+    objects: ref:/EmulatedDevice[@Name='Device2']/Dhcpv6BlockConfig[@Name='DHCPv6Client']
+    until: BlockState=BOUND
+
+
+-
+  name: Get the DHCPv6 Server results
+  register: DHCPv6serverresult
+  stc:
+    action: get
+    objects: ref:/EmulatedDevice[@Name='Device1']/DHCPv6ServerConfig/Dhcpv6ServerResults
+    
+- debug:
+    var: DHCPv6serverresult
+    
+# -
+  # name: Get the DHCPv6 Client results
+  # register: DHCPv6clientresult
+  # stc:
+    # action: get
+    # objects: ref:/EmulatedDevice[@Name='Device2']/DHCPv6BlockConfig/Dhcpv6SessionResults
+    
+# - debug:
+    # var: DHCPv6clientresult
+
+-
+  name: Take the ports offline
+  stc: 
+    action: perform
+    command: DetachPortsCommand
+    properties:
+      PortList: ref:/port
+      
+- 
+  name: Delete DHCPv6 Server object
+  stc: 
+    action: delete
+    objects: ref:/EmulatedDevice[@Name='Device1']/DHCPv6ServerConfig[@Name='DHCPv6Server']
+    
+- 
+  name: Delete DHCPv6 Client object
+  stc: 
+    action: delete
+    objects: ref:/EmulatedDevice[@Name='Device2']/DHCPv6BlockConfig[@Name='DHCPv6Client']
