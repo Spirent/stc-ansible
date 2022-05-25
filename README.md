@@ -490,6 +490,9 @@ Debugging can be difficult when using Ansible. To make it easier to troubleshoot
 Check the [playbook](playbooks) folder for more examples.
 
 
+### More detailed documentation
+
+Please check [docs](docs) folder for more detailed documentation.
 
 # Implementation and Design 
 
