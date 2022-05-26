@@ -1,0 +1,618 @@
+Multicast Protocol - MLD
+=========================
+
+.. contents::
+   :local:
+   :depth: 1
+
+Overview
+--------
+
+`STC Ansible` module allows you to create/configure blocks of hosts for Multicast Listener Discovery (MLD) emulation
+using different services across multiple ports. 
+MLD versions 1 and 2 are supported. 
+
+To create and configure an emulated MLD Protocol test through `STC Ansible` module, 
+initially you should create `MLDhostconfig` object under an emulated device. Once the 
+MLD protocol is enabled on the emulated device, it will act as a MLD host.
+
+An MLD host should be assosiated to a membership with a multicast group block. To create MLD group
+membership, use `mldGroupMembership` object.
+
+You can configure all the characteristics of a MLD emulated host as well as the group memberships in create mode. 
+Same can also be reconfigured/modify later.
+
+Once the MLD hosts and group memberships set up is done, you can configure the Streamblock/traffic generator
+between the hosts or the multicast groups by setting the source and destination MLD object references.
+
+Now, you can verify the traffic statistics (transmitted and received packets) between the 
+hosts/multicast groups by starting the devices (here emulated MLD hosts).
+
+Please refer example playbooks mld-config.yaml in
+`Github <https://github.com/Spirent/stc-ansible/tree/master/playbooks>`_ playbook folder.
+
+
+Create MLD Host
+----------------
+
+Purpose
+~~~~~~~
+
+Creates MLD object(s) in the Spirent Test Center(stc) datamodel under the emulated device object(s).
+During the object creation, Name and other MLD properties can be defined.
+The name of the MLD object will be used as a reference in order to reconfigure/modify
+any of it's properties later.
+
+.. role:: mandatory
+
+
+Synopsis
+~~~~~~~~
+
+.. note:: :mandatory:`M` indicates that the parameter is  :mandatory:`Mandatory`.
+
+.. parsed-literal::
+   -
+      name: create MLD host block
+      stc: 
+         action: create  :mandatory:`M`
+         under: <emulated device reference> :mandatory:`M`
+         count: <integer>
+         objects: 
+            - <MLD object name>  :mandatory:`M`
+              <MLD attribute1: value1>
+              <MLD attribute2: value2>
+              .
+              .
+
+Parameters
+~~~~~~~~~~
+
+.. raw:: html
+    
+   <!DOCTYPE html>
+   <html>
+   <head>
+   <style>
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+   td, th {
+     border: 1px solid #dddddd;
+     text-align: left;
+     padding: 8px;
+   }
+
+   tr:nth-child(even) {
+     background-color: #dddddd;
+   }
+   </style>
+   </head>
+   <body>
+
+   <table>
+     <tr>
+       <th style="text-align: center">Parameter</th>
+       <th style="text-align: center">Value Type</th>
+       <th style="text-align: center">Description</th>
+     </tr>
+     <tr>
+       <td>action</td>
+       <td>string</td>
+       <td>
+           <div>Specifies the action for the given task. Here, it is <code>create</code>.</div>
+           <div><b>Required:</b> Yes</div>
+       </td>
+     </tr>
+     <tr>
+       <td>under</td>
+       <td>xpath</td>
+       <td>
+            <div>An emulated device under which the MLD host is created.</div>
+            <div><b>Required:</b> Yes</div>
+            <div><b>Example:</b></div>
+                   <div><code>under: /EmulatedDevice[@Name=’Device1’]</code></div>
+            <div><b>See Also:</b></div>
+                   <div> - <a href='../docs/EmulatedDevice.rst'>EmulatedDevice section</a></div>
+                   <div> - <a href='https://www.w3schools.com/xml/xpath_syntax.asp'>XPATH Standard (Selecting Nodes)</a></div>
+                <div><b>NOTES:</b></div>
+                  <div>   1. EmulatedDevice must already exist.</div>
+                  <div>   2. If the device does not exist with the specified name, an exception will be raised and the playbook stops.</div>
+       </td>
+     </tr>
+     <tr>
+       <td>count   </td>
+       <td>integer   </td>
+       <td>
+          <div>Specifies the number of MLD hosts to be created.</div>
+          <div>Count value above 1, creates several MLD objects/hosts in an iterative way. </div>
+          <div>Use the keyword ${item} as a template in device names. The item will be replace with the values from 1 to count.</div>
+          <div><b>Required:</b> No. Optional field</div>
+       </td>
+     </tr>
+     <tr>
+       <td>objects</td>
+       <td>string</td>
+       <td>
+          <div>Specifies to identify stc objects and attributes.</div>
+          <div>To create MLD version 1, 2 or 3 host blocks, use <code>MLDhostConfig</code> object.</div>
+          <div><b>Required:</b> Yes.</div>
+          <div><b>See Also:</b></div>
+          <div> <a href='http://kms.spirentcom.com/CSC/pabtech/stc-automation-html/MLDHostConfig.htm'> MLD object reference guide</a><div>
+       </td>
+     </tr>
+   </table>
+
+   </body>
+   </html>
+
+
+Examples
+~~~~~~~~
+
+.. code-block:: yaml
+
+    -
+      name: create MLD v1 on Ipv6 Device
+      stc: 
+        action: create
+        under: /EmulatedDevice[@Name='IPV6-Device1']
+        count: 1
+        objects: 
+          - MLDhostConfig: 
+              Active: True
+              Version: MLD_V1
+              RouterAlert: TRUE
+              Name: "MLDv1Host"
+
+    -
+      name: create MLD v2 on Ipv6 Device
+      stc: 
+        action: create
+        under: /EmulatedDevice[@Name='IPV6-Device2']
+        count: 1
+        objects: 
+          - MLDhostConfig:
+              Active: True
+              Version: MLD_V2
+              RouterAlert: TRUE
+              Name: "MLDv2Host"
+
+    -
+      name: create 10 MLD host blocks
+      stc: 
+         action: create
+         under: /EmulatedDevice[@Name='Device${item}']
+         count: 10
+         objects: 
+           - MLDhostConfig: 
+              Active: True
+              Version: MLD_V2
+              RouterAlert: TRUE
+              Name: "MLDv2Host${item}"
+
+
+Configure MLD Host
+-------------------
+
+Purpose
+~~~~~~~
+
+Reconfigures/modifies an existing MLD hosts properties.
+
+.. role:: mandatory
+
+
+Synopsis
+~~~~~~~~
+
+.. parsed-literal::
+   -
+      name: configure MLD device
+      count: <integer>
+      stc: 
+         action: config  :mandatory:`M`
+         object: <MLD device reference>  :mandatory:`M`
+         properties:   :mandatory:`M`
+            <MLD attribute1: value1>
+            <MLD attribute2: value2>
+            .
+            .
+
+.. raw:: html
+    
+   <table>
+     <tr>
+       <th style="text-align: center">Parameter</th>
+       <th style="text-align: center">Value Type</th>
+       <th style="text-align: center">Description</th>
+     </tr>
+     <tr>
+       <td>action</td>
+       <td>string</td>
+       <td>Specifies the action for the given task. Here it is <code>config</code>.
+           <div><b>Required:</b> Yes</div>
+       </td>
+     </tr>
+     <tr>
+       <td>count   </td>
+       <td>integer   </td>
+       <td>
+          <div>Specifies the number of MLD hosts to be configured.</div>
+          <div>Count value above 1, creates several MLD objects in an iterative way. </div>
+          <div>Use the keyword ${item} as a template in device names. The item will be replace 
+           with the values from 1 to count.</div>
+          <div><b>Required:</b> No. Optional field</div>
+       </td>
+     </tr>
+     <tr>
+       <td>object</td>
+       <td>xpath</td>
+       <td>
+            <div>An emulated MLD device object under which the attributes are configured.</div>
+            <div><b>Required:</b> Yes</div>
+            <div><b>Example:</b></div>
+                   <div><code>object: ref:/EmulatedDevice[@Name='Dev1']/MLDHostConfig[@Name='MLDDev1']</code></div>
+            <div><b>See Also:</b></div>
+                   <div> - <a href='https://www.w3schools.com/xml/xpath_syntax.asp'>XPATH Standard (Selecting Nodes)</a></div>
+                <div><b>NOTES:</b></div>
+                  <div>   1. MLD host must already exist.</div>
+                  <div>   2. If the device does not exist with the specified name, an exception will be raised and the playbook stops.</div>
+       </td>
+     </tr>
+     <tr>
+       <td>properties</td>
+       <td>string</td>
+       <td>
+          <div>Specifies to identify the properties of MLD objects.</div>
+          <div><b>Required:</b> Yes</div>
+          <div>For MLD attributes, please refer <div>
+          <div> <a href='http://kms.spirentcom.com/CSC/pabtech/stc-automation-html/MLDHostConfig.htm'> MLD object reference guide</a><div>
+       </td>
+     </tr>
+   </table>
+
+
+Examples
+~~~~~~~~
+
+.. code-block:: yaml
+
+    -
+      name: configure/modify MLD v1/v2 host properties
+      stc: 
+      action: config
+      count: 1
+      object: ref:/EmulatedDevice[@Name='Device1']/MLDhostConfig[@Name='MLDDevice1']
+      properties: 
+         Ipv6Tos: 10
+         RouterAlert: FALSE
+
+    -
+      name: configure/modify multiple MLD host properties
+      stc: 
+      action: config
+      count: 10
+      object: ref:/EmulatedDevice[@Name='Device${item}']/MLDhostConfig[@Name='MLDDevice${item}']
+      properties: 
+         Ipv6Tos: 10
+         RouterAlert: FALSE
+
+
+Create MLD Group Membership
+----------------------------
+
+Purpose
+~~~~~~~
+
+Creates blocks of MLD group memberships under a specific MLD host object.
+It also defines the characteristics of the group membership and the source pools.
+
+Synopsis
+~~~~~~~~
+
+.. parsed-literal::
+   -
+      name: create MLD group membership
+      under: <MLD host reference path> :mandatory:`M`
+      count: <integer>
+      stc: 
+         action: create  :mandatory:`M`
+         objects:   :mandatory:`M`
+           - <MLD group membership Object>:
+               <MLD group attribute1: value1>
+               <MLD group attribute2: value2>
+               .
+               .
+
+Parameters
+~~~~~~~~~~
+
+.. raw:: html
+    
+   <table>
+     <tr>
+       <th style="text-align: center">Parameter</th>
+       <th style="text-align: center">Value Type</th>
+       <th style="text-align: center">Description</th>
+     </tr>
+     <tr>
+       <td>action</td>
+       <td>string</td>
+       <td>Specifies the action for the given task. Here it is <code>create</code>.
+           <div><b>Required:</b> yes</div>
+       </td>
+     </tr>
+     <tr>
+       <td>under</td>
+       <td>xpath</td>
+       <td>
+            <div>An MLD host under which the MLD group membership is created.</div>
+            <div><b>Required:</b> Yes</div>
+            <div><b>Example:</b></div>
+            <div><code>under: /EmulatedDevice[@Name='Dev1']/MLDhostConfig[@Name='MLDDev1']</code></div>
+            <div><b>See also:</b></div>
+            <div>- <a href='https://www.w3schools.com/xml/xpath_syntax.asp'>XPATH Standard (Selecting Nodes)</a></div>
+            <div><b>NOTES:</b></div>
+            <div>1. MLD v1/v2 host must already exist</div>
+            <div>2. If the path is incorrect, an exception will be raised and the playbook stops. 
+       </td>
+     </tr>
+     <tr>
+       <td>count   </td>
+       <td>integer   </td>
+       <td>
+          <div>Specifies the number of MLD group memberships to be created.</div>
+          <div>Count value above 1, creates several MLD group membership objects in an iterative way.</div>
+          <div>Use the keyword ${item} as a template in device names. The item will be replace with the values from 1 to count.</div>
+          <div><b>Required:</b> No. Optional field.</div>
+       </td>
+     </tr>
+     <tr>
+       <td>objects</td>
+       <td>string</td>
+       <td>
+          <div>Specifies to identify stc objects and attributes.</div>
+          <div>To create group memberships under MLD v1/v2 hosts, use <code>MLDGroupMembership</code> object.
+          <div><b>Required:</b> Yes.</div>
+          <div><b>See Also:</b>
+          <div><a href='http://kms.spirentcom.com/CSC/pabtech/stc-automation-html/MLDGroupMembership.htm'> MLD group membership Object Reference Guide</a> </div>
+          <div><b>NOTES:</b></div>
+            <div>1. An IPv6 Multicast group must already exist. <a href='../docs/Multicast.rst'>Multicast Group </a> section</div>
+       </td>
+     </tr>
+   </table>
+
+
+Examples
+~~~~~~~~
+
+  1. Sample YAML code to create MLD group membership on MLD v1 host:
+  
+  .. code-block:: yaml
+
+   -
+     name: create MLD group membership
+     stc: 
+       action: create
+       under: /EmulatedDevice[@Name='Device1']/MLDhostConfig[@Name='MLDv1host']
+       count: 1
+       objects: 
+         - MLDGroupMembership:
+            name: "MLDgroup1"
+            DeviceGroupMapping: MANY_TO_MANY
+            FilterMode: EXCLUDE
+            MulticastGroup: ref:/Ipv6Group[@Name='MulticastGroup1']
+
+
+          
+  2. Sample YAML code to create MLD group membership on MLD v2 host:
+  
+  .. code-block:: yaml
+
+   -
+     name: create MLD group membership
+     stc: 
+       action: create
+       under: /EmulatedDevice[@Name='Device1']/MLDhostConfig[@Name='MLDv2host']
+       count: 1
+       objects: 
+         - MLDGroupMembership:
+            name: "MLDgroup1"
+            DeviceGroupMapping: MANY_TO_MANY
+            FilterMode: EXCLUDE
+            IsSourceList: FALSE
+            UserDefinedSources: FALSE
+            MulticastGroup: ref:/Ipv6Group[@Name='MulticastGroup1']
+            -Ipv6NetworkBlock:
+               StartIpList: 2000::1
+               NetworkCount: 10
+
+
+  3. Sample YAML code to create multiple MLD group memberships on MLD v2 host:
+  
+  .. code-block:: yaml
+  
+   -
+     name: create 10 MLD group memberships
+     stc: 
+       action: create
+       under: /EmulatedDevice[@Name='Device${item}']/MLDhostConfig[@Name='MLDhost${item}']
+       count: 10
+       objects: 
+         - MLDGroupMembership:
+            name: "MLDgroup${item}"
+            DeviceGroupMapping: MANY_TO_MANY
+            FilterMode: EXCLUDE
+            IsSourceList: FALSE
+            UserDefinedSources: FALSE
+            MulticastGroup: ref:/Ipv6Group[@Name='MulticastGroup${item}']
+            -Ipv6NetworkBlock:
+               StartIpList: 2000::${item}
+               NetworkCount: 10
+
+
+Configure MLD group membership
+-------------------------------
+
+Purpose
+~~~~~~~
+
+Reconfigures/modifies an existing MLD group membership and it's child objects properties.
+
+.. role:: mandatory
+
+
+Synopsis
+~~~~~~~~
+
+.. parsed-literal::
+   -
+      name: configure MLD group membership
+      count: <integer>
+      stc: 
+         action: config  :mandatory:`M`
+         object: <MLD group membership reference>  :mandatory:`M`
+         properties:  :mandatory:`M`
+            <MLD group membership attribute1: value1>
+            <MLD group membership attribute2: value2>
+              <group membership child object>
+                 <attribute1: value>
+                 <attribute2: value>
+                 
+
+Parameters
+~~~~~~~~~~
+
+.. raw:: html
+
+   <table>
+     <tr>
+       <th style="text-align: center">Parameter</th>
+       <th style="text-align: center">Value Type</th>
+       <th style="text-align: center">Description</th>
+     </tr>
+     <tr>
+       <td>action</td>
+       <td>string</td>
+       <td>Specifies the action for the given task. Here it is <code>config</code>.
+           <div><b>Required:</b> Yes.</div>
+       </td>
+     </tr>
+     <tr>
+       <td>count   </td>
+       <td>integer   </td>
+       <td>
+          <div>Specifies the number of MLD group memberships to be configured.</div>
+          <div>Count value above 1, creates several MLD group membership objects in an iterative way. </div>
+          <div>Use the keyword ${item} as a template in group membership names. The item will be replace 
+           with the values from 1 to count.</div>
+           <div><b>Required:</b> No. Optional field.</div>
+       </td>
+     </tr>
+     <tr>
+       <td>object</td>
+       <td>xpath</td>
+       <td>
+            <div>An MLD group membership object under which the attributes are configured.</div>
+            <div><b>Required:</b> Yes</div>
+            <div><b>Example:</b></div>
+            <div><code>ref:/EmulatedDevice[@Name='Dev1']/MLDhostConfig[@Name='MLDhost1']/</code> </div>
+            <div><code>MLDGroupMembership[@Name='group1']</code></div>
+            <div><b>See Also:</b></div>
+                   <div> - <a href='https://www.w3schools.com/xml/xpath_syntax.asp'>XPATH Standard (Selecting Nodes)</a></div>
+                <div><b>NOTES:</b></div>
+                  <div>   1. MLD devices and group memberships must already exist.</div>
+                  <div>   2. If the device does not exist with the specified name, an exception will be raised and the playbook stops.</div>
+       </td>
+     </tr>
+     <tr>
+       <td>properties</td>
+       <td>string</td>
+       <td>
+          <div>Specifies to identify the properties of MLD group membership objects.</div>
+          <div><b>Required:</b> Yes</div>
+          <div><b>See Also:</b>
+          <div><a href='http://kms.spirentcom.com/CSC/pabtech/stc-automation-html/MLDGroupMembership.htm'> MLD group membership Object Reference Guide</a> </div>
+          <div><b>NOTES:</b></div>
+            <div>1. An IPv6 Multicast group must already exist. <a href='../docs/Multicast.rst'>Multicast Group </a> section</div>
+       </td>
+     </tr>
+   </table>
+
+
+Examples
+~~~~~~~~
+
+.. code-block:: yaml
+
+   -
+     name: config MLD group membership under MLD v2 device
+     stc: 
+       action: config
+       count: 1
+       objects: /EmulatedDevice[@Name='MLDDevice1']/MLDhostConfig[@Name='MLDhost1']/MLDGroupMembership[@Name='group1']
+       properties:
+          DeviceGroupMapping: ONE_TO_ONE
+          FilterMode: EXCLUDE
+          IsSourceList: FALSE
+          UserDefinedSources: FALSE
+          MulticastGroup: ref:/Ipv6Group[@Name='MulticastGroup1']
+          Ipv6NetworkBlock:
+            StartIpList: 2000::1
+            NetworkCount: 10
+
+Configure MLD Traffic
+----------------------
+
+Purpose
+~~~~~~~
+
+Configures the traffic between the MLD hosts or groups.
+About creating a bound streamblock, please refer `StreamBlock <../docs/StreamBlock.rst>`_ section and 
+`Start Protocols <../docs/Start_Protocols.rst>`_, `Results <../docs/Results.rst>`_ sections to 
+start devices and get TX(transmitted)/RX(received) counter values.
+
+Examples
+~~~~~~~~
+
+.. code-block:: yaml
+
+   # To configure traffic between MLD Devices
+   -
+     name: Configure multicast stream
+     stc: 
+       count: 1
+       action: create
+       under: /project
+       objects: 
+          - StreamBlock: 
+             EnableStreamOnlyGeneration: true
+             SrcBinding-targets: ref:/EmulatedDevice[@Name='Device1']/Ipv6If
+             DstBinding-targets: ref:/EmulatedDevice[@Name='Device2']/Ipv6If
+             AffiliationStreamBlockLoadProfile: 
+               Load: 10
+
+
+   # To configure traffic between MLD groups
+   -
+     name: Configure the traffic generator2
+     stc: 
+       count: 1
+       action: create
+       under: /project
+       objects: 
+          - StreamBlock: 
+             EnableStreamOnlyGeneration: true
+             SrcBinding-targets: |
+                                 ref:/EmulatedDevice[@Name='Device1']/MLDhostConfig[@Name='MLDhost1']
+                                 /MLDGroupMembership[@Name='group1']/Ipv6NetworkBlock
+             DstBinding-targets: |
+                                 ref:/EmulatedDevice[@Name='Device2']/MLDhostConfig[@Name='MLDhost2']
+                                 /MLDGroupMembership[@Name='group2']/Ipv6NetworkBlock
+             AffiliationStreamBlockLoadProfile: 
+               Load: 10
+
+For more examples please check `Playbooks <https://github.com/Spirent/stc-ansible/tree/master/playbooks>`_.
